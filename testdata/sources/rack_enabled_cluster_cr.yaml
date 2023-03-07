@@ -1,0 +1,25 @@
+service:
+  feature-key-file: /etc/aerospike/secret/features.conf
+security: {}
+
+network:
+  service:
+    port: 3000
+  heartbeat:
+    port: 3002
+  fabric:
+    port: 3001
+
+namespaces:
+  - name: test
+    memory-size: 3000000000
+    replication-factor: 2
+    storage-engine:
+      type: device
+      devices:
+        - /test/dev/xvdf
+  - name: testMem
+    memory-size: 3000000000
+    replication-factor: 1
+    storage-engine:
+      type: memory

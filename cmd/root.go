@@ -26,6 +26,11 @@ var (
 	errInvalidAerospikeVersion = fmt.Errorf("ERR: aerospike version must be in the form <a>.<b>.<c>.<d>")
 )
 
+// Replaced at compile time
+var (
+	VERSION = "0.0.1"
+)
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "asconfig <path/to/config.yaml> [<path/to/aerospike.conf>]",
@@ -45,13 +50,13 @@ var rootCmd = &cobra.Command{
 		log.Info("running command", cmdNameKey, "rootCmd")
 
 		srcPath := args[0]
-		log.Info("got argument value", argNameKey, "source", valueKey, srcPath)
+		log.Info("processing argument", argNameKey, "source", valueKey, srcPath)
 
 		version, err := cmd.Flags().GetString("aerospike-version")
 		if err != nil {
 			return err
 		}
-		log.Info("got flag value", flagNameKey, "aerospike-version", valueKey, version)
+		log.Info("processing flag", flagNameKey, "aerospike-version", valueKey, version)
 
 		fdata, err := os.ReadFile(srcPath)
 		if err != nil {
@@ -76,7 +81,7 @@ var rootCmd = &cobra.Command{
 		destPath := strings.TrimSuffix(srcPath, ".yaml") + ".conf"
 		if len(args) > ArgMin {
 			destPath = args[1]
-			log.Info("got argument value", argNameKey, "destination", valueKey, destPath)
+			log.Info("processing argument", argNameKey, "destination", valueKey, destPath)
 		}
 
 		log.Info("writing converted data to", fileKey, destPath)
@@ -135,7 +140,7 @@ var rootCmd = &cobra.Command{
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
-		log.Error(err, "Execute failed", cmdNameKey, "rootCmd")
+		log.Error(err, "execute failed", cmdNameKey, "rootCmd")
 		os.Exit(1)
 	}
 }
@@ -150,4 +155,6 @@ func init() {
 	rootCmd.Flags().BoolP("help", "u", false, "Display help information")
 	rootCmd.PersistentFlags().StringP("aerospike-version", "a", "", "Aerospike server version for the configuration file. Ex: 6.2.0.2")
 	rootCmd.MarkPersistentFlagRequired("aerospike-version")
+
+	rootCmd.Version = VERSION
 }

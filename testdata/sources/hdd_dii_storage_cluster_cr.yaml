@@ -1,0 +1,33 @@
+service:
+  feature-key-file: /etc/aerospike/secret/features.conf
+security: {}
+network:
+  service:
+    port: 3000
+  fabric:
+    port: 3001
+  heartbeat:
+    port: 3002
+namespaces:
+  - name: test
+    memory-size: 2000000000
+    single-bin: true
+    data-in-index: true
+    replication-factor: 1
+    storage-engine:
+      type: device
+      files:
+        - /opt/aerospike/data/test/test.dat
+      filesize: 2000000000
+      data-in-memory: true
+  - name: bar
+    memory-size: 3000000000
+    single-bin: true
+    data-in-index: true
+    replication-factor: 1
+    storage-engine:
+      type: device
+      files:
+        - /opt/aerospike/data/bar/bar.dat
+      filesize: 2000000000
+      data-in-memory: true
