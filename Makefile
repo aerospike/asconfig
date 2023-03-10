@@ -1,4 +1,5 @@
 # Variables required for this Makefile
+ROOT_DIR = $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 VERSION = $(shell git describe --tags --always)
 GO_ENV_VARS =
 
@@ -18,13 +19,30 @@ asconfig:
 # Clean up
 .PHONY: clean
 clean:
-	rm asconfig
-	rm -r coverage
+	$(RM) asconfig
+	$(RM) coverage
+	$(MAKE) -C $(ROOT_DIR)/pkg/ $@
 
 .Phony: dependencies
 dependencies:
 	go get github.com/wadey/gocovmerge
 	go install github.com/wadey/gocovmerge
+
+# fpm is needed to build these artifacts
+.PHONY: all
+all: deb rpm tar
+
+.PHONY: deb
+deb: asconfig
+	$(MAKE) -C $(ROOT_DIR)/pkg/ $@
+
+.PHONY: rpm
+rpm: asconfig
+	$(MAKE) -C $(ROOT_DIR)/pkg/ $@
+
+.PHONY: tar
+tar: asconfig
+	$(MAKE) -C $(ROOT_DIR)/pkg/ $@
 
 .PHONY: test
 test: integration unit
