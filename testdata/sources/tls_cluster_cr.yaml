@@ -7,6 +7,7 @@ network:
     tls-authenticate-client: any
     tls-port: 4333
   heartbeat:
+    mode: multicast
     tls-name: aerospike-a-0.test-runner
     tls-port: 3012
   fabric:
