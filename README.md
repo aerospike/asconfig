@@ -15,7 +15,7 @@ asconfig <path/to/config.yaml> [<path/to/aerospike.conf>] [flags]
     ```
     Short form flags and source file only conversions are also supported.
     In this case, -a is the server version and using only a source file means
-    the result will be written as <path/to/config>.conf
+    the result will be written as <path/to/config>.conf.
     ```
         asconfig -a "6.2.0.2 aerospike.yaml
     ```
