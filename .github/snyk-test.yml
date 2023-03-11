@@ -1,0 +1,29 @@
+name: "Snyk Report"
+
+on:
+  workflow_call:
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Setup go version
+        uses: actions/setup-go@v3
+        with:
+          go-version: '^1.19.0' # This should match the Go version used on the internal build containers
+      - name: Install dependencies
+        run : |
+          make deps
+      - name: Setup snyk CLI
+        uses: snyk/actions/setup@master
+      - name: Run Snyk to check for vulnerabilities and record dependencies
+        run: |
+          snyk test --print-deps | sed -r "s/\x1B\[([0-9]{1,3}((;[0-9]{1,3})*)?)?[m|K]//g" | tee asconfig-snyk.txt
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      - name: Upload snyk results
+        uses: actions/upload-artifact@v3
+        with:
+          name: asconfig-snyk.txt
+          path: asconfig-snyk.txt
