@@ -1,3 +1,6 @@
+//go:build integration
+// +build integration
+
 package main
 
 import (
@@ -135,6 +138,12 @@ var testFiles = []testFile{
 		destination: filepath.Join(destinationPath, "xdr_src_cluster_cr.conf"),
 		expected:    filepath.Join(expectedPath, "xdr_src_cluster_cr.conf"),
 		arguments:   []string{binaryPath, "-a", "6.2.0.2"},
+	},
+	{
+		source:      filepath.Join(sourcePath, "missing_heartbeat_mode.yaml"),
+		destination: filepath.Join(destinationPath, "missing_heartbeat_mode.conf"),
+		expected:    filepath.Join(expectedPath, "missing_heartbeat_mode.conf"),
+		arguments:   []string{binaryPath, "-a", "6.2.0.2", "-f"},
 	},
 }
 

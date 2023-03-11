@@ -6,6 +6,7 @@ network:
   service:
     port: 3000
   heartbeat:
+    mode: multicast
     port: 3002
   fabric:
     port: 3001

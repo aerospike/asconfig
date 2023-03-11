@@ -9,6 +9,7 @@ network:
   fabric:
     port: 3001
   heartbeat:
+    mode: multicast
     port: 3002
 
 xdr:
