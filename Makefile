@@ -2,6 +2,7 @@
 ROOT_DIR = $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 VERSION = $(shell git describe --tags --always)
 GO_ENV_VARS =
+INSTALL_DIR = /usr/local/bin
 
 ifdef GOOS
 GO_ENV_VARS = GOOS=$(GOOS)
@@ -27,6 +28,14 @@ clean:
 dependencies:
 	go get github.com/wadey/gocovmerge
 	go install github.com/wadey/gocovmerge
+
+.Phony: install
+install: asconfig
+	install -m 755 ./asconfig $(INSTALL_DIR)
+
+.Phony: uninstall
+uninstall:
+	rm $(INSTALL_DIR)/asconfig
 
 # fpm is needed to build these artifacts
 .PHONY: all
