@@ -14,13 +14,13 @@ endif
 # Builds exporter binary
 .PHONY: asconfig
 asconfig:
-	$(GO_ENV_VARS) go build -ldflags="-X 'cmd.version=$(VERSION)'" -o asconfig .
+	$(GO_ENV_VARS) go build -ldflags="-X 'aerospike/asconfig/cmd.VERSION=$(VERSION)'" -o asconfig .
 
 # Clean up
 .PHONY: clean
 clean:
 	$(RM) asconfig
-	$(RM) coverage
+	$(RM) -r coverage
 	$(MAKE) -C $(ROOT_DIR)/pkg/ $@
 
 .Phony: dependencies

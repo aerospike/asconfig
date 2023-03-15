@@ -8,16 +8,16 @@ import (
 	"testing"
 )
 
-type preTest struct {
+type preTestConvert struct {
 	flags          []string
 	arguments      []string
 	expectedErrors []error
 }
 
-var preTests = []preTest{
+var preTestsConvert = []preTestConvert{
 	{
 		flags:          []string{"-a", "5.6.0.0"},
-		arguments:      []string{"./root_test.go"},
+		arguments:      []string{"./convert_test.go"},
 		expectedErrors: []error{nil},
 	},
 	{
@@ -40,10 +40,10 @@ var preTests = []preTest{
 	},
 }
 
-func TestPreRun(t *testing.T) {
-	cmd := newRootCmd()
+func TestPreRunConvert(t *testing.T) {
+	cmd := newConvertCmd()
 
-	for _, test := range preTests {
+	for _, test := range preTestsConvert {
 		cmd.ParseFlags(test.flags)
 		err := cmd.PreRunE(cmd, test.arguments)
 		for _, expectedErr := range test.expectedErrors {

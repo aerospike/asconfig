@@ -8,13 +8,13 @@ import (
 // TODO move this to its own package
 
 const (
-	cmdNameKey  = "commandName"
-	flagNameKey = "flagName"
-	argNameKey  = "argumentName"
-	valueKey    = "value"
-	fileKey     = "file"
-	countKey    = "count"
-	expectedKey = "expected"
+	keyCmdName  = "commandName"
+	keyFlagName = "flagName"
+	keyArgName  = "argumentName"
+	keyValue    = "value"
+	keyFile     = "file"
+	keyCount    = "count"
+	keyExpected = "expected"
 )
 
 const (
