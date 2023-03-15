@@ -30,7 +30,7 @@ dependencies:
 	go install github.com/wadey/gocovmerge
 
 .Phony: install
-install: asconfig
+install:
 	install -m 755 ./asconfig $(INSTALL_DIR)
 
 .Phony: uninstall
