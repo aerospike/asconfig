@@ -31,7 +31,7 @@ dependencies:
 
 .Phony: install
 install:
-	install -m 755 ./asconfig $(INSTALL_DIR)
+	install -v -m 755 ./asconfig $(INSTALL_DIR)
 
 .Phony: uninstall
 uninstall:
