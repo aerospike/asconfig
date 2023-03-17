@@ -121,26 +121,30 @@ func newConvertCmd() *cobra.Command {
 			// validate arguments
 			if len(args) < argMin {
 				log.Error(errNotEnoughArguments, "too few arguments", keyCmdName, "convertCmd", keyCount, len(args), keyExpected, argMin)
-				multiErr = errors.Join(multiErr, errNotEnoughArguments)
+				// multiErr = errors.Join(multiErr, errNotEnoughArguments) TODO use this in go 1.20
+				multiErr = fmt.Errorf("%w, %w", multiErr, errNotEnoughArguments)
 				return multiErr
 			}
 
 			if len(args) > argMax {
 				log.Error(errTooManyArguments, "too many arguments", keyCmdName, "convertCmd", keyCount, len(args), keyExpected, argMax)
-				multiErr = errors.Join(multiErr, errTooManyArguments)
+				// multiErr = errors.Join(multiErr, errTooManyArguments) TODO use this in go 1.20
+				multiErr = fmt.Errorf("%w, %w", multiErr, errTooManyArguments)
 			}
 
 			source := args[0]
 			if _, err := os.Stat(source); errors.Is(err, os.ErrNotExist) {
 				log.Error(errFileNotExist, "source file does not exist", keyCmdName, "convertCmd", keyFile, source)
-				multiErr = errors.Join(multiErr, errFileNotExist, err)
+				// multiErr = errors.Join(multiErr, errFileNotExist, err) TODO use this in go 1.20
+				multiErr = fmt.Errorf("%w, %w, %w", multiErr, errFileNotExist, err)
 			}
 
 			if len(args) > argMin {
 				dest := args[1]
 				if stat, err := os.Stat(dest); !errors.Is(err, os.ErrNotExist) && stat.IsDir() {
 					log.Error(errFileisDir, "file to write to is a directory", keyCmdName, "convertCmd", keyFile, dest)
-					multiErr = errors.Join(multiErr, errFileisDir, err)
+					// multiErr = errors.Join(multiErr, errFileisDir, err) TODO use this in go 1.20
+					multiErr = fmt.Errorf("%w, %w, %w", multiErr, errFileisDir, err)
 				}
 			}
 
@@ -148,27 +152,31 @@ func newConvertCmd() *cobra.Command {
 			force, err := cmd.Flags().GetBool("force")
 			if err != nil {
 				log.Error(err, "failed to parse flag", keyCmdName, "convertCmd", keyFlagName, "force")
-				multiErr = errors.Join(multiErr, err)
+				// multiErr = errors.Join(multiErr, err) TODO use this in go 1.20
+				multiErr = fmt.Errorf("%w, %w", multiErr, err)
 			}
 
 			av, err := cmd.Flags().GetString("aerospike-version")
 			if err != nil {
 				log.Error(err, "failed to parse flag", keyCmdName, "convertCmd", keyFlagName, "aerospike-version")
-				multiErr = errors.Join(multiErr, errInvalidAerospikeVersion, err)
+				// multiErr = errors.Join(multiErr, errInvalidAerospikeVersion, err) TODO use this in go 1.20
+				multiErr = fmt.Errorf("%w, %w, %w", multiErr, errInvalidAerospikeVersion, err)
 			}
 
 			if !force {
 				supported, err := asconfig.IsSupportedVersion(av)
 				if err != nil {
 					log.Error(err, "IsSupportedVersion returned an error", keyCmdName, "convertCmd", keyFlagName, "aerospike-version", keyValue, av)
-					multiErr = errors.Join(multiErr, errInvalidAerospikeVersion, err)
+					// multiErr = errors.Join(multiErr, errInvalidAerospikeVersion, err) TODO use this in go 1.20
+					multiErr = fmt.Errorf("%w, %w, %w", multiErr, errInvalidAerospikeVersion, err)
 				}
 
 				// TODO include valid versions in the error message
 				// asconfig lib needs a getSupportedVersions func
 				if !supported {
 					log.Error(errUnsupportedAerospikeVersion, "unsupported aerospike version", keyCmdName, "convertCmd", keyFlagName, "aerospike-version", keyValue, av)
-					multiErr = errors.Join(multiErr, errUnsupportedAerospikeVersion)
+					// multiErr = errors.Join(multiErr, errUnsupportedAerospikeVersion) TODO use this in go 1.20
+					multiErr = fmt.Errorf("%w, %w, %w", multiErr, errUnsupportedAerospikeVersion, err)
 				}
 			}
 
