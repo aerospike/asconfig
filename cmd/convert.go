@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/aerospike/aerospike-management-lib/asconfig"
 	"github.com/spf13/cobra"
@@ -106,7 +105,7 @@ func newConvertCmd() *cobra.Command {
 
 			// TODO asconf to yaml
 
-			destPath := strings.TrimSuffix(srcPath, ".yaml") + ".conf"
+			destPath := os.Stdout.Name()
 			if len(args) > argMin {
 				destPath = args[1]
 				log.Info("processing argument", keyArgName, "destination", keyValue, destPath)
