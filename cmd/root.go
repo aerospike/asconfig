@@ -45,7 +45,13 @@ func Execute() {
 var log logr.Logger
 
 func init() {
-	log = logrusr.New(logrus.New())
+	tmpLog := logrus.New()
+
+	fmt := logrus.TextFormatter{}
+	fmt.FullTimestamp = true
+
+	tmpLog.SetFormatter(&fmt)
+	log = logrusr.New(tmpLog)
 
 	schemaMap, err := schema.NewSchemaMap()
 	if err != nil {
