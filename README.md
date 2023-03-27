@@ -25,7 +25,3 @@ asconfig [command]
     ```
         asconfig convert -a "6.2.0.2 aerospike.yaml
     ```
-
-## Developer Docs
-
-TODO
