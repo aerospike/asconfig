@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"aerospike/asconfig/log"
 	"aerospike/asconfig/schema"
 	"os"
 
@@ -37,12 +38,12 @@ func newRootCmd() *cobra.Command {
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
-		log.Error(err, "execute failed", keyCmdName, "rootCmd")
+		logger.Error(err, "Execute failed", log.Command, "rootCmd")
 		os.Exit(1)
 	}
 }
 
-var log logr.Logger
+var logger logr.Logger
 
 func init() {
 	tmpLog := logrus.New()
@@ -51,12 +52,12 @@ func init() {
 	fmt.FullTimestamp = true
 
 	tmpLog.SetFormatter(&fmt)
-	log = logrusr.New(tmpLog)
+	logger = logrusr.New(tmpLog)
 
 	schemaMap, err := schema.NewSchemaMap()
 	if err != nil {
 		panic(err)
 	}
 
-	asconfig.InitFromMap(log, schemaMap)
+	asconfig.InitFromMap(logger, schemaMap)
 }

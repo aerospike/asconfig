@@ -1,22 +1,22 @@
-package cmd
+package log
 
 import (
 	"fmt"
 	"reflect"
 )
 
-// TODO move this to its own package
-
+// key names for structured logging
 const (
-	keyCmdName  = "commandName"
-	keyFlagName = "flagName"
-	keyArgName  = "argumentName"
-	keyValue    = "value"
-	keyFile     = "file"
-	keyCount    = "count"
-	keyExpected = "expected"
+	Command  = "Command"
+	Flag     = "Flag"
+	Argument = "Argument"
+	Value    = "Value"
+	File     = "File"
+	Count    = "Count"
+	Expected = "Expected"
 )
 
+// log levels
 const (
 	Fatal int = iota
 	Error
@@ -29,7 +29,7 @@ const (
 // structToKeysAndValues converts a struct to a list of key value pairs of the format
 // expected by logr. Nested structs, maps, etc, are not flattened.
 // all struct fields must be exported
-func structToKeysAndValues(v any) ([]any, error) {
+func StructToKeysAndValues(v any) ([]any, error) {
 	var res []any
 
 	vval := reflect.ValueOf(v)

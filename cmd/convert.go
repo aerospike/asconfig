@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	"aerospike/asconfig/log"
+
 	"github.com/aerospike/aerospike-management-lib/asconfig"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -20,7 +22,7 @@ var (
 	errTooManyArguments            = fmt.Errorf("expected a maximum of %d arguments", argMax)
 	errFileNotExist                = fmt.Errorf("file does not exist")
 	errFileisDir                   = fmt.Errorf("file is a directory")
-	errInvalidAerospikeVersion     = fmt.Errorf("aerospike version must be in the form <a>.<b>.<c>.<d>")
+	errInvalidAerospikeVersion     = fmt.Errorf("aerospike version must be in the form <a>.<b>.<c>")
 	errUnsupportedAerospikeVersion = fmt.Errorf("aerospike version unsupported")
 	errConfigValidation            = fmt.Errorf("error while validating aerospike config")
 )
@@ -47,22 +49,22 @@ func newConvertCmd() *cobra.Command {
 				the result will be written as <path/to/config>.conf
 				EX: asconfig convert -a "6.2.0.2 aerospike.yaml`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			log.Info("running command", keyCmdName, "convertCmd")
+			logger.Info("Running command", log.Command, "convertCmd")
 
 			srcPath := args[0]
-			log.Info("processing argument", keyArgName, "source", keyValue, srcPath)
+			logger.Info("Processing argument", log.Argument, "source", log.Value, srcPath)
 
 			version, err := cmd.Flags().GetString("aerospike-version")
 			if err != nil {
 				return err
 			}
-			log.Info("processing flag", keyFlagName, "aerospike-version", keyValue, version)
+			logger.Info("Processing flag", log.Flag, "aerospike-version", log.Value, version)
 
 			force, err := cmd.Flags().GetBool("force")
 			if err != nil {
 				return err
 			}
-			log.Info("processing flag", keyFlagName, "force", keyValue, force)
+			logger.Info("Processing flag", log.Flag, "force", log.Value, force)
 
 			fdata, err := os.ReadFile(srcPath)
 			if err != nil {
@@ -75,25 +77,25 @@ func newConvertCmd() *cobra.Command {
 				return err
 			}
 
-			asConf, err := asconfig.NewMapAsConfig(log, version, data)
+			asConf, err := asconfig.NewMapAsConfig(logger, version, data)
 			if err != nil {
-				return fmt.Errorf("failed to load config map: %v", err)
+				return fmt.Errorf("failed to initialize AsConfig from yaml: %v", err)
 			}
 
 			if !force {
-				valid, validationErrors, err := asConf.IsValid(log, version)
+				valid, validationErrors, err := asConf.IsValid(logger, version)
 				if !valid {
-					log.Error(errConfigValidation, "valid is false", keyFile, srcPath)
+					logger.Error(errConfigValidation, "Valid is false", log.File, srcPath)
 				}
 				if len(validationErrors) > 0 {
 					for _, e := range validationErrors {
-						errorKeysAndValues, err := structToKeysAndValues(*e)
+						errorKeysAndValues, err := log.StructToKeysAndValues(*e)
 						if err != nil {
 							return err
 						}
 
-						keysAndValues := append([]any{keyFile, srcPath}, errorKeysAndValues...)
-						log.Error(errConfigValidation, "validationErrors", keysAndValues...)
+						keysAndValues := append([]any{log.File, srcPath}, errorKeysAndValues...)
+						logger.Error(errConfigValidation, "validationErrors", keysAndValues...)
 					}
 				}
 				if err != nil {
@@ -108,10 +110,10 @@ func newConvertCmd() *cobra.Command {
 			destPath := os.Stdout.Name()
 			if len(args) > argMin {
 				destPath = args[1]
-				log.Info("processing argument", keyArgName, "destination", keyValue, destPath)
+				logger.Info("Processing argument", log.Argument, "destination", log.Value, destPath)
 			}
 
-			log.Info("writing converted data to", keyFile, destPath)
+			logger.Info("Writing converted data to", log.File, destPath)
 			return os.WriteFile(destPath, []byte(confFile), 0644)
 		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
@@ -119,21 +121,21 @@ func newConvertCmd() *cobra.Command {
 
 			// validate arguments
 			if len(args) < argMin {
-				log.Error(errNotEnoughArguments, "too few arguments", keyCmdName, "convertCmd", keyCount, len(args), keyExpected, argMin)
+				logger.Error(errNotEnoughArguments, "Too few arguments", log.Command, "convertCmd", log.Count, len(args), log.Expected, argMin)
 				// multiErr = errors.Join(multiErr, errNotEnoughArguments) TODO use this in go 1.20
 				multiErr = fmt.Errorf("%w, %w", multiErr, errNotEnoughArguments)
 				return multiErr
 			}
 
 			if len(args) > argMax {
-				log.Error(errTooManyArguments, "too many arguments", keyCmdName, "convertCmd", keyCount, len(args), keyExpected, argMax)
+				logger.Error(errTooManyArguments, "Too many arguments", log.Command, "convertCmd", log.Count, len(args), log.Expected, argMax)
 				// multiErr = errors.Join(multiErr, errTooManyArguments) TODO use this in go 1.20
 				multiErr = fmt.Errorf("%w, %w", multiErr, errTooManyArguments)
 			}
 
 			source := args[0]
 			if _, err := os.Stat(source); errors.Is(err, os.ErrNotExist) {
-				log.Error(errFileNotExist, "source file does not exist", keyCmdName, "convertCmd", keyFile, source)
+				logger.Error(errFileNotExist, "Source file does not exist", log.Command, "convertCmd", log.File, source)
 				// multiErr = errors.Join(multiErr, errFileNotExist, err) TODO use this in go 1.20
 				multiErr = fmt.Errorf("%w, %w, %w", multiErr, errFileNotExist, err)
 			}
@@ -141,7 +143,7 @@ func newConvertCmd() *cobra.Command {
 			if len(args) > argMin {
 				dest := args[1]
 				if stat, err := os.Stat(dest); !errors.Is(err, os.ErrNotExist) && stat.IsDir() {
-					log.Error(errFileisDir, "file to write to is a directory", keyCmdName, "convertCmd", keyFile, dest)
+					logger.Error(errFileisDir, "File to write to is a directory", log.Command, "convertCmd", log.File, dest)
 					// multiErr = errors.Join(multiErr, errFileisDir, err) TODO use this in go 1.20
 					multiErr = fmt.Errorf("%w, %w, %w", multiErr, errFileisDir, err)
 				}
@@ -150,14 +152,14 @@ func newConvertCmd() *cobra.Command {
 			// validate flags
 			force, err := cmd.Flags().GetBool("force")
 			if err != nil {
-				log.Error(err, "failed to parse flag", keyCmdName, "convertCmd", keyFlagName, "force")
+				logger.Error(err, "Failed to parse flag", log.Command, "convertCmd", log.Flag, "force")
 				// multiErr = errors.Join(multiErr, err) TODO use this in go 1.20
 				multiErr = fmt.Errorf("%w, %w", multiErr, err)
 			}
 
 			av, err := cmd.Flags().GetString("aerospike-version")
 			if err != nil {
-				log.Error(err, "failed to parse flag", keyCmdName, "convertCmd", keyFlagName, "aerospike-version")
+				logger.Error(err, "Failed to parse flag", log.Command, "convertCmd", log.Flag, "aerospike-version")
 				// multiErr = errors.Join(multiErr, errInvalidAerospikeVersion, err) TODO use this in go 1.20
 				multiErr = fmt.Errorf("%w, %w, %w", multiErr, errInvalidAerospikeVersion, err)
 			}
@@ -165,7 +167,7 @@ func newConvertCmd() *cobra.Command {
 			if !force {
 				supported, err := asconfig.IsSupportedVersion(av)
 				if err != nil {
-					log.Error(err, "IsSupportedVersion returned an error", keyCmdName, "convertCmd", keyFlagName, "aerospike-version", keyValue, av)
+					logger.Error(err, "IsSupportedVersion returned an error", log.Command, "convertCmd", log.Flag, "aerospike-version", log.Value, av)
 					// multiErr = errors.Join(multiErr, errInvalidAerospikeVersion, err) TODO use this in go 1.20
 					multiErr = fmt.Errorf("%w, %w, %w", multiErr, errInvalidAerospikeVersion, err)
 				}
@@ -173,7 +175,7 @@ func newConvertCmd() *cobra.Command {
 				// TODO include valid versions in the error message
 				// asconfig lib needs a getSupportedVersions func
 				if !supported {
-					log.Error(errUnsupportedAerospikeVersion, "unsupported aerospike version", keyCmdName, "convertCmd", keyFlagName, "aerospike-version", keyValue, av)
+					logger.Error(errUnsupportedAerospikeVersion, "Unsupported aerospike version", log.Command, "convertCmd", log.Flag, "aerospike-version", log.Value, av)
 					// multiErr = errors.Join(multiErr, errUnsupportedAerospikeVersion) TODO use this in go 1.20
 					multiErr = fmt.Errorf("%w, %w, %w", multiErr, errUnsupportedAerospikeVersion, err)
 				}
