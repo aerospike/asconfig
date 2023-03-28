@@ -1,53 +1,17 @@
 package log
 
 import (
-	"fmt"
-	"reflect"
+	"github.com/sirupsen/logrus"
 )
 
-// key names for structured logging
-const (
-	Command  = "Command"
-	Flag     = "Flag"
-	Argument = "Argument"
-	Value    = "Value"
-	File     = "File"
-	Count    = "Count"
-	Expected = "Expected"
-)
+// log levels are the same as logrus
+func GetLogLevels() (levels []string) {
+	levels = make([]string, len(logrus.AllLevels))
 
-// log levels
-const (
-	Fatal int = iota
-	Error
-	Warning
-	Info
-	Verbose
-	Debug
-)
-
-// structToKeysAndValues converts a struct to a list of key value pairs of the format
-// expected by logr. Nested structs, maps, etc, are not flattened.
-// all struct fields must be exported
-func StructToKeysAndValues(v any) ([]any, error) {
-	var res []any
-
-	vval := reflect.ValueOf(v)
-	vkind := vval.Kind()
-	vtype := vval.Type()
-
-	if vkind != reflect.Struct {
-		return res, fmt.Errorf("structToKeysAndValues got unsupported type: %s", vkind.String())
+	for i, lvl := range logrus.AllLevels {
+		text, _ := lvl.MarshalText()
+		levels[i] = string(text)
 	}
 
-	fieldCount := vval.NumField()
-	res = make([]any, fieldCount*2)
-
-	for i := 0; i < fieldCount; i++ {
-		j := i * 2
-		res[j] = vtype.Field(i).Name
-		res[j+1] = vval.Field(i).Interface()
-	}
-
-	return res, nil
+	return
 }

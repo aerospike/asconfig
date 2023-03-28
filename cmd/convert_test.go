@@ -38,6 +38,17 @@ var preTestsConvert = []preTestConvert{
 			errUnsupportedAerospikeVersion,
 		},
 	},
+	{
+		flags:     []string{},
+		arguments: []string{"./bad_file.yaml", "./", "too_many"},
+		expectedErrors: []error{
+			errTooManyArguments,
+			errFileNotExist,
+			errFileisDir,
+			errInvalidAerospikeVersion,
+			errUnsupportedAerospikeVersion,
+		},
+	},
 }
 
 func TestPreRunConvert(t *testing.T) {
