@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/aerospike/aerospike-management-lib/asconfig"
 	"github.com/spf13/cobra"
@@ -11,18 +13,18 @@ import (
 )
 
 const (
-	argMin = 1
-	argMax = 2
+	convertArgMin = 1
+	convertArgMax = 1
 )
 
 var (
-	errNotEnoughArguments          = fmt.Errorf("expected a minimum of %d arguments", argMin)
-	errTooManyArguments            = fmt.Errorf("expected a maximum of %d arguments", argMax)
+	errNotEnoughArguments          = fmt.Errorf("expected a minimum of %d arguments", convertArgMin)
+	errTooManyArguments            = fmt.Errorf("expected a maximum of %d arguments", convertArgMax)
 	errFileNotExist                = fmt.Errorf("file does not exist")
-	errFileisDir                   = fmt.Errorf("file is a directory")
 	errInvalidAerospikeVersion     = fmt.Errorf("aerospike version must be in the form <a>.<b>.<c>")
 	errUnsupportedAerospikeVersion = fmt.Errorf("aerospike version unsupported")
 	errConfigValidation            = fmt.Errorf("error while validating aerospike config")
+	errInvalidOutput               = fmt.Errorf("Invalid output flag")
 )
 
 func init() {
@@ -101,27 +103,54 @@ func newConvertCmd() *cobra.Command {
 
 			// TODO asconf to yaml
 
-			destPath := os.Stdout.Name()
-			if len(args) > argMin {
-				destPath = args[1]
-				logger.Debugf("Processing output file %s", destPath)
+			outputPath, err := cmd.Flags().GetString("output")
+			if err != nil {
+				return err
 			}
 
-			logger.Debugf("Writing converted data to: %s", destPath)
-			return os.WriteFile(destPath, []byte(confFile), 0644)
+			// write to stdout by default
+			if outputPath == "" {
+				outputPath = os.Stdout.Name()
+			}
+
+			if stat, err := os.Stat(outputPath); !errors.Is(err, os.ErrNotExist) && stat.IsDir() {
+				// output path is a directory so write a new file to it
+				srcFileName := filepath.Base(srcPath)
+				srcFileName = strings.TrimSuffix(srcFileName, filepath.Ext(srcFileName))
+
+				outputPath = filepath.Join(outputPath, srcFileName)
+				outputPath += ".conf"
+			}
+
+			var outFile *os.File
+			if outputPath == os.Stdout.Name() {
+				outFile = os.Stdout
+			} else {
+				outFile, err = os.OpenFile(outputPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+				if err != nil {
+					return err
+				}
+
+				defer outFile.Close()
+			}
+
+			logger.Debugf("Writing converted data to: %s", outputPath)
+			_, err = outFile.Write([]byte(confFile))
+			return err
+
 		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			var multiErr error
 
 			// validate arguments
-			if len(args) < argMin {
-				logger.Errorf("Expected atleast %d arguments", argMin)
+			if len(args) < convertArgMin {
+				logger.Errorf("Expected atleast %d argument(s)", convertArgMin)
 				// multiErr = errors.Join(multiErr, errNotEnoughArguments) TODO use this in go 1.20
 				multiErr = fmt.Errorf("%w, %w", multiErr, errNotEnoughArguments)
 			}
 
-			if len(args) > argMax {
-				logger.Errorf("Expected no more than %d arguments", argMax)
+			if len(args) > convertArgMax {
+				logger.Errorf("Expected no more than %d argument(s)", convertArgMax)
 				// multiErr = errors.Join(multiErr, errTooManyArguments) TODO use this in go 1.20
 				multiErr = fmt.Errorf("%w, %w", multiErr, errTooManyArguments)
 			}
@@ -135,20 +164,21 @@ func newConvertCmd() *cobra.Command {
 				}
 			}
 
-			if len(args) > argMin {
-				dest := args[1]
-				if stat, err := os.Stat(dest); !errors.Is(err, os.ErrNotExist) && stat.IsDir() {
-					logger.Errorf("Output file is a directory %s", dest)
-					// multiErr = errors.Join(multiErr, errFileisDir, err) TODO use this in go 1.20
-					multiErr = fmt.Errorf("%w, %s %w", multiErr, dest, errFileisDir)
-				}
+			// validate flags
+			_, err := cmd.Flags().GetString("output")
+			if err != nil {
+				// multiErr = errors.Join(multiErr, err) TODO use this in go 1.20
+				multiErr = fmt.Errorf("%w, %w", multiErr, err)
 			}
 
-			// validate flags
 			force, err := cmd.Flags().GetBool("force")
 			if err != nil {
 				// multiErr = errors.Join(multiErr, err) TODO use this in go 1.20
 				multiErr = fmt.Errorf("%w, %w", multiErr, err)
+			}
+
+			if !force {
+				cmd.MarkFlagRequired("aerospike-version")
 			}
 
 			av, err := cmd.Flags().GetString("aerospike-version")
@@ -160,7 +190,7 @@ func newConvertCmd() *cobra.Command {
 			if !force {
 				supported, err := asconfig.IsSupportedVersion(av)
 				if err != nil {
-					logger.Errorf("Failed to check %s for compatibility", av)
+					logger.Errorf("Failed to check aerospike version %s for compatibility", av)
 					// multiErr = errors.Join(multiErr, errInvalidAerospikeVersion, err) TODO use this in go 1.20
 					multiErr = fmt.Errorf("%w, %w %w", multiErr, errInvalidAerospikeVersion, err)
 				}
@@ -179,9 +209,10 @@ func newConvertCmd() *cobra.Command {
 	}
 
 	// flags and configuration settings
-	res.PersistentFlags().StringP("aerospike-version", "a", "", "Aerospike server version for the configuration file. Ex: 6.2.0.2")
-	res.MarkPersistentFlagRequired("aerospike-version")
-	res.PersistentFlags().BoolP("force", "f", false, "Override checks for supported server version and config validation")
+	// aerospike-version is marked required in this cmd's PreRun if the --force flag is not provided
+	res.Flags().StringP("aerospike-version", "a", "", "Aerospike server version for the configuration file. Ex: 6.2.0.2")
+	res.Flags().BoolP("force", "f", false, "Override checks for supported server version and config validation")
+	res.Flags().StringP("output", "o", "", "File path to write output to")
 
 	res.Version = VERSION
 

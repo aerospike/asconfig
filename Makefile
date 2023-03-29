@@ -21,7 +21,8 @@ asconfig:
 .PHONY: clean
 clean:
 	$(RM) asconfig
-	$(RM) -r coverage
+	$(RM) -r testdata/coverage/*
+	$(RM) -r testdata/bin/*
 	$(MAKE) -C $(ROOT_DIR)/pkg/ $@
 
 .Phony: dependencies
@@ -58,18 +59,25 @@ test: integration unit
 
 .Phony: integration
 integration:
-	mkdir coverage || true
-	go test -tags=integration -coverpkg=./... -coverprofile=coverage/integration.cov
+	mkdir testdata/coverage/integration || true
+	go test -tags=integration
+
+	mkdir testdata/coverage/tmp_merged
+	go tool covdata merge -i=testdata/coverage/integration -o=testdata/coverage/tmp_merged
+	
+	go tool covdata textfmt -i=testdata/coverage/tmp_merged -o=testdata/coverage/integration.cov
+	rm -r testdata/coverage/tmp_merged
+	rm -r testdata/coverage/integration
 
 .Phony: unit
 unit:
-	mkdir coverage || true
-	go test ./... -coverprofile coverage/unit.cov -coverpkg ./... -tags=unit
+	mkdir testdata/coverage || true
+	go test ./... -coverprofile testdata/coverage/unit.cov -coverpkg ./... -tags=unit
 
 .Phony: coverage
 coverage: dependencies integration unit
-	gocovmerge coverage/*.cov > coverage/total.cov
+	gocovmerge testdata/coverage/*.cov > testdata/coverage/total.cov
 
 .Phony: view-coverage
 view-coverage: coverage
-	go tool cover -html=coverage/total.cov
+	go tool cover -html=testdata/coverage/total.cov

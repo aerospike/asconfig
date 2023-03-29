@@ -15,14 +15,14 @@ import (
 
 // Replaced at compile time
 var (
-	VERSION = "0.0.1"
+	VERSION = "development"
 )
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = newRootCmd()
 
 var (
-	errInvalidLogLevel = fmt.Errorf("Invalid log-level")
+	errInvalidLogLevel = fmt.Errorf("Invalid log-level flag")
 )
 
 // newRootCmd is the root command constructor. It is useful for producing copies of rootCmd for testing.
