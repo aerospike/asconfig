@@ -25,3 +25,20 @@ asconfig [command]
     ```
         asconfig convert -a "6.2.0" aerospike.yaml
     ```
+
+## Build
+
+Build asconfig using the included top level makefile.
+```
+make
+```
+The resulting binary is available at bin/asconfig
+
+Building rpm, deb, and tar packages is also done using the makefile.
+You will have to install fpm and rpmbuild to build all these.
+```
+make rpm deb tar
+```
+The packages will be avialable in the pkg/ directory.
+
+# Build Examples
