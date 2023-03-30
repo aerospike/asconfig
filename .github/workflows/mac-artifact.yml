@@ -80,5 +80,5 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: ${{ steps.system-info.outputs.platform }}-${{ runner.arch }}-${{ runner.os }}-${{ steps.system-info.outputs.release }}-asconfig
-          path: ${{ steps.working-dir.outputs.value }}/asconfig
+          path: ${{ steps.working-dir.outputs.value }}/bin/asconfig
           if-no-files-found: error
