@@ -41,13 +41,13 @@ func newConvertCmd() *cobra.Command {
 				files. In the future, this command may be able to convert from asconf back to yaml.
 				Specifying the server version that will use the aerospike.conf is required.
 				Usage examples...
-				convert local file "aerospike.yaml" to aerospike config format for version 6.2.0.2 and
+				convert local file "aerospike.yaml" to aerospike config format for version 6.2.0 and
 				write it to local file "aerospike.conf."
-				EX: asconfig convert --aerospike-version "6.2.0.2" aerospike.yaml --output aerospike.conf
+				EX: asconfig convert --aerospike-version "6.2.0" aerospike.yaml --output aerospike.conf
 				Short form flags and source file only conversions are also supported.
 				In this case, -a is the server version and using only a source file means
 				the result will be written to stdout.
-				EX: asconfig convert -a "6.2.0.2 aerospike.yaml`,
+				EX: asconfig convert -a "6.2.0" aerospike.yaml`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger.Debug("Running convert command")
 
@@ -106,11 +106,6 @@ func newConvertCmd() *cobra.Command {
 			outputPath, err := cmd.Flags().GetString("output")
 			if err != nil {
 				return err
-			}
-
-			// write to stdout by default
-			if outputPath == "" {
-				outputPath = os.Stdout.Name()
 			}
 
 			if stat, err := os.Stat(outputPath); !errors.Is(err, os.ErrNotExist) && stat.IsDir() {
@@ -212,7 +207,7 @@ func newConvertCmd() *cobra.Command {
 	// aerospike-version is marked required in this cmd's PreRun if the --force flag is not provided
 	res.Flags().StringP("aerospike-version", "a", "", "Aerospike server version for the configuration file. Ex: 6.2.0.2")
 	res.Flags().BoolP("force", "f", false, "Override checks for supported server version and config validation")
-	res.Flags().StringP("output", "o", "", "File path to write output to")
+	res.Flags().StringP("output", "o", os.Stdout.Name(), "File path to write output to")
 
 	res.Version = VERSION
 
