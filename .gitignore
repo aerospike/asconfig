@@ -19,5 +19,11 @@ asconfig
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
+# packages
+*.rpm
+*.deb
+*.tar
+pkg/*
+
 # Meta files
 .DS_Store
