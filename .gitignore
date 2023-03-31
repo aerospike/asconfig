@@ -7,9 +7,23 @@
 
 # Test binary, built with `go test -c`
 *.test
+asconfig
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
+*.cov
+
+# IDE configs
+*.vscode
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+
+# packages
+*.rpm
+*.deb
+*.tar
+pkg/*
+
+# Meta files
+.DS_Store
