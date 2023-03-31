@@ -25,16 +25,16 @@ clean:
 	$(RM) -r testdata/bin/*
 	$(MAKE) -C $(ROOT_DIR)/pkg/ $@
 
-.Phony: dependencies
+PHONY: dependencies
 dependencies:
 	go get github.com/wadey/gocovmerge
 	go install github.com/wadey/gocovmerge
 
-.Phony: install
+PHONY: install
 install:
 	install -m 755 ./bin/asconfig $(INSTALL_DIR)
 
-.Phony: uninstall
+PHONY: uninstall
 uninstall:
 	rm $(INSTALL_DIR)/asconfig
 
@@ -57,7 +57,7 @@ tar: asconfig
 .PHONY: test
 test: integration unit
 
-.Phony: integration
+PHONY: integration
 integration:
 	mkdir testdata/coverage/integration || true
 	go test -tags=integration
@@ -69,15 +69,15 @@ integration:
 	rm -r testdata/coverage/tmp_merged
 	rm -r testdata/coverage/integration
 
-.Phony: unit
+PHONY: unit
 unit:
 	mkdir testdata/coverage || true
 	go test ./... -coverprofile testdata/coverage/unit.cov -coverpkg ./... -tags=unit
 
-.Phony: coverage
+PHONY: coverage
 coverage: dependencies integration unit
 	gocovmerge testdata/coverage/*.cov > testdata/coverage/total.cov
 
-.Phony: view-coverage
+PHONY: view-coverage
 view-coverage: coverage
 	go tool cover -html=testdata/coverage/total.cov

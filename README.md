@@ -39,6 +39,4 @@ You will have to install fpm and rpmbuild to build all these.
 ```
 make rpm deb tar
 ```
-The packages will be avialable in the pkg/ directory.
-
-# Build Examples
+The packages will be available in the pkg/ directory.
