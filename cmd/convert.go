@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -24,7 +25,8 @@ var (
 	errInvalidAerospikeVersion     = fmt.Errorf("aerospike version must be in the form <a>.<b>.<c>")
 	errUnsupportedAerospikeVersion = fmt.Errorf("aerospike version unsupported")
 	errConfigValidation            = fmt.Errorf("error while validating aerospike config")
-	errInvalidOutput               = fmt.Errorf("Invalid output flag")
+	errInvalidOutput               = fmt.Errorf("invalid output flag")
+	errInvalidFormat               = fmt.Errorf("invalid format flag")
 )
 
 func init() {
@@ -52,7 +54,6 @@ func newConvertCmd() *cobra.Command {
 			logger.Debug("Running convert command")
 
 			srcPath := args[0]
-			logger.Debug("Processing source file")
 
 			version, err := cmd.Flags().GetString("aerospike-version")
 			if err != nil {
@@ -68,20 +69,51 @@ func newConvertCmd() *cobra.Command {
 
 			logger.Debugf("Processing flag force value=%t", force)
 
+			format, err := cmd.Flags().GetString("format")
+			if err != nil {
+				return err
+			}
+
+			logger.Debugf("Processing flag format value=%s", format)
+
+			logger.Debug("Processing source file")
+
 			fdata, err := os.ReadFile(srcPath)
 			if err != nil {
 				return err
 			}
 
-			var data map[string]any
-			err = yaml.Unmarshal(fdata, &data)
-			if err != nil {
-				return err
-			}
+			var asConf *asconfig.AsConfig
+			var out []byte
 
-			asConf, err := asconfig.NewMapAsConfig(managementLibLogger, version, data)
-			if err != nil {
-				return fmt.Errorf("failed to initialize AsConfig from yaml: %w", err)
+			if format == "yaml" {
+				var data map[string]any
+				err = yaml.Unmarshal(fdata, &data)
+				if err != nil {
+					return err
+				}
+
+				asConf, err = asconfig.NewMapAsConfig(managementLibLogger, version, data)
+				if err != nil {
+					return fmt.Errorf("failed to initialize asconfig from yaml: %w", err)
+				}
+
+				out = []byte(asConf.ToConfFile())
+			} else if format == "asconfig" {
+				reader := bytes.NewReader(fdata)
+
+				asConf, err = asconfig.FromConfFile(managementLibLogger, version, reader)
+				if err != nil {
+					return fmt.Errorf("failed to parse asconfig file: %w", err)
+				}
+
+				out, err = yaml.Marshal(asConf.ToMap())
+				if err != nil {
+					return fmt.Errorf("failed to marshal asconfig to yaml: %w", err)
+				}
+
+			} else {
+				return fmt.Errorf("%w %s", errInvalidFormat, format)
 			}
 
 			if !force {
@@ -98,10 +130,6 @@ func newConvertCmd() *cobra.Command {
 					return fmt.Errorf("%w, %w", errConfigValidation, err)
 				}
 			}
-
-			confFile := asConf.ToConfFile()
-
-			// TODO asconf to yaml
 
 			outputPath, err := cmd.Flags().GetString("output")
 			if err != nil {
@@ -130,7 +158,7 @@ func newConvertCmd() *cobra.Command {
 			}
 
 			logger.Debugf("Writing converted data to: %s", outputPath)
-			_, err = outFile.Write([]byte(confFile))
+			_, err = outFile.Write([]byte(out))
 			return err
 
 		},
@@ -143,6 +171,8 @@ func newConvertCmd() *cobra.Command {
 				// multiErr = errors.Join(multiErr, errNotEnoughArguments) TODO use this in go 1.20
 				multiErr = fmt.Errorf("%w, %w", multiErr, errNotEnoughArguments)
 			}
+
+			//TODO validate the --format flag
 
 			if len(args) > convertArgMax {
 				logger.Errorf("Expected no more than %d argument(s)", convertArgMax)
@@ -183,6 +213,12 @@ func newConvertCmd() *cobra.Command {
 			}
 
 			if !force {
+				if av == "" {
+					logger.Error("missing required flag '--aerospike-version'")
+					// multiErr = errors.Join(multiErr, errInvalidAerospikeVersion, err) TODO use this in go 1.20
+					multiErr = fmt.Errorf("%w, missing required flag '--aerospike-version' %w", multiErr, errInvalidAerospikeVersion)
+				}
+
 				supported, err := asconfig.IsSupportedVersion(av)
 				if err != nil {
 					logger.Errorf("Failed to check aerospike version %s for compatibility", av)
@@ -208,6 +244,7 @@ func newConvertCmd() *cobra.Command {
 	res.Flags().StringP("aerospike-version", "a", "", "Aerospike server version for the configuration file. Ex: 6.2.0.\nThe first 3 digits of the Aerospike version number are required.\nThis option is required unless --force is used")
 	res.Flags().BoolP("force", "f", false, "Override checks for supported server version and config validation")
 	res.Flags().StringP("output", "o", os.Stdout.Name(), "File path to write output to")
+	res.Flags().StringP("format", "F", "asconfig", "The format to convert the source file to. Valid options are: yaml, asconfig")
 
 	res.Version = VERSION
 

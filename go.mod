@@ -3,7 +3,7 @@ module aerospike/asconfig
 go 1.19
 
 require (
-	github.com/aerospike/aerospike-management-lib v0.0.0-20230306055500-d9ede81e69b4
+	github.com/aerospike/aerospike-management-lib v0.0.0-20230403233518-7e22e4c23e46
 	github.com/bombsimon/logrusr/v4 v4.0.0
 	github.com/docker/docker v23.0.3+incompatible
 	github.com/go-logr/logr v1.2.3
