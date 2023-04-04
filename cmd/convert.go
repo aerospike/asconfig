@@ -84,7 +84,6 @@ func newConvertCmd() *cobra.Command {
 			}
 
 			var asConf *asconfig.AsConfig
-			var out []byte
 
 			if format == "yaml" {
 				var data map[string]any
@@ -98,7 +97,6 @@ func newConvertCmd() *cobra.Command {
 					return fmt.Errorf("failed to initialize asconfig from yaml: %w", err)
 				}
 
-				out = []byte(asConf.ToConfFile())
 			} else if format == "asconfig" {
 				reader := bytes.NewReader(fdata)
 
@@ -107,15 +105,11 @@ func newConvertCmd() *cobra.Command {
 					return fmt.Errorf("failed to parse asconfig file: %w", err)
 				}
 
-				out, err = yaml.Marshal(asConf.ToMap())
-				if err != nil {
-					return fmt.Errorf("failed to marshal asconfig to yaml: %w", err)
-				}
-
 			} else {
 				return fmt.Errorf("%w %s", errInvalidFormat, format)
 			}
 
+			// TODO extract this to a function
 			if !force {
 				valid, validationErrors, err := asConf.IsValid(managementLibLogger, version)
 				if !valid {
@@ -129,6 +123,20 @@ func newConvertCmd() *cobra.Command {
 				if !valid || err != nil {
 					return fmt.Errorf("%w, %w", errConfigValidation, err)
 				}
+			}
+
+			// TODO merge this with above format check
+			var out []byte
+			if format == "yaml" {
+				out = []byte(asConf.ToConfFile())
+			} else if format == "asconfig" {
+				out, err = yaml.Marshal(map[string]interface{}(*asConf.ToMap()))
+				if err != nil {
+					return fmt.Errorf("failed to marshal asconfig to yaml: %w", err)
+				}
+
+			} else {
+				return fmt.Errorf("%w %s", errInvalidFormat, format)
 			}
 
 			outputPath, err := cmd.Flags().GetString("output")
