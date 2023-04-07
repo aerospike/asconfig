@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"bytes"
+	"aerospike/asconfig/asconf"
 	"errors"
 	"fmt"
 	"os"
@@ -10,7 +10,6 @@ import (
 
 	"github.com/aerospike/aerospike-management-lib/asconfig"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -24,7 +23,6 @@ var (
 	errFileNotExist                = fmt.Errorf("file does not exist")
 	errInvalidAerospikeVersion     = fmt.Errorf("aerospike version must be in the form <a>.<b>.<c>")
 	errUnsupportedAerospikeVersion = fmt.Errorf("aerospike version unsupported")
-	errConfigValidation            = fmt.Errorf("error while validating aerospike config")
 	errInvalidOutput               = fmt.Errorf("invalid output flag")
 	errInvalidFormat               = fmt.Errorf("invalid format flag")
 )
@@ -83,60 +81,34 @@ func newConvertCmd() *cobra.Command {
 				return err
 			}
 
-			var asConf *asconfig.AsConfig
+			var outFmt asconf.Format
+			// TODO make the format flag Format type
+			switch format {
+			case "asconfig":
+				outFmt = asconf.YAML
+			case "yaml":
+				outFmt = asconf.AsConfig
+			}
 
-			if format == "yaml" {
-				var data map[string]any
-				err = yaml.Unmarshal(fdata, &data)
+			conf, err := asconf.NewAsconf(
+				fdata,
+				asconf.Format(format),
+				outFmt,
+				version,
+				logger,
+				managementLibLogger,
+			)
+
+			if !force {
+				err = conf.Validate()
 				if err != nil {
 					return err
 				}
-
-				asConf, err = asconfig.NewMapAsConfig(managementLibLogger, version, data)
-				if err != nil {
-					return fmt.Errorf("failed to initialize asconfig from yaml: %w", err)
-				}
-
-			} else if format == "asconfig" {
-				reader := bytes.NewReader(fdata)
-
-				asConf, err = asconfig.FromConfFile(managementLibLogger, version, reader)
-				if err != nil {
-					return fmt.Errorf("failed to parse asconfig file: %w", err)
-				}
-
-			} else {
-				return fmt.Errorf("%w %s", errInvalidFormat, format)
 			}
 
-			// TODO extract this to a function
-			if !force {
-				valid, validationErrors, err := asConf.IsValid(managementLibLogger, version)
-				if !valid {
-					logger.Errorf("Invalid aerospike configuration file: %s", srcPath)
-				}
-				if len(validationErrors) > 0 {
-					for _, e := range validationErrors {
-						logger.Errorf("Aerospike config validation error: %+v", e)
-					}
-				}
-				if !valid || err != nil {
-					return fmt.Errorf("%w, %w", errConfigValidation, err)
-				}
-			}
-
-			// TODO merge this with above format check
-			var out []byte
-			if format == "yaml" {
-				out = []byte(asConf.ToConfFile())
-			} else if format == "asconfig" {
-				out, err = yaml.Marshal(map[string]interface{}(*asConf.ToMap()))
-				if err != nil {
-					return fmt.Errorf("failed to marshal asconfig to yaml: %w", err)
-				}
-
-			} else {
-				return fmt.Errorf("%w %s", errInvalidFormat, format)
+			out, err := conf.MarshalText()
+			if err != nil {
+				return err
 			}
 
 			outputPath, err := cmd.Flags().GetString("output")
