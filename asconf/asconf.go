@@ -22,6 +22,7 @@ var (
 	errConfigValidation = fmt.Errorf("error while validating config")
 )
 
+// TODO maybe use mockery here
 type confMarshalValidator interface {
 	IsValid(log logr.Logger, version string) (bool, []*asconfig.ValidationErr, error)
 	ToMap() *asconfig.Conf
