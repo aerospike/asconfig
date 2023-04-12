@@ -4,7 +4,9 @@ package testdata
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
+	"os"
 	"os/exec"
 
 	"github.com/docker/docker/api/types"
@@ -52,11 +54,14 @@ func RemoveAerospikeContainer(id string, cli *client.Client) error {
 
 func CreateAerospikeContainer(name string, c *container.Config, ch *container.HostConfig, p *v1.Platform, cli *client.Client) (string, error) {
 	ctx := context.Background()
-	_, err := cli.ImagePull(ctx, name, types.ImagePullOptions{Platform: p.Architecture})
+	reader, err := cli.ImagePull(ctx, name, types.ImagePullOptions{Platform: p.Architecture})
 	if err != nil {
 		log.Printf("Unable to pull image %s: %s", name, err)
 		return "", err
 	}
+
+	defer reader.Close()
+	io.Copy(os.Stdout, reader)
 
 	resp, err := cli.ContainerCreate(ctx, c, ch, nil, p, "")
 	if err != nil {
