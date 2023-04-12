@@ -1,8 +1,6 @@
 name: Mac Artifact
 
 on:
-  repository_dispatch:
-    types: mac-build
   push:
     branches: [main]
   pull_request:
@@ -11,7 +9,7 @@ on:
     inputs:
       submodule:
         description: The directory of the submodule, if this workflow is being called on a submodule
-        required: true
+        required: false
         type: string
 
 jobs:
