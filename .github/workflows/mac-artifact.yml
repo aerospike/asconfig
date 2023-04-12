@@ -30,10 +30,15 @@ jobs:
           cond: ${{ inputs.submodule != '' }}
           if_true: aerospike-tools/${{ inputs.submodule }} # In this case we are expecting to checkout the tools package.
           if_false: asconfig
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           path: ${{ steps.checkout-dir.outputs.value }}
           fetch-depth: 0
+      - name: Checkout asconfig
+        run: |
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          git submodule update --init --recursive -- ${{ inputs.submodule || '.' }}
+        working-directory: ${{ steps.checkout-dir.outputs.value }}
       - name: Print version
         working-directory: ${{ steps.working-dir.outputs.value }}
         run: |
@@ -42,7 +47,7 @@ jobs:
         working-directory: ${{ steps.working-dir.outputs.value }}
         run: |
           echo "GO_VERSION=$(grep '^go ' go.mod | cut -d " " -f 2)" >> $GITHUB_ENV
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: ${{ env.GO_VERSION }}
           check-latest: true
@@ -52,7 +57,7 @@ jobs:
         working-directory: ${{ steps.working-dir.outputs.value }}
         id: sha
         run: |
-          echo "::set-output name=sha::$(git rev-parse head)"
+          echo "sha=$(git rev-parse head)" >> $GITHUB_OUTPUT
       - uses: kenchan0130/actions-system-info@master
         id: system-info
       - name: Cache asconfig
