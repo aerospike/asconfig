@@ -36,6 +36,12 @@ jobs:
           fetch-depth: 0
       - name: Checkout asconfig
         run: |
+          # Workaround to replace ssh with http in .gitmodules and add auth
+          # If the .gitmodules was http then we would just need to add the "token:"
+          # param to the above actions/checkout@v3 step since the token is persisted.
+          git config --file .gitmodules --get-regexp url | while read url; do
+            git config --file=.gitmodules $(echo "$url" | sed -E "s/git@github.com:|https:\/\/github.com\//https:\/\/${{ secrets.TOOLS_BUILD_PAT }}:${{ secrets.TOOLS_BUILD_PAT }}@github.com\//")
+          done
           git submodule update --init --recursive -- ${{ inputs.submodule || '.' }}
         working-directory: ${{ steps.checkout-dir.outputs.value }}
       - name: Print version
