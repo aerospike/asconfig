@@ -35,7 +35,6 @@ jobs:
           path: ${{ steps.checkout-dir.outputs.value }}
           fetch-depth: 0
           submodules: recursive
-        working-directory: ${{ steps.checkout-dir.outputs.value }}
       - name: Print version
         working-directory: ${{ steps.working-dir.outputs.value }}
         run: |
