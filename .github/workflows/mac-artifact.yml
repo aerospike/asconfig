@@ -36,7 +36,6 @@ jobs:
           fetch-depth: 0
       - name: Checkout asconfig
         run: |
-          git config --global url."https://github.com/".insteadOf "git@github.com:"
           git submodule update --init --recursive -- ${{ inputs.submodule || '.' }}
         working-directory: ${{ steps.checkout-dir.outputs.value }}
       - name: Print version
