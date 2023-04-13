@@ -73,7 +73,7 @@ jobs:
           cache-index: "1"
         with:
           path: |
-            ${{ steps.working-dir.outputs.value }}/bin
+            ${{ steps.working-dir.outputs.value }}/bin/asconfig
           key: ${{ env.cache-name }}-${{ env.cache-index }}-${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-${{ steps.sha.outputs.sha }}
       - name: Build mac asconfig
         if: steps.cache-asconfig.outputs.cache-hit != 'true'
