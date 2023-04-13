@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"aerospike/asconfig/testdata"
+	"aerospike/asconfig/testutils"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -201,12 +201,12 @@ var testFiles = []testFile{
 }
 
 func getVersion(l []string) string {
-	i := testdata.IndexOf(l, "-a")
+	i := testutils.IndexOf(l, "-a")
 	if i >= 0 {
 		return l[i+1]
 	}
 
-	i = testdata.IndexOf(l, "--aerospike-version")
+	i = testutils.IndexOf(l, "--aerospike-version")
 	if i >= 0 {
 		return l[i+1]
 	}
@@ -257,14 +257,12 @@ func TestRootCommand(t *testing.T) {
 		}
 
 		version := getVersion(tf.arguments)
-		err = runServer(version, filepath.Base(confPath), dockerClient, t)
-		if err != nil {
-			t.Error(err)
-		}
+		runServer(version, filepath.Base(confPath), dockerClient, t)
 	}
 }
 
-func runServer(version string, confName string, dockerClient *client.Client, t *testing.T) (err error) {
+func runServer(version string, confName string, dockerClient *client.Client, t *testing.T) {
+	var err error
 	containerName := "aerospike:ee-" + version
 	confPath := "/opt/aerospike/work/" + confName
 	cmd := fmt.Sprintf("/usr/bin/asd --foreground --config-file %s", confPath)
@@ -279,7 +277,7 @@ func runServer(version string, confName string, dockerClient *client.Client, t *
 
 	absDestPath, err := filepath.Abs(destinationPath)
 	if err != nil {
-		return
+		t.Error(err)
 	}
 
 	containerHostConf := &container.HostConfig{
@@ -296,25 +294,30 @@ func runServer(version string, confName string, dockerClient *client.Client, t *
 		Architecture: "amd64",
 	}
 
-	id, err := testdata.CreateAerospikeContainer(containerName, containerConf, containerHostConf, platform, dockerClient)
+	id, err := testutils.CreateAerospikeContainer(containerName, containerConf, containerHostConf, platform, dockerClient)
 	if err != nil {
-		return
+		t.Error(err)
 	}
 
 	// cleanup container
-	defer func() { err = testdata.RemoveAerospikeContainer(id, dockerClient) }()
+	defer func() {
+		err = testutils.RemoveAerospikeContainer(id, dockerClient)
+		if err != nil {
+			t.Error(err)
+		}
+	}()
 
-	err = testdata.StartAerospikeContainer(id, dockerClient)
+	err = testutils.StartAerospikeContainer(id, dockerClient)
 	if err != nil {
-		return
+		t.Error(err)
 	}
 
 	// time for Aerospike to run
 	time.Sleep(time.Second)
 
-	err = testdata.StopAerospikeContainer(id, dockerClient)
+	err = testutils.StopAerospikeContainer(id, dockerClient)
 	if err != nil {
-		return
+		t.Error(err)
 	}
 
 	// time for the container to close
@@ -322,13 +325,13 @@ func runServer(version string, confName string, dockerClient *client.Client, t *
 
 	logReader, err := dockerClient.ContainerLogs(context.Background(), id, types.ContainerLogsOptions{ShowStdout: true})
 	if err != nil {
-		return
+		t.Error(err)
 	}
 
 	defer logReader.Close()
 	data, err := io.ReadAll(logReader)
 	if err != nil {
-		return
+		t.Error(err)
 	}
 
 	containerOut := string(data)
@@ -336,6 +339,4 @@ func runServer(version string, confName string, dockerClient *client.Client, t *
 	if strings.Contains(containerOut, "CRITICAL (config)") {
 		t.Errorf("Aerospike encountered a configuration error...\n%s", data)
 	}
-
-	return
 }

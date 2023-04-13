@@ -1,5 +1,5 @@
 // A common location to store utilities for testing.
-package testdata
+package testutils
 
 import (
 	"context"
