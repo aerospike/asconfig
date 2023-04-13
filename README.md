@@ -1,6 +1,16 @@
-# A CLI tool for managing Aerospike configuration files
+# Asconfig
 
-Asconfig currently supports converting from yaml to asconfig.
+A CLI tool for managing Aerospike configuration files.
+
+# Overview
+
+Asconfig allows you to write configuration files for the aerospike database in yaml.
+Start by creating a yaml configuration file according to the json schema files in [the schema directory](schema/json).
+Be sure to follow the schema for the version of the Aerospike server you plan to use the configuration file with.
+Run `asconfig convert -a <aerospike-version> <path/to/config.yaml>` to convert your yaml configuration to an [Aerospike configuration file](https://docs.aerospike.com/server/operations/configure).
+The converted file can be used to configure the Aerospike database.
+
+Run `asconfig --help` and see the sections below for more details.
 
 # Usage
 
@@ -14,22 +24,125 @@ asconfig [command]
 
 ## Usage examples
 
-    Convert local file "aerospike.yaml" to aerospike config format for Aerospike server version 6.2.0 and
-    write it to local file "aerospike.conf."
-    ```
-        asconfig convert --aerospike-version "6.2.0" aerospike.yaml --output aerospike.conf
-    ```
-    Short form flags and source file only conversions are also supported.
-    In this case, -a is the server version and using only a source file means
-    the result will be written to stdout.
-    ```
-        asconfig convert -a "6.2.0" aerospike.yaml
-    ```
+Convert local file "aerospike.yaml" to aerospike config format for Aerospike server version 6.2.0 and
+write it to local file "aerospike.conf."
+```shell
+    asconfig convert --aerospike-version "6.2.0" aerospike.yaml --output aerospike.conf
+```
+Short form flags and source file only conversions are also supported.
+In this case, -a is the server version and using only a source file means
+the result will be written to stdout.
+```shell
+    asconfig convert -a "6.2.0" aerospike.yaml
+```
+
+## Configuration Examples
+
+Here is an example yaml config and corresponding Aerospike config.
+
+### example.yaml
+
+```yaml
+service:
+  feature-key-file: /etc/aerospike/features.conf
+
+logging:
+  - name: console
+    any: info
+
+network:
+  service:
+    port: 3000
+  fabric:
+    port: 3001
+  heartbeat:
+    mode: mesh
+    port: 3002
+    addresses:
+      - local
+
+xdr:
+  dcs:
+    - name: elastic
+      connector: true
+      node-address-ports:
+        - connector 8080
+      namespaces:
+        - name: test
+
+namespaces:
+  - name: test
+    memory-size: 3000000000
+    replication-factor: 2
+    storage-engine:
+      type: device
+```
+
+### Convert
+
+```shell
+asconfig convert -a 6.2.0 example.yaml -o example.conf
+```
+
+### example.conf
+
+```
+
+logging {
+
+    console {
+        context any    info
+    }
+}
+
+namespace test {
+    memory-size    3000000000
+    replication-factor    2
+
+    storage-engine device {
+        data-in-memory    true
+        file    /opt/aerospike/data/test.dat
+        filesize    2000000000
+    }
+}
+
+network {
+
+    fabric {
+        port    3001
+    }
+
+    heartbeat {
+        address    local
+        mode    mesh
+        port    3002
+    }
+
+    service {
+        port    3000
+    }
+}
+
+service {
+    feature-key-file    /etc/aerospike/features.conf
+}
+
+xdr {
+
+    dc elastic {
+        connector    true
+        node-address-port    0.0.0.0 8080
+
+        namespace test {
+        }
+    }
+}
+```
 
 ## Build
 
 Build asconfig using the included top level makefile.
-```
+```shell
 make
 ```
 The resulting binary is available at bin/asconfig
