@@ -47,9 +47,8 @@ service:
   feature-key-file: /etc/aerospike/features.conf
 
 logging:
-  - name: console
-    any: info
-
+- name: console
+  any: info
 network:
   service:
     port: 3000
@@ -58,15 +57,15 @@ network:
   heartbeat:
     mode: mesh
     port: 3002
-    addresses:
+    addresses: 
       - local
 
 xdr:
-  dcs:
+  dcs: 
     - name: elastic
       connector: true
       node-address-ports:
-        - connector 8080
+        -  0.0.0.0 8080
       namespaces:
         - name: test
 
@@ -76,6 +75,11 @@ namespaces:
     replication-factor: 2
     storage-engine:
       type: device
+      files:
+        - /opt/aerospike/data/test.dat
+      filesize: 2000000000
+      data-in-memory: true
+
 ```
 
 ### Convert
