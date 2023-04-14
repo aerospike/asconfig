@@ -25,12 +25,15 @@ asconfig [command]
 
 Convert local file "aerospike.yaml" to aerospike config format for Aerospike server version 6.2.0 and
 write it to local file "aerospike.conf."
+
 ```shell
     asconfig convert --aerospike-version "6.2.0" aerospike.yaml --output aerospike.conf
 ```
+
 Short form flags and source file only conversions are also supported.
 In this case, -a is the server version and using only a source file means
 the result will be written to stdout.
+
 ```shell
     asconfig convert -a "6.2.0" aerospike.yaml
 ```
@@ -95,15 +98,15 @@ Installing the [Red Hat YAML vscode extension](https://marketplace.visualstudio.
 
 ### Example
 
-Use the asconfig schema for Aerospike server 6.2.0.x for code suggestions in vscode when writing yaml config in the asconfig repository.
+Use the asconfig schema for Aerospike server 6.2.0.x for code suggestions in vscode.
 
 - Install the [Red Hat YAML vscode extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml)
 
-- Add a yaml.schemas mapping like the one below to your vscode settings.json.
+- Add a yaml.schemas mapping like the one below to your vscode settings.json. Replace "/absolute/path/to/asconfig/repo" with the path to your local clone of the asconfig repo.
 
     ```json
         "yaml.schemas": {
-            "./schema/json/6.2.0.json": ["./*.yaml"]
+            "/absolute/path/to/asconfig/repo/schema/json/6.2.0.json": ["/*.yaml"]
         }
     ```
 
@@ -111,18 +114,21 @@ Use the asconfig schema for Aerospike server 6.2.0.x for code suggestions in vsc
 
 Now you can use the code suggestions from the 6.2.0 Aerospike yaml schema to write your yaml configuration.
 
-
 ## Build
 
 Build asconfig using the included top level makefile.
+
 ```shell
 make
 ```
+
 The resulting binary is available at bin/asconfig
 
 Building rpm, deb, and tar packages is also done using the makefile.
 You will have to install fpm and rpmbuild to build all of these.
-```
+
+```shell
 make rpm deb tar
 ```
+
 The packages will be available in the pkg/ directory.
