@@ -55,6 +55,7 @@ func newRootCmd() *cobra.Command {
 
 	logLevelUsage := fmt.Sprintf("Set the logging detail level. Valid levels are: %v", log.GetLogLevels())
 	res.PersistentFlags().StringP("log-level", "l", "info", logLevelUsage)
+	res.PersistentFlags().BoolP("version", "V", false, "Version for asconfig.")
 
 	return res
 }
