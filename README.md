@@ -87,7 +87,7 @@ namespaces:
 asconfig convert -a 6.2.0 example.yaml -o example.conf
 ```
 
-For More examples see the aerospikeConfig property from the [Aerospike Kubernetes Operators examples](https://github.com/aerospike/aerospike-kubernetes-operator/tree/master/config/samples).
+For More examples see the aerospikeConfig property from the [Aerospike Kubernetes Operator examples](https://github.com/aerospike/aerospike-kubernetes-operator/tree/master/config/samples).
 
 ## Build
 
@@ -98,7 +98,7 @@ make
 The resulting binary is available at bin/asconfig
 
 Building rpm, deb, and tar packages is also done using the makefile.
-You will have to install fpm and rpmbuild to build all these.
+You will have to install fpm and rpmbuild to build all of these.
 ```
 make rpm deb tar
 ```
