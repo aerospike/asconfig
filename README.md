@@ -4,9 +4,8 @@ A CLI tool for managing Aerospike configuration files.
 
 # Overview
 
-Asconfig allows you to write configuration files for the aerospike database in yaml.
-Start by creating a yaml configuration file according to the json schema files in [the schema directory](schema/json).
-Be sure to follow the schema for the version of the Aerospike server you plan to use the configuration file with.
+Asconfig allows you to manage and create Aerospike configuration using a versioned schema directory. This configuration is shared with the Aerospike cluster Custom Resource.
+To get started you can copy an example below or load the schema into your IDE.
 Run `asconfig convert -a <aerospike-version> <path/to/config.yaml>` to convert your yaml configuration to an [Aerospike configuration file](https://docs.aerospike.com/server/operations/configure).
 The converted file can be used to configure the Aerospike database.
 
@@ -38,7 +37,7 @@ the result will be written to stdout.
 
 ## Configuration Examples
 
-Here is an example yaml config and corresponding Aerospike config.
+Here is an example yaml config and the command to convert it to an [Aerospike configuration file](https://docs.aerospike.com/server/operations/configure) for database version 6.2.0.x.
 
 ### example.yaml
 
@@ -88,60 +87,7 @@ namespaces:
 asconfig convert -a 6.2.0 example.yaml -o example.conf
 ```
 
-### example.conf
-
-```
-
-logging {
-
-    console {
-        context any    info
-    }
-}
-
-namespace test {
-    memory-size    3000000000
-    replication-factor    2
-
-    storage-engine device {
-        data-in-memory    true
-        file    /opt/aerospike/data/test.dat
-        filesize    2000000000
-    }
-}
-
-network {
-
-    fabric {
-        port    3001
-    }
-
-    heartbeat {
-        address    local
-        mode    mesh
-        port    3002
-    }
-
-    service {
-        port    3000
-    }
-}
-
-service {
-    feature-key-file    /etc/aerospike/features.conf
-}
-
-xdr {
-
-    dc elastic {
-        connector    true
-        node-address-port    0.0.0.0 8080
-
-        namespace test {
-        }
-    }
-}
-```
+For More examples see the aerospikeConfig property from the [Aerospike Kubernetes Operators examples](https://github.com/aerospike/aerospike-kubernetes-operator/tree/master/config/samples).
 
 ## Build
 
