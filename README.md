@@ -13,13 +13,15 @@ Run `asconfig --help` and see the sections below for more details.
 
 # Usage
 
-asconfig [command]
+`asconfig COMMAND [flags] [arguments]`
 
-## Supported commands
+## Supported Commands
 
-| Name | Description |
-| ---- | ----------- |
-| convert | convert yaml to aerospike config format |
+| Command | Description |
+| ------- | ----------- |
+| completion [flags] <shell> | Generate the autocompletion script for the specified shell |
+| convert [flags] <path/to/config.yaml> | Convert yaml to aerospike config format |
+| help [command] | Help about any command |
 
 ## Usage examples
 
@@ -38,25 +40,29 @@ the result will be written to stdout.
     asconfig convert -a "6.2.0" aerospike.yaml
 ```
 
-## Writing Aerospike configuration in yaml
+## Schema validation
 
 Installing the [Red Hat YAML vscode extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) is recommended. The extension allows using the Aerospike configuration json schema files for code suggestions in vscode when creating your own yaml configuration.
 
+The json schema files used by asconfig and in this example are stored in the [asconfig schema directory](https://github.com/aerospike/asconfig/tree/main/schema/json). In order to use them for writing your own yaml config, clone the [asconfig github repository](https://github.com/aerospike/asconfig) and follow the example below.
+
 ### Example
 
-Use the asconfig schema for Aerospike server 6.2.0.x for code suggestions in vscode.
+You can load schema files into most IDE's to get code suggestions. The following steps walk through this process in vscode.
 
-- Install the [Red Hat YAML vscode extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml)
+- Install the [Red Hat YAML vscode extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml).
 
-- Add a yaml.schemas mapping like the one below to your vscode settings.json. Replace "/absolute/path/to/asconfig/repo" with the path to your local clone of the asconfig repo.
+- In vscode, go to preferences, then settings. Search for "YAML schema" and click "edit in settings.json".
+
+- Add a yaml.schemas mapping like the one below to your settings.json. Replace "/absolute/path/to/asconfig/repo" with the path to your local clone of the asconfig repo.
 
     ```json
         "yaml.schemas": {
-            "/absolute/path/to/asconfig/repo/schema/json/6.2.0.json": ["/*.yaml"]
+            "/absolute/path/to/asconfig/repo/schema/json/6.2.0.json": ["/*aerospike.yaml"]
         }
     ```
 
-    This will associate all files ending in ".yaml" with the 6.2.0 Aerospike yaml schema.
+    This will associate all files ending in "aerospike.yaml" with the 6.2.0 Aerospike yaml schema.
 
 Now you can use the code suggestions from the 6.2.0 Aerospike yaml schema to write your yaml configuration.
 
