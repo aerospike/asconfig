@@ -16,11 +16,12 @@ import (
 )
 
 type TestData struct {
-	Source         string
-	Destination    string
-	Expected       string
-	Arguments      []string
-	SkipServerTest bool
+	Source               string
+	Destination          string
+	Expected             string
+	Arguments            []string
+	SkipServerTest       bool
+	ServerErrorAllowList []string
 }
 
 func GetAerospikeContainerID(name string) ([]byte, error) {

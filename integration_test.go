@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"testing"
@@ -125,18 +126,19 @@ var testFiles = []testutils.TestData{
 		Expected:    filepath.Join(expectedPath, "host_network_cluster_cr.conf"),
 		Arguments:   []string{"convert", "-a", "6.2.0.2", "-o", destinationPath},
 	},
-	// {
-	// 	source:      filepath.Join(sourcePath, "ldap_cluster_cr.yaml"),
-	// 	destination: filepath.Join(destinationPath, "ldap_cluster_cr.conf"),
-	// 	expected:    filepath.Join(expectedPath, "ldap_cluster_cr.conf"),
-	// 	arguments:   []string{"convert", "-a", "6.2.0.2", "-o", destinationPath},
-	// },
-	// {
-	// 	source:      filepath.Join(sourcePath, "pmem_cluster_cr.yaml"),
-	// 	destination: filepath.Join(destinationPath, "pmem_cluster_cr.conf"),
-	// 	expected:    filepath.Join(expectedPath, "pmem_cluster_cr.conf"),
-	// 	arguments:   []string{"convert", "-a", "6.2.0.2", "-o", destinationPath},
-	// },
+	{
+		Source:      filepath.Join(sourcePath, "ldap_cluster_cr.yaml"),
+		Destination: filepath.Join(destinationPath, "ldap_cluster_cr.conf"),
+		Expected:    filepath.Join(expectedPath, "ldap_cluster_cr.conf"),
+		Arguments:   []string{"convert", "-a", "6.2.0.2", "-o", destinationPath},
+	},
+	{
+		Source:               filepath.Join(sourcePath, "pmem_cluster_cr.yaml"),
+		Destination:          filepath.Join(destinationPath, "pmem_cluster_cr.conf"),
+		Expected:             filepath.Join(expectedPath, "pmem_cluster_cr.conf"),
+		Arguments:            []string{"convert", "-a", "6.2.0.2", "-o", destinationPath},
+		ServerErrorAllowList: []string{"missing or invalid mount point"},
+	},
 	{
 		Source:      filepath.Join(sourcePath, "podspec_cr.yaml"),
 		Destination: filepath.Join(destinationPath, "podspec_cr.conf"),
@@ -173,12 +175,13 @@ var testFiles = []testutils.TestData{
 		Expected:    filepath.Join(expectedPath, "ssd_storage_cluster_cr.conf"),
 		Arguments:   []string{"convert", "-a", "6.2.0.2", "-o", destinationPath},
 	},
-	// {
-	// 	source:      filepath.Join(sourcePath, "tls_cluster_cr.yaml"),
-	// 	destination: filepath.Join(destinationPath, "tls_cluster_cr.conf"),
-	// 	expected:    filepath.Join(expectedPath, "tls_cluster_cr.conf"),
-	// 	arguments:   []string{"convert", "-a", "6.2.0.2", "-o", filepath.Join(destinationPath, "tls_cluster_cr.conf")}, // TODO need to make .conf into .yaml for auto coverted yaml to conf tests
-	// },
+	{
+		Source:               filepath.Join(sourcePath, "tls_cluster_cr.yaml"),
+		Destination:          filepath.Join(destinationPath, "tls_cluster_cr.conf"),
+		Expected:             filepath.Join(expectedPath, "tls_cluster_cr.conf"),
+		Arguments:            []string{"convert", "-a", "6.2.0.2", "-o", filepath.Join(destinationPath, "tls_cluster_cr.conf")},
+		ServerErrorAllowList: []string{"failed to set up service tls"},
+	},
 	{
 		Source:      filepath.Join(sourcePath, "xdr_dst_cluster_cr.yaml"),
 		Destination: filepath.Join(destinationPath, "xdr_dst_cluster_cr.conf"),
@@ -287,7 +290,7 @@ func TestYamlToConf(t *testing.T) {
 
 		if !tf.SkipServerTest {
 			version := getVersion(tf.Arguments)
-			runServer(version, filepath.Base(confPath), dockerClient, t)
+			runServer(version, filepath.Base(confPath), dockerClient, t, tf)
 		}
 	}
 }
@@ -320,7 +323,7 @@ func sortLines(data []byte) ([]byte, error) {
 	return []byte(sorted), nil
 }
 
-func runServer(version string, confName string, dockerClient *client.Client, t *testing.T) {
+func runServer(version string, confName string, dockerClient *client.Client, t *testing.T, td testutils.TestData) {
 	var err error
 	containerName := "aerospike:ee-" + version
 	confPath := "/opt/aerospike/work/" + confName
@@ -414,8 +417,19 @@ func runServer(version string, confName string, dockerClient *client.Client, t *
 		t.Error("Aerospike container logs are empty")
 	}
 
-	if strings.Contains(containerOut, "CRITICAL (config)") {
-		t.Errorf("Aerospike encountered a configuration error...\n%s", data)
+	reg := regexp.MustCompile(`CRITICAL \(config\):.*`)
+	configErrors := reg.FindAllString(containerOut, -1)
+	for _, cfgErr := range configErrors {
+		exempted := false
+		for _, exemption := range td.ServerErrorAllowList {
+			if strings.Contains(cfgErr, exemption) {
+				exempted = true
+			}
+		}
+
+		if !exempted {
+			t.Errorf("Aerospike encountered a configuration error...\n%s", data)
+		}
 	}
 }
 
@@ -426,12 +440,13 @@ var confToYamlTests = []testutils.TestData{
 		Expected:    filepath.Join(sourcePath, "all_flash_cluster_cr.yaml"),
 		Arguments:   []string{"convert", "-a", "6.2.0.2", "--format", "asconfig", "-o", destinationPath},
 	},
-	// {
-	// 	source:      filepath.Join(expectedPath, "multiple_tls_authenticate_client.conf"),
-	// 	destination: filepath.Join(destinationPath, "multiple_tls_authenticate_client.yaml"),
-	// 	expected:    filepath.Join(sourcePath, "multiple_tls_authenticate_client.yaml"),
-	// 	arguments:   []string{"convert", "-a", "6.2.0.2", "--format", "asconfig", "-o", destinationPath},
-	// },
+	{
+		Source:               filepath.Join(expectedPath, "multiple_tls_authenticate_client.conf"),
+		Destination:          filepath.Join(destinationPath, "multiple_tls_authenticate_client.yaml"),
+		Expected:             filepath.Join(sourcePath, "multiple_tls_authenticate_client.yaml"),
+		Arguments:            []string{"convert", "-a", "6.2.0.2", "--format", "asconfig", "-o", destinationPath},
+		ServerErrorAllowList: []string{"failed to set up service tls"},
+	},
 	{
 		Source:      filepath.Join(expectedPath, "dim_nostorage_cluster_cr.conf"),
 		Destination: filepath.Join(destinationPath, "dim_nostorage_cluster_cr.yaml"),
@@ -474,12 +489,13 @@ var confToYamlTests = []testutils.TestData{
 		Expected:    filepath.Join(sourcePath, "ldap_cluster_cr.yaml"),
 		Arguments:   []string{"convert", "-a", "6.2.0.2", "--format", "asconfig", "-o", destinationPath},
 	},
-	// {
-	// 	source:      filepath.Join(expectedPath, "pmem_cluster_cr.conf"),
-	// 	destination: filepath.Join(destinationPath, "pmem_cluster_cr.yaml"),
-	// 	expected:    filepath.Join(sourcePath, "pmem_cluster_cr.yaml"),
-	// 	arguments:   []string{"convert", "-a", "6.2.0.2", "--format", "asconfig", "-o", destinationPath},
-	// },
+	{
+		Source:               filepath.Join(expectedPath, "pmem_cluster_cr.conf"),
+		Destination:          filepath.Join(destinationPath, "pmem_cluster_cr.yaml"),
+		Expected:             filepath.Join(sourcePath, "pmem_cluster_cr.yaml"),
+		Arguments:            []string{"convert", "-a", "6.2.0.2", "--format", "asconfig", "-o", destinationPath},
+		ServerErrorAllowList: []string{"missing or invalid mount point"},
+	},
 	{
 		Source:      filepath.Join(expectedPath, "podspec_cr.conf"),
 		Destination: filepath.Join(destinationPath, "podspec_cr.yaml"),
@@ -516,12 +532,13 @@ var confToYamlTests = []testutils.TestData{
 		Expected:    filepath.Join(sourcePath, "ssd_storage_cluster_cr.yaml"),
 		Arguments:   []string{"convert", "-a", "6.2.0.2", "--format", "asconfig", "-o", destinationPath},
 	},
-	// {
-	// 	source:      filepath.Join(expectedPath, "tls_cluster_cr.conf"),
-	// 	destination: filepath.Join(destinationPath, "tls_cluster_cr.yaml"),
-	// 	expected:    filepath.Join(sourcePath, "tls_cluster_cr.yaml"),
-	// 	arguments:   []string{"convert", "-a", "6.2.0.2", "--format", "asconfig", "-o", filepath.Join(destinationPath, "tls_cluster_cr.yaml")}, // TODO need to make .conf into .yaml for auto coverted yaml to conf tests
-	// },
+	{
+		Source:               filepath.Join(expectedPath, "tls_cluster_cr.conf"),
+		Destination:          filepath.Join(destinationPath, "tls_cluster_cr.yaml"),
+		Expected:             filepath.Join(sourcePath, "tls_cluster_cr.yaml"),
+		Arguments:            []string{"convert", "-a", "6.2.0.2", "--format", "asconfig", "-o", filepath.Join(destinationPath, "tls_cluster_cr.yaml")},
+		ServerErrorAllowList: []string{"failed to set up service tls"},
+	},
 	{
 		Source:      filepath.Join(expectedPath, "xdr_dst_cluster_cr.conf"),
 		Destination: filepath.Join(destinationPath, "xdr_dst_cluster_cr.yaml"),
@@ -633,7 +650,7 @@ func TestConfToYaml(t *testing.T) {
 
 		if !tf.SkipServerTest {
 			version := getVersion(tf.Arguments)
-			runServer(version, "tmp.conf", dockerClient, t)
+			runServer(version, "tmp.conf", dockerClient, t, tf)
 		}
 	}
 }

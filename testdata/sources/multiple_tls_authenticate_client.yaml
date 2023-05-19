@@ -20,7 +20,7 @@ network:
         tls-name: aerospike-a-0.test-runner
         tls-port: 3012
     service:
-        tls-authenticate-clients:
+        tls-authenticate-client:
             - remote-xdr-dc.aerospike.com
             - local-clients.aerospike.com
         tls-name: aerospike-a-0.test-runner
