@@ -24,4 +24,6 @@ network:
         port: 3000
 security: {}
 service:
-    feature-key-file: /etc/aerospike/secret/features.conf
+    feature-key-files:
+      - /etc/aerospike/secret/features.conf
+      - /etc/aerospike/secret/features.conf

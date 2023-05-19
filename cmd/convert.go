@@ -67,7 +67,12 @@ func newConvertCmd() *cobra.Command {
 
 			logger.Debugf("Processing flag force value=%t", force)
 
-			format, err := cmd.Flags().GetString("format")
+			formatString, err := cmd.Flags().GetString("format")
+			if err != nil {
+				return err
+			}
+
+			format, err := asconf.ParseFmtString(formatString)
 			if err != nil {
 				return err
 			}
@@ -82,11 +87,10 @@ func newConvertCmd() *cobra.Command {
 			}
 
 			var outFmt asconf.Format
-			// TODO make the format flag Format type
 			switch format {
-			case "asconfig":
+			case asconf.AsConfig:
 				outFmt = asconf.YAML
-			case "yaml":
+			case asconf.YAML:
 				outFmt = asconf.AsConfig
 			}
 
@@ -98,6 +102,10 @@ func newConvertCmd() *cobra.Command {
 				logger,
 				managementLibLogger,
 			)
+
+			if err != nil {
+				return err
+			}
 
 			if !force {
 				err = conf.Validate()
@@ -122,7 +130,13 @@ func newConvertCmd() *cobra.Command {
 				srcFileName = strings.TrimSuffix(srcFileName, filepath.Ext(srcFileName))
 
 				outputPath = filepath.Join(outputPath, srcFileName)
-				outputPath += ".conf"
+				if outFmt == asconf.YAML {
+					outputPath += ".yaml"
+				} else if outFmt == asconf.AsConfig {
+					outputPath += ".conf"
+				} else {
+					return fmt.Errorf("output format unrecognized %w", errInvalidFormat)
+				}
 			}
 
 			var outFile *os.File
@@ -224,7 +238,7 @@ func newConvertCmd() *cobra.Command {
 	res.Flags().StringP("aerospike-version", "a", "", "Aerospike server version for the configuration file. Ex: 6.2.0.\nThe first 3 digits of the Aerospike version number are required.\nThis option is required unless --force is used")
 	res.Flags().BoolP("force", "f", false, "Override checks for supported server version and config validation")
 	res.Flags().StringP("output", "o", os.Stdout.Name(), "File path to write output to")
-	res.Flags().StringP("format", "F", "asconfig", "The format to convert the source file to. Valid options are: yaml, asconfig")
+	res.Flags().StringP("format", "F", "yaml", "The format to convert the source file to. Valid options are: yaml, asconfig")
 
 	res.Version = VERSION
 

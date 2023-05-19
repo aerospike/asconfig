@@ -1,31 +1,28 @@
-service:
-  feature-key-file: /etc/aerospike/secret/features.conf
-security: {}
-network:
-  service:
-    tls-name: aerospike-a-0.test-runner
-    tls-authenticate-client: any
-    tls-port: 4333
-  heartbeat:
-    mode: multicast
-    tls-name: aerospike-a-0.test-runner
-    tls-port: 3012
-  fabric:
-    tls-name: aerospike-a-0.test-runner
-    tls-port: 3011
-  tls:
-    - name: aerospike-a-0.test-runner
-      cert-file: /etc/aerospike/secret/svc_cluster_chain.pem
-      key-file: /etc/aerospike/secret/svc_key.pem
-      ca-file: /etc/aerospike/secret/cacert.pem
-
+logging:
+    - any: info
+      name: console
 namespaces:
-  - name: bar
-    memory-size: 3000000000
-    replication-factor: 1
-    storage-engine:
-      type: device
-      files:
-        - /opt/aerospike/data/bar.dat
-      filesize: 2000000000
-      data-in-memory: true
+    - memory-size: 3000000000
+      name: bar
+      replication-factor: 1
+      storage-engine:
+        data-in-memory: true
+        files:
+            - /opt/aerospike/data/bar.dat
+        filesize: 2000000000
+        type: device
+network:
+    fabric:
+        tls-name: aerospike-a-0.test-runner
+        tls-port: 3011
+    heartbeat:
+        mode: multicast
+        tls-name: aerospike-a-0.test-runner
+        tls-port: 3012
+    service:
+        tls-authenticate-client: any
+        tls-name: aerospike-a-0.test-runner
+        tls-port: 4333
+security: {}
+service:
+    feature-key-file: /etc/aerospike/secret/features.conf

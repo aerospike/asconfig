@@ -65,6 +65,7 @@ func newRootCmd() *cobra.Command {
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
+		logger.Error(err)
 		os.Exit(1)
 	}
 }

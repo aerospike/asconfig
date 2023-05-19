@@ -3,6 +3,7 @@ package asconf
 import (
 	"bytes"
 	"fmt"
+	"strings"
 
 	"github.com/aerospike/aerospike-management-lib/asconfig"
 	"github.com/go-logr/logr"
@@ -39,7 +40,22 @@ type asconf struct {
 	aerospikeVersion    string
 }
 
+func ParseFmtString(in string) (fmt Format, err error) {
+
+	switch strings.ToLower(in) {
+	case "yaml":
+		fmt = YAML
+	case "asconfig":
+		fmt = AsConfig
+	default:
+		err = errInvalidFormat
+	}
+
+	return
+}
+
 func NewAsconf(source []byte, srcFmt, outFmt Format, aerospikeVersion string, logger *logrus.Logger, managementLibLogger logr.Logger) (ac *asconf, err error) {
+
 	ac = &asconf{
 		logger:              logger,
 		managementLibLogger: managementLibLogger,
@@ -143,6 +159,7 @@ func (ac *asconf) loadAsConf() error {
 	cmap := *c.ToMap()
 
 	mapToStats(cmap, []mapping{
+		// toList,
 		typedContextsToObject,
 		toPlural,
 	})

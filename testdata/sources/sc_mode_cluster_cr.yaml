@@ -1,20 +1,23 @@
-service:
-  feature-key-file: /etc/aerospike/secret/features.conf
-security: {}
-network:
-  service:
-    port: 3000
-  fabric:
-    port: 3001
-  heartbeat:
-    mode: multicast
-    port: 3002
+logging:
+    - any: info
+      name: console
 namespaces:
-  - name: test
-    memory-size: 3000000000
-    replication-factor: 2
-    strong-consistency: true
-    storage-engine:
-      type: device
-      devices:
-        - /test/dev/xvdf
+    - memory-size: 3000000000
+      name: test
+      replication-factor: 2
+      storage-engine:
+        devices:
+            - /test/dev/xvdf
+        type: device
+      strong-consistency: true
+network:
+    fabric:
+        port: 3001
+    heartbeat:
+        mode: multicast
+        port: 3002
+    service:
+        port: 3000
+security: {}
+service:
+    feature-key-file: /etc/aerospike/secret/features.conf

@@ -15,6 +15,14 @@ import (
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
+type TestData struct {
+	Source         string
+	Destination    string
+	Expected       string
+	Arguments      []string
+	SkipServerTest bool
+}
+
 func GetAerospikeContainerID(name string) ([]byte, error) {
 	cmd := fmt.Sprintf("docker ps -a | grep '%s' | awk 'NF>1{print $NF}'", name)
 	output, err := exec.Command("bash", "-c", cmd).Output()

@@ -24,7 +24,7 @@ func mapToStats(in lib.Stats, funcs []mapping) {
 		}
 
 		for _, f := range funcs {
-			f(k, v, in)
+			f(k, in[k], in)
 		}
 	}
 }
@@ -38,7 +38,7 @@ func typedContextsToObject(k string, v any, m lib.Stats) {
 		// in order to make valid asconfig yaml we convert this context
 		// to a map where "type" maps to the value
 		if _, ok := v.(lib.Stats); !ok {
-			m[k] = map[string]any{"type": v}
+			m[k] = lib.Stats{"type": v}
 		}
 	}
 }
@@ -48,8 +48,74 @@ func toPlural(k string, v any, m lib.Stats) {
 	// convert asconfig fields/contexts that need to be plural
 	// in order to create valid asconfig yaml.
 	if plural, ok := singularToPlural[k]; ok {
-		m[plural] = v
+		// if the config item can be plural, but is not a list
+		// then the item only has one entry and should not be
+		// converted to the plural form
+		// if the management lib ever parses list entries as anything other
+		// than []string this might have to change.
+		if isListOrString(k) {
+			if _, ok := v.([]string); !ok {
+				return
+			}
+
+			if len(v.([]string)) == 1 {
+				// the management lib parses all config fields
+				// that are in singularToPlural as lists. If these
+				// fields are actually scalars then overwrite the list
+				// with the single value
+				m[k] = v.([]string)[0]
+				return
+			}
+		}
+
 		delete(m, k)
+		m[plural] = v
+	}
+}
+
+// // toList breaks single line list asconfig entries, which the management lib parses as a slice with a single string,
+// // into the lists the yaml schema expects
+// func toList(k string, v any, m lib.Stats) {
+// 	if ok, sep := isSingleLineList(k); ok {
+// 		var values []string
+
+// 		if values, ok = v.([]string); !ok {
+// 			return
+// 		}
+
+// 		if len(values) < 1 {
+// 			return
+// 		}
+
+// 		splitValues := strings.Split(values[0], sep)
+// 		m[k] = splitValues
+// 	}
+// }
+
+// // isSingleLineList detects if a given asconfig field can have multiple entries on the same line
+// // it also returns the separator used to delemit these entries
+// func isSingleLineList(name string) (exists bool, separator string) {
+// 	switch name {
+// 	case "file":
+// 		exists = true
+// 		separator = " "
+// 	default:
+// 		exists = false
+// 	}
+
+// 	return
+// }
+
+// isListOrString returns true for special config fields that may be a
+// single string value or a list with multiple strings in the schema files
+// NOTE: any time schema the changes to make a value
+// a string or a list (array) that value needs to be added here
+func isListOrString(name string) bool {
+	switch name {
+	case "feature-key-file", "tls-authenticate-client":
+		return true
+	default:
+		return false
 	}
 }
 
@@ -60,7 +126,6 @@ func isTypedContext(in string) bool {
 	switch in {
 	case "storage-engine", "index-type":
 		return true
-
 	default:
 		return false
 	}
