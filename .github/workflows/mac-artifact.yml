@@ -44,10 +44,12 @@ jobs:
           done
           git submodule update --init --recursive -- ${{ inputs.submodule || '.' }}
         working-directory: ${{ steps.checkout-dir.outputs.value }}
-      - name: Print version
+      - name: Print and get version
         working-directory: ${{ steps.working-dir.outputs.value }}
+        id: tag
         run: |
           git describe --tags --always
+          echo "tag=$(git describe --tags --always)" >> $GITHUB_OUTPUT
       - name: Get go version from go.mod
         working-directory: ${{ steps.working-dir.outputs.value }}
         run: |
@@ -58,11 +60,6 @@ jobs:
           check-latest: true
           cache: true
           cache-dependency-path: ${{ steps.working-dir.outputs.value }}/go.sum
-      - name: Get SHA
-        working-directory: ${{ steps.working-dir.outputs.value }}
-        id: sha
-        run: |
-          echo "sha=$(git rev-parse head)" >> $GITHUB_OUTPUT
       - uses: kenchan0130/actions-system-info@master
         id: system-info
       - name: Cache asconfig
@@ -74,7 +71,7 @@ jobs:
         with:
           path: |
             ${{ steps.working-dir.outputs.value }}/bin/asconfig
-          key: ${{ env.cache-name }}-${{ env.cache-index }}-${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-${{ steps.sha.outputs.sha }}
+          key: ${{ env.cache-name }}-${{ env.cache-index }}-${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-${{ steps.tag.outputs.tag }}
       - name: Build mac asconfig
         if: steps.cache-asconfig.outputs.cache-hit != 'true'
         working-directory: ${{ steps.working-dir.outputs.value }}
