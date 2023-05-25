@@ -238,7 +238,7 @@ func newConvertCmd() *cobra.Command {
 	res.Flags().StringP("aerospike-version", "a", "", "Aerospike server version for the configuration file. Ex: 6.2.0.\nThe first 3 digits of the Aerospike version number are required.\nThis option is required unless --force is used")
 	res.Flags().BoolP("force", "f", false, "Override checks for supported server version and config validation")
 	res.Flags().StringP("output", "o", os.Stdout.Name(), "File path to write output to")
-	res.Flags().StringP("format", "F", "yaml", "The format to convert the source file to. Valid options are: yaml, asconfig")
+	res.Flags().StringP("format", "F", "yaml", "The format of the source file. It will be converted to its opposite format. Valid options are: yaml, asconfig. Default value is yaml")
 
 	res.Version = VERSION
 
