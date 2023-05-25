@@ -34,6 +34,7 @@ jobs:
         with:
           path: ${{ steps.checkout-dir.outputs.value }}
           fetch-depth: 0
+          submodules: true
       - name: Checkout asconfig
         run: |
           # Workaround to replace ssh with http in .gitmodules and add auth
