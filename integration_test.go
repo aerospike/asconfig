@@ -1,9 +1,13 @@
+//go:build integration
+// +build integration
+
 package main
 
 import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -31,6 +35,7 @@ const (
 	destinationPath = "testdata/destinations"
 	coveragePath    = "testdata/coverage/integration"
 	binPath         = "testdata/bin"
+	extraTestPath   = "testdata/cases"
 )
 
 var featKeyPath string
@@ -231,6 +236,15 @@ func getVersion(l []string) string {
 func TestYamlToConf(t *testing.T) {
 	dockerClient, _ := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 
+	extraTests, err := getExtraTests(extraTestPath, "yaml")
+	if err != nil {
+		t.Logf("Skipping getExtraTests: %v", err)
+		panic(err)
+	}
+
+	testFiles = append(testFiles, extraTests...)
+	// testFiles = extraTests
+
 	for i, tf := range testFiles {
 		var err error
 
@@ -321,6 +335,31 @@ func sortLines(data []byte) ([]byte, error) {
 	sorted := strings.Join(lines, "")
 
 	return []byte(sorted), nil
+}
+
+func getExtraTests(path string, testType string) (tf []testutils.TestData, err error) {
+	files, err := os.ReadDir(path)
+	if err != nil {
+		return
+	}
+
+	for _, f := range files {
+		tfName := filepath.Join(path, f.Name(), fmt.Sprintf("%s-tests.json", testType))
+		fdata, err := os.ReadFile(tfName)
+		if err != nil {
+			return nil, err
+		}
+
+		var testCases []testutils.TestData
+		err = json.Unmarshal(fdata, &testCases)
+		if err != nil {
+			return nil, err
+		}
+
+		tf = append(tf, testCases...)
+	}
+
+	return
 }
 
 func runServer(version string, confName string, dockerClient *client.Client, t *testing.T, td testutils.TestData) {
@@ -573,6 +612,13 @@ var confToYamlTests = []testutils.TestData{
 
 func TestConfToYaml(t *testing.T) {
 	dockerClient, _ := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+
+	extraTests, err := getExtraTests(extraTestPath, "conf")
+	if err != nil {
+		t.Logf("Skipping getExtraTests: %v", err)
+	}
+
+	confToYamlTests = append(confToYamlTests, extraTests...)
 
 	for _, tf := range confToYamlTests {
 		var err error

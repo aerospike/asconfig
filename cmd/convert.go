@@ -36,7 +36,7 @@ var convertCmd = newConvertCmd()
 func newConvertCmd() *cobra.Command {
 	res := &cobra.Command{
 		Use:   "convert [flags] <path/to/config.yaml>",
-		Short: "Convert yaml to aerospike config format.",
+		Short: "Convert yaml to Aerospike config format.",
 		Long: `Convert is used to convert between yaml and aerospike configuration
 				files. In the future, this command may be able to convert from asconf back to yaml.
 				Specifying the server version that will use the aerospike.conf is required.
@@ -96,7 +96,7 @@ func newConvertCmd() *cobra.Command {
 
 			conf, err := asconf.NewAsconf(
 				fdata,
-				asconf.Format(format),
+				format,
 				outFmt,
 				version,
 				logger,

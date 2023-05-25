@@ -16,6 +16,7 @@ type Format string
 const (
 	YAML     Format = "yaml"
 	AsConfig Format = "asconfig"
+	JSON     Format = "json"
 )
 
 var (
@@ -28,6 +29,7 @@ type confMarshalValidator interface {
 	IsValid(log logr.Logger, version string) (bool, []*asconfig.ValidationErr, error)
 	ToMap() *asconfig.Conf
 	ToConfFile() asconfig.DotConf
+	GetFlatMap() *asconfig.Conf
 }
 
 type asconf struct {
@@ -45,7 +47,7 @@ func ParseFmtString(in string) (fmt Format, err error) {
 	switch strings.ToLower(in) {
 	case "yaml":
 		fmt = YAML
-	case "asconfig":
+	case "asconfig", "conf", "asconf":
 		fmt = AsConfig
 	default:
 		err = errInvalidFormat
@@ -106,16 +108,38 @@ func (ac *asconf) MarshalText() (text []byte, err error) {
 	return
 }
 
-func (ac *asconf) load() error {
+func (ac *asconf) GetIntermediateConfig() map[string]any {
+	return *ac.cfg.GetFlatMap()
+}
+
+func (ac *asconf) load() (err error) {
 
 	switch ac.srcFmt {
 	case YAML:
-		return ac.loadYAML()
+		err = ac.loadYAML()
 	case AsConfig:
-		return ac.loadAsConf()
+		err = ac.loadAsConf()
 	default:
 		return fmt.Errorf("%w %s", errInvalidFormat, ac.srcFmt)
 	}
+
+	if err != nil {
+		return err
+	}
+
+	cmap := *ac.cfg.ToMap()
+
+	mapToStats(cmap, []mapping{
+		sortLists,
+	})
+
+	ac.cfg, err = asconfig.NewMapAsConfig(
+		ac.managementLibLogger,
+		ac.aerospikeVersion,
+		cmap,
+	)
+
+	return
 }
 
 func (ac *asconf) loadYAML() error {

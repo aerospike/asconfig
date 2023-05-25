@@ -1,6 +1,9 @@
 package asconf
 
 import (
+	"sort"
+	"strings"
+
 	lib "github.com/aerospike/aerospike-management-lib"
 )
 
@@ -26,6 +29,49 @@ func mapToStats(in lib.Stats, funcs []mapping) {
 		for _, f := range funcs {
 			f(k, in[k], in)
 		}
+	}
+}
+
+func sortLists(k string, v any, m lib.Stats) {
+	if v, ok := v.([]lib.Stats); ok {
+		sort.Slice(v, func(i int, j int) bool {
+			iv, iok := v[i]["name"]
+			jv, jok := v[j]["name"]
+
+			// sections may also use the "type" field to identify themselves
+			if !iok {
+				iv, iok = v[i]["type"]
+			}
+
+			if !jok {
+				jv, jok = v[j]["type"]
+			}
+
+			// if i or both don't have id fields, consider them i >= j
+			if !iok {
+				return false
+			}
+
+			// if only j has an id field consider i < j
+			if !jok {
+				return true
+			}
+
+			iname := iv.(string)
+			jname := jv.(string)
+
+			gt := strings.Compare(iname, jname)
+
+			switch gt {
+			case 1:
+				return true
+			case -1, 0:
+				return false
+			default:
+				panic("unexpected gt value")
+			}
+		})
+		m[k] = v
 	}
 }
 
