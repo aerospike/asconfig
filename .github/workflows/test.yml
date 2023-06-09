@@ -19,6 +19,13 @@ jobs:
       - name: Install dependencies
         run: |
           make dependencies
+      - name: Write public single node EE key
+        run: |
+          echo $FEATURES >> /tmp/features.conf
+        env:
+          FEATURES : ${{secrets.SINGLE_NODE_EE_FEATURE_KEY}}
       - name: Run tests
         run: |
           make coverage
+        env:
+          FEATKEY : /tmp/features.conf
