@@ -21,7 +21,7 @@ jobs:
           make dependencies
       - name: Write feature key
         run: |
-          'echo "$FEATURES" > /tmp/features.conf'
+          echo "$FEATURES" > /tmp/features.conf
         env:
           FEATURES : ${{secrets.SINGLE_NODE_EE_FEATURE_KEY}}
       - name: Run tests
