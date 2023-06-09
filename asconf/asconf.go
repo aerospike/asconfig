@@ -3,7 +3,6 @@ package asconf
 import (
 	"bytes"
 	"fmt"
-	"strings"
 
 	"github.com/aerospike/aerospike-management-lib/asconfig"
 	"github.com/go-logr/logr"
@@ -14,6 +13,7 @@ import (
 type Format string
 
 const (
+	Invalid  Format = ""
 	YAML     Format = "yaml"
 	AsConfig Format = "asconfig"
 	JSON     Format = "json"
@@ -40,20 +40,6 @@ type asconf struct {
 	outFmt              Format
 	src                 []byte
 	aerospikeVersion    string
-}
-
-func ParseFmtString(in string) (fmt Format, err error) {
-
-	switch strings.ToLower(in) {
-	case "yaml", "yml":
-		fmt = YAML
-	case "asconfig", "conf", "asconf":
-		fmt = AsConfig
-	default:
-		err = errInvalidFormat
-	}
-
-	return
 }
 
 func NewAsconf(source []byte, srcFmt, outFmt Format, aerospikeVersion string, logger *logrus.Logger, managementLibLogger logr.Logger) (ac *asconf, err error) {
@@ -86,7 +72,7 @@ func (ac *asconf) Validate() error {
 		}
 	}
 
-	if !valid || err != nil {
+	if !valid || err != nil || len(validationErrors) > 0 {
 		return fmt.Errorf("%w, %w", errConfigValidation, err)
 	}
 

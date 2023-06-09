@@ -119,39 +119,6 @@ func toPlural(k string, v any, m lib.Stats) {
 	}
 }
 
-// // toList breaks single line list asconfig entries, which the management lib parses as a slice with a single string,
-// // into the lists the yaml schema expects
-// func toList(k string, v any, m lib.Stats) {
-// 	if ok, sep := isSingleLineList(k); ok {
-// 		var values []string
-
-// 		if values, ok = v.([]string); !ok {
-// 			return
-// 		}
-
-// 		if len(values) < 1 {
-// 			return
-// 		}
-
-// 		splitValues := strings.Split(values[0], sep)
-// 		m[k] = splitValues
-// 	}
-// }
-
-// // isSingleLineList detects if a given asconfig field can have multiple entries on the same line
-// // it also returns the separator used to delemit these entries
-// func isSingleLineList(name string) (exists bool, separator string) {
-// 	switch name {
-// 	case "file":
-// 		exists = true
-// 		separator = " "
-// 	default:
-// 		exists = false
-// 	}
-
-// 	return
-// }
-
 // isListOrString returns true for special config fields that may be a
 // single string value or a list with multiple strings in the schema files
 // NOTE: any time the schema changes to make a value
@@ -176,27 +143,6 @@ func isTypedContext(in string) bool {
 		return false
 	}
 }
-
-// func isListField(in string) bool {
-
-// 	if _, ok := singularToPlural[in]; ok {
-// 		return true
-// 	}
-
-// 	return false
-// }
-
-// func isListContext(in string) bool {
-
-// 	switch in {
-// 	// copied from management lib's isListSection()
-// 	case "namespace", "datacenter", "dc", "set", "tls", "file":
-// 		return true
-
-// 	default:
-// 		return false
-// 	}
-// }
 
 // copied from the management lib asconfig package
 var singularToPlural = map[string]string{
@@ -233,4 +179,19 @@ var singularToPlural = map[string]string{
 	"tls-node":                     "tls-nodes",
 	"xdr-remote-datacenter":        "xdr-remote-datacenters",
 	"tls-authenticate-client":      "tls-authenticate-client",
+}
+
+func ParseFmtString(in string) (fmt Format, err error) {
+
+	switch strings.ToLower(in) {
+	case "yaml", "yml":
+		fmt = YAML
+	case "asconfig", "conf", "asconf":
+		fmt = AsConfig
+	default:
+		fmt = Invalid
+		err = errInvalidFormat
+	}
+
+	return
 }
