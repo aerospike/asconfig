@@ -1,0 +1,32 @@
+logging:
+    - any: info
+      name: console
+namespaces:
+    - memory-size: 4294967296
+      name: test
+      replication-factor: 2
+      storage-engine:
+        type: memory
+    - memory-size: 4294967296
+      name: bar
+      replication-factor: 2
+      storage-engine:
+        type: memory
+network:
+    fabric:
+        port: 3001
+    heartbeat:
+        interval: 150
+        mode: multicast
+        multicast-groups:
+            - 239.1.99.222
+        port: 9918
+        timeout: 10
+    info:
+        port: 3003
+    service:
+        addresses:
+            - any
+        port: 3000
+service:
+    proto-fd-max: 15000

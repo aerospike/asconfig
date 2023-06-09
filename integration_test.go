@@ -1,10 +1,6 @@
-//go:build integration
-// +build integration
-
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -15,7 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"sort"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -30,12 +26,13 @@ import (
 )
 
 const (
-	sourcePath      = "testdata/sources"
-	expectedPath    = "testdata/expected"
-	destinationPath = "testdata/destinations"
-	coveragePath    = "testdata/coverage/integration"
-	binPath         = "testdata/bin"
-	extraTestPath   = "testdata/cases"
+	sourcePath       = "testdata/sources"
+	expectedPath     = "testdata/expected"
+	destinationPath  = "testdata/destinations"
+	coveragePath     = "testdata/coverage/integration"
+	binPath          = "testdata/bin"
+	extraTestPath    = "testdata/cases"
+	tmpServerLogPath = "testdata/tmp_server.log"
 )
 
 var featKeyPath string
@@ -55,9 +52,15 @@ func TestMain(m *testing.M) {
 		}
 	}
 
+	tmpf, err := os.Create(tmpServerLogPath)
+	if err != nil {
+		panic(err)
+	}
+	tmpf.Close()
+
 	compileArgs := []string{"build", "-cover", "-coverpkg", "./...", "-o", binPath + "/asconfig.test"}
 	compile := exec.Command("go", compileArgs...)
-	_, err := compile.CombinedOutput()
+	_, err = compile.CombinedOutput()
 	if err != nil {
 		panic(err)
 	}
@@ -69,12 +72,19 @@ func TestMain(m *testing.M) {
 			featKeyPath = pair[1]
 		}
 	}
-	//TODO REMOVE THIS
-	featKeyPath = "/Users/dwelch/Desktop/everything/docs/features.conf"
+
+	if featKeyPath == "" {
+		panic("FEATKEY environement variable must be full path to a valid aerospike feature key file")
+	}
 
 	code := m.Run()
 
 	err = os.RemoveAll(destinationPath)
+	if err != nil {
+		panic(err)
+	}
+
+	err = os.Remove(tmpServerLogPath)
 	if err != nil {
 		panic(err)
 	}
@@ -219,18 +229,35 @@ var testFiles = []testutils.TestData{
 	},
 }
 
-func getVersion(l []string) string {
+func getVersion(l []string) (v string) {
 	i := testutils.IndexOf(l, "-a")
 	if i >= 0 {
-		return l[i+1]
+		v = l[i+1]
 	}
 
 	i = testutils.IndexOf(l, "--aerospike-version")
 	if i >= 0 {
-		return l[i+1]
+		v = l[i+1]
 	}
 
-	return ""
+	numbs := strings.Split(v, ".")
+	major, err := strconv.Atoi(numbs[0])
+
+	if err != nil {
+		return
+	}
+
+	minor, err := strconv.Atoi(numbs[1])
+
+	if err != nil {
+		return
+	}
+
+	if major == 5 && minor < 3 || major < 5 {
+		return
+	}
+
+	return "ee-" + v
 }
 
 func TestYamlToConf(t *testing.T) {
@@ -239,11 +266,9 @@ func TestYamlToConf(t *testing.T) {
 	extraTests, err := getExtraTests(extraTestPath, "yaml")
 	if err != nil {
 		t.Logf("Skipping getExtraTests: %v", err)
-		panic(err)
 	}
 
 	testFiles = append(testFiles, extraTests...)
-	// testFiles = extraTests
 
 	for i, tf := range testFiles {
 		var err error
@@ -273,27 +298,6 @@ func TestYamlToConf(t *testing.T) {
 			}
 		}
 
-		expected, err := os.ReadFile(tf.Expected)
-		if err != nil {
-			t.Error(err)
-		}
-
-		sortedActual, err := sortLines(actual)
-		if err != nil {
-			t.Error(err)
-		}
-
-		sortedExpected, err := sortLines(expected)
-		if err != nil {
-			t.Error(err)
-		}
-
-		if string(sortedActual) != string(sortedExpected) {
-			diff, _ := diff(tf.Destination, tf.Expected)
-			t.Errorf("\nTESTCASE: %+v\nACTUAL:\n%s\nEXPECTED:\n%s\nDIFF:\n%s\nERR: %+v\n", tf, actual, expected, string(diff), err)
-		}
-
-		// test that the converted config works with an Aerospike server
 		confPath := tf.Destination
 
 		// if asconfig wrote to stdout, write a temp file for the server to use
@@ -302,39 +306,21 @@ func TestYamlToConf(t *testing.T) {
 			os.WriteFile(confPath, actual, 0644)
 		}
 
+		if _, err := diff(confPath, tf.Expected); err != nil {
+			t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf, err)
+		}
+
+		// test that the converted config works with an Aerospike server
 		if !tf.SkipServerTest {
 			version := getVersion(tf.Arguments)
-			runServer(version, filepath.Base(confPath), dockerClient, t, tf)
+			runServer(version, confPath, dockerClient, t, tf)
+		}
+
+		// cleanup the destination file
+		if err := os.Remove(confPath); err != nil {
+			t.Error(err)
 		}
 	}
-}
-
-func sortLines(data []byte) ([]byte, error) {
-	r := bufio.NewReader(bytes.NewReader(bytes.Clone(data)))
-	var lines []string
-
-	for {
-		const delim = '\n'
-		line, err := r.ReadString(delim)
-		if err == nil || len(line) > 0 {
-			if err != nil {
-				line += string(delim)
-			}
-			lines = append(lines, line)
-		}
-
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return nil, err
-		}
-	}
-
-	sort.Strings(lines)
-	sorted := strings.Join(lines, "")
-
-	return []byte(sorted), nil
 }
 
 func getExtraTests(path string, testType string) (tf []testutils.TestData, err error) {
@@ -362,11 +348,12 @@ func getExtraTests(path string, testType string) (tf []testutils.TestData, err e
 	return
 }
 
-func runServer(version string, confName string, dockerClient *client.Client, t *testing.T, td testutils.TestData) {
+func runServer(version string, confPath string, dockerClient *client.Client, t *testing.T, td testutils.TestData) {
 	var err error
-	containerName := "aerospike:ee-" + version
-	confPath := "/opt/aerospike/work/" + confName
-	cmd := fmt.Sprintf("/usr/bin/asd --foreground --config-file %s", confPath)
+	containerName := "aerospike:" + version
+	serverConfPath := "/opt/aerospike/work/" + filepath.Base(confPath)
+	cmd := fmt.Sprintf("/usr/bin/asd --foreground --config-file %s", serverConfPath)
+	// cmd = fmt.Sprintf("/bin/bash")
 
 	containerConf := &container.Config{
 		Image: containerName,
@@ -374,10 +361,23 @@ func runServer(version string, confName string, dockerClient *client.Client, t *
 		Cmd:   strings.Split(cmd, " "),
 	}
 
-	absDestPath, err := filepath.Abs(destinationPath)
+	destDir := filepath.Dir(confPath)
+	absDestPath, err := filepath.Abs(destDir)
 	if err != nil {
 		t.Error(err)
 	}
+
+	absTmpLog, err := filepath.Abs(tmpServerLogPath)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// wipe the tmp server log file inbetween runs
+	tmpf, err := os.Create(absTmpLog)
+	if err != nil {
+		t.Error(err)
+	}
+	tmpf.Close()
 
 	containerHostConf := &container.HostConfig{
 		Mounts: []mount.Mount{
@@ -391,6 +391,21 @@ func runServer(version string, confName string, dockerClient *client.Client, t *
 				Source: featKeyPath,
 				Target: "/etc/aerospike/secret/features.conf",
 			},
+			{
+				Type:   mount.TypeBind,
+				Source: featKeyPath,
+				Target: "/etc/aerospike/features.conf",
+			},
+			{
+				Type:   mount.TypeBind,
+				Source: absTmpLog,
+				Target: "/var/log/aerospike/aerospike.log",
+			},
+			{
+				Type:   mount.TypeBind,
+				Source: absTmpLog,
+				Target: "/run/log/aerospike.log",
+			},
 		},
 	}
 
@@ -398,7 +413,7 @@ func runServer(version string, confName string, dockerClient *client.Client, t *
 		Architecture: "amd64",
 	}
 
-	// maybe don't create new containers each time? is it possible to
+	// TODO if possible, don't create new containers each time
 	id, err := testutils.CreateAerospikeContainer(containerName, containerConf, containerHostConf, platform, dockerClient)
 	if err != nil {
 		t.Error(err)
@@ -423,15 +438,10 @@ func runServer(version string, confName string, dockerClient *client.Client, t *
 		t.Error(err)
 	}
 
-	time.Sleep(time.Second)
-
 	defer logReader.Close()
-	data, err := io.ReadAll(logReader)
-	if err != nil {
-		t.Error(err)
-	}
 
-	containerOut := string(data)
+	// need this to allow logs to accumulate
+	time.Sleep(time.Second * 3)
 
 	err = testutils.StopAerospikeContainer(id, dockerClient)
 	if err != nil {
@@ -452,9 +462,37 @@ func runServer(version string, confName string, dockerClient *client.Client, t *
 	case <-statusCh:
 	}
 
-	if len(containerOut) == 0 {
-		t.Error("Aerospike container logs are empty")
+	data, err := io.ReadAll(logReader)
+	if err != nil {
+		t.Error(err)
 	}
+
+	var containerOut string
+	containerOut = string(data)
+
+	// containerOut := string(logs)
+	// if the server container logs are empty
+	// the server may have been configured to log to
+	// /var/log/aerospike/aerospike.log which is mapped
+	// to absTmpLog
+	if len(containerOut) == 0 {
+		data, err := os.ReadFile(absTmpLog)
+		if err != nil {
+			t.Error(err)
+		}
+		containerOut = string(data)
+	}
+
+	// if the logs are still empty, the server logged somewhere else
+	// or there is a problem, fail in this case
+	if len(containerOut) == 0 {
+		t.Errorf("suite: %+v\nAerospike container logs are empty", td)
+	}
+
+	// some tests use aerospike versions from when no enterprise container was published
+	// these will fail with "'x feature' is enterprise-only"
+	// always ignore this failure
+	td.ServerErrorAllowList = append(td.ServerErrorAllowList, "' is enterprise-only")
 
 	reg := regexp.MustCompile(`CRITICAL \(config\):.*`)
 	configErrors := reg.FindAllString(containerOut, -1)
@@ -467,7 +505,7 @@ func runServer(version string, confName string, dockerClient *client.Client, t *
 		}
 
 		if !exempted {
-			t.Errorf("Aerospike encountered a configuration error...\n%s", data)
+			t.Errorf("suite: %+v\nAerospike encountered a configuration error...\n%s", td, containerOut)
 		}
 	}
 }
@@ -641,43 +679,9 @@ func TestConfToYaml(t *testing.T) {
 			}
 		}
 
-		expected, err := os.ReadFile(tf.Expected)
-		if err != nil {
-			t.Error(err)
-		}
-
-		sortedActual, err := sortLines(actual)
-		if err != nil {
-			t.Error(err)
-		}
-
-		sortedExpected, err := sortLines(expected)
-		if err != nil {
-			t.Error(err)
-		}
-
-		// diff, err := diff(tf.destination, tf.expected)
-		// if err != nil {
-		// 	t.Errorf("\nTESTCASE: %+v\nACTUAL:\n%s\nEXPECTED:\n%s\nDIFF:\n%s\nERR: %+v\n", tf, actual, expected, string(diff), err)
-		// }
-
-		if string(sortedActual) != string(sortedExpected) {
-			diff, _ := diff(tf.Destination, tf.Expected)
-			t.Errorf("\nTESTCASE: %+v\nACTUAL:\n%s\nEXPECTED:\n%s\nDIFF:\n%s\nERR: %+v\n", tf, actual, expected, string(diff), err)
-		}
-
-		// convert the produced conf file back to yaml
+		// convert the produced yaml file back to conf
 		// check that it matches the source and that it
 		// works with the server
-
-		if tf.Destination == os.Stdout.Name() {
-			actual = out
-		} else {
-			actual, err = os.ReadFile(tf.Destination)
-			if err != nil {
-				t.Error(err)
-			}
-		}
 
 		confPath := tf.Destination
 
@@ -687,22 +691,43 @@ func TestConfToYaml(t *testing.T) {
 			os.WriteFile(confPath, actual, 0644)
 		}
 
-		test = exec.Command(binPath+"/asconfig.test", "convert", "-f", "--format", "yaml", "--output", filepath.Join(destinationPath, "tmp.conf"), confPath)
+		// verify that the generated yaml matches the expected yaml
+		if _, err := diff(confPath, tf.Expected); err != nil {
+			t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf, err)
+		}
+
+		finalConfPath := filepath.Join(destinationPath, "tmp.conf")
+		test = exec.Command(binPath+"/asconfig.test", "convert", "-f", "--format", "yaml", "--output", finalConfPath, confPath)
 		test.Env = []string{"GOCOVERDIR=" + coveragePath}
 		_, err = test.Output()
 		if err != nil {
 			t.Error(string(err.(*exec.ExitError).Stderr))
 		}
 
+		// verify that the generated conf matches the source conf
+		if _, err := diff(tf.Source, finalConfPath); err != nil {
+			t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf, err)
+		}
+
+		// test that the converted config works with an Aerospike server
 		if !tf.SkipServerTest {
 			version := getVersion(tf.Arguments)
-			runServer(version, "tmp.conf", dockerClient, t, tf)
+			runServer(version, finalConfPath, dockerClient, t, tf)
+		}
+
+		// cleanup the destination files
+		if err := os.Remove(finalConfPath); err != nil {
+			t.Error(err)
+		}
+
+		if err := os.Remove(confPath); err != nil {
+			t.Error(err)
 		}
 	}
 }
 
 func diff(path1 string, path2 string) ([]byte, error) {
-	com := exec.Command("diff", path1, path2)
+	com := exec.Command(binPath+"/asconfig.test", "diff", path1, path2)
 	diff, err := com.Output()
 	if err != nil {
 		err = fmt.Errorf("diff failed err: %s, out: %s", err, string(diff))

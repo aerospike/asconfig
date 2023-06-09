@@ -1,0 +1,312 @@
+logging:
+    - any: info
+      name: /dummy/file/path3
+namespaces:
+    - default-ttl: 0
+      memory-size: 10737418240
+      migrate-order: 3
+      name: ns9
+      replication-factor: 2
+      storage-engine:
+        data-in-memory: true
+        files:
+            - /dummy/file/path13
+        filesize: 10737418240
+        max-write-cache: 268435456
+        type: device
+        write-block-size: 2097152
+      strong-consistency: true
+    - default-ttl: 0
+      memory-size: 1073741824
+      migrate-order: 3
+      name: ns8
+      replication-factor: 2
+      storage-engine:
+        data-in-memory: true
+        files:
+            - /dummy/file/path12
+        filesize: 2147483648
+        max-write-cache: 268435456
+        type: device
+    - default-ttl: 0
+      memory-size: 2147483648
+      migrate-order: 4
+      name: ns7
+      replication-factor: 2
+      storage-engine:
+        data-in-memory: true
+        files:
+            - /dummy/file/path11
+        filesize: 2147483648
+        max-write-cache: 268435456
+        type: device
+    - default-ttl: 0
+      memory-size: 2147483648
+      migrate-order: 4
+      name: ns6
+      replication-factor: 2
+      storage-engine:
+        data-in-memory: true
+        files:
+            - /dummy/file/path10
+        filesize: 2147483648
+        max-write-cache: 268435456
+        type: device
+    - default-ttl: 0
+      high-water-memory-pct: 90
+      memory-size: 10737418240
+      migrate-order: 5
+      name: ns5
+      replication-factor: 2
+      sets:
+        - enable-index: true
+          name: set9
+        - enable-index: true
+          name: set8
+        - enable-index: true
+          name: set7
+        - enable-index: true
+          name: set6
+        - enable-index: true
+          name: set5
+        - enable-index: true
+          name: set4
+        - enable-index: true
+          name: set3
+        - enable-index: true
+          name: set2
+        - enable-index: true
+          name: set15
+        - enable-index: true
+          name: set14
+        - enable-index: true
+          name: set13
+        - enable-index: true
+          name: set12
+        - enable-index: true
+          name: set11
+        - enable-index: true
+          name: set10
+        - enable-index: true
+          name: set1
+      stop-writes-pct: 90
+      storage-engine:
+        data-in-memory: true
+        files:
+            - /dummy/file/path9
+        filesize: 12884901888
+        max-write-cache: 268435456
+        type: device
+      strong-consistency: true
+    - default-ttl: 0
+      high-water-memory-pct: 90
+      memory-size: 2147483648
+      migrate-order: 4
+      name: ns4
+      replication-factor: 2
+      stop-writes-pct: 90
+      storage-engine:
+        data-in-memory: true
+        files:
+            - /dummy/file/path8
+        filesize: 2147483648
+        max-write-cache: 2146435072
+        type: device
+    - default-ttl: 0
+      high-water-memory-pct: 90
+      memory-size: 1073741824
+      migrate-order: 3
+      name: ns3
+      replication-factor: 2
+      stop-writes-pct: 90
+      storage-engine:
+        data-in-memory: true
+        files:
+            - /dummy/file/path7
+        filesize: 2147483648
+        max-write-cache: 2146435072
+        type: device
+    - default-ttl: 0
+      memory-size: 1073741824
+      migrate-order: 3
+      name: ns22
+      replication-factor: 2
+      storage-engine:
+        type: memory
+    - default-ttl: 0
+      memory-size: 1073741824
+      migrate-order: 3
+      name: ns21
+      replication-factor: 2
+      storage-engine:
+        type: memory
+    - default-ttl: 0
+      memory-size: 1073741824
+      migrate-order: 3
+      name: ns20
+      replication-factor: 2
+      storage-engine:
+        type: memory
+    - default-ttl: 0
+      high-water-memory-pct: 90
+      memory-size: 1073741824
+      migrate-order: 2
+      name: ns2
+      replication-factor: 2
+      stop-writes-pct: 90
+      storage-engine:
+        data-in-memory: true
+        files:
+            - /dummy/file/path6
+        filesize: 2147483648
+        max-write-cache: 2146435072
+        type: device
+    - default-ttl: 0
+      memory-size: 1073741824
+      migrate-order: 3
+      name: ns19
+      replication-factor: 2
+      storage-engine:
+        type: memory
+    - default-ttl: 0
+      memory-size: 1073741824
+      migrate-order: 3
+      name: ns18
+      replication-factor: 2
+      storage-engine:
+        type: memory
+    - default-ttl: 0
+      memory-size: 1073741824
+      migrate-order: 3
+      name: ns17
+      replication-factor: 2
+      storage-engine:
+        type: memory
+    - default-ttl: 0
+      memory-size: 1073741824
+      migrate-order: 3
+      name: ns16
+      replication-factor: 2
+      storage-engine:
+        type: memory
+    - default-ttl: 0
+      memory-size: 1073741824
+      migrate-order: 3
+      name: ns15
+      replication-factor: 2
+      storage-engine:
+        type: memory
+    - default-ttl: 0
+      memory-size: 1073741824
+      migrate-order: 3
+      name: ns14
+      replication-factor: 2
+      storage-engine:
+        type: memory
+    - default-ttl: 0
+      high-water-memory-pct: 90
+      memory-size: 21474836480
+      migrate-order: 4
+      name: ns13
+      nsup-period: 600
+      replication-factor: 2
+      stop-writes-pct: 90
+      storage-engine:
+        data-in-memory: true
+        files:
+            - /dummy/file/path16
+        filesize: 32212254720
+        max-write-cache: 268435456
+        type: device
+    - default-ttl: 0
+      memory-size: 1073741824
+      migrate-order: 3
+      name: ns12
+      replication-factor: 2
+      storage-engine:
+        data-in-memory: true
+        files:
+            - /dummy/file/path15
+        filesize: 2147483648
+        max-write-cache: 268435456
+        type: device
+    - default-ttl: 0
+      memory-size: 1073741824
+      migrate-order: 3
+      name: ns11
+      replication-factor: 2
+      storage-engine:
+        data-in-memory: true
+        files:
+            - /dummy/file/path14
+        filesize: 2147483648
+        max-write-cache: 268435456
+        type: device
+    - default-ttl: 0
+      memory-size: 10737418240
+      migrate-order: 3
+      name: ns10
+      replication-factor: 4
+      storage-engine:
+        type: memory
+    - default-ttl: 0
+      high-water-memory-pct: 90
+      memory-size: 10737418240
+      migrate-order: 1
+      name: ns1
+      replication-factor: 2
+      stop-writes-pct: 90
+      storage-engine:
+        data-in-memory: true
+        files:
+            - /dummy/file/path5
+        filesize: 12884901888
+        max-write-cache: 268435456
+        type: device
+      strong-consistency: true
+network:
+    fabric:
+        addresses:
+            - 127.0.0.1
+        port: 3001
+    heartbeat:
+        addresses:
+            - 127.0.0.1
+        interval: 150
+        mesh-seed-address-ports:
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+        mode: mesh
+        port: 3002
+        timeout: 10
+    info:
+        addresses:
+            - 127.0.0.1
+        port: 3003
+    service:
+        access-addresses:
+            - 127.0.0.1
+        addresses:
+            - 127.0.0.1
+            - 127.0.0.1
+        alternate-access-addresses:
+            - 127.0.0.1
+        port: 3000
+security:
+    enable-security: true
+    log:
+        report-authentication: true
+        report-sys-admin: true
+        report-user-admin: true
+        report-violation: true
+service:
+    advertise-ipv6: true
+    feature-key-file: /etc/aerospike/features.conf
+    group: root
+    log-local-time: true
+    node-id: c36177c7b616
+    pidfile: /dummy/file/path1
+    proto-fd-max: 15000
+    user: root

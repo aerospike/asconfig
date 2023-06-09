@@ -1,0 +1,94 @@
+logging:
+    - any: info
+      audit: critical
+      name: console
+      security: critical
+namespaces:
+    - default-ttl: 0
+      high-water-memory-pct: 90
+      index-type:
+        mounts:
+            - /dummy/mount/point1
+            - /dummy/mount/point2
+        mounts-high-water-pct: 90
+        mounts-size-limit: 2147483648000
+        type: flash
+      memory-size: 96636764160
+      name: ns1
+      nsup-period: 3600
+      partition-tree-sprigs: 16384
+      rack-id: 1
+      replication-factor: 2
+      storage-engine:
+        devices:
+            - /dummy/device1
+            - /dummy/device2
+            - /dummy/device3
+            - /dummy/device4
+        read-page-cache: true
+        type: device
+        write-block-size: 131072
+network:
+    fabric:
+        port: 3001
+    heartbeat:
+        addresses:
+            - 127.0.0.1
+        interval: 150
+        mesh-seed-address-ports:
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+        mode: mesh
+        port: 3002
+        timeout: 20
+    info:
+        port: 3003
+    service:
+        addresses:
+            - any
+        port: 3000
+security:
+    syslog:
+        local: 4
+        report-authentication: true
+        report-data-op:
+            - aura_anonymization
+        report-sys-admin: true
+        report-user-admin: true
+        report-violation: true
+service:
+    cluster-name: the_cluster_name
+    os-group-perms: true
+    proto-fd-max: 190000
+xdr:
+    dcs:
+        - connector: true
+          name: dc2
+          namespaces:
+            - enable-compression: true
+              name: aura_anonymization
+              ship-only-specified-sets: true
+              ship-sets:
+                - set1
+                - set2
+                - set3
+                - set4
+                - set5
+                - set6
+          node-address-ports:
+            - test_dns_name:4000
+        - auth-mode: internal
+          auth-password-file: /dummy/file/path1
+          auth-user: root
+          name: dc1
+          namespaces:
+            - compression-level: 1
+              enable-compression: true
+              forward: true
+              name: ns2
+          node-address-ports:
+            - test_dns_name:4000

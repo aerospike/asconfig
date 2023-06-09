@@ -1,0 +1,49 @@
+logging:
+    - any: info
+      name: console
+namespaces:
+    - default-ttl: 0
+      enable-benchmarks-batch-sub: true
+      enable-benchmarks-write: true
+      memory-size: 128849018880
+      name: ns1
+      nsup-period: 120
+      rack-id: 1
+      replication-factor: 2
+      storage-engine:
+        cache-replica-writes: true
+        devices:
+            - /dummy/device1
+            - /dummy/device2
+            - /dummy/device3
+            - /dummy/device4
+        disable-odsync: true
+        enable-benchmarks-storage: true
+        post-write-queue: 2048
+        read-page-cache: true
+        type: device
+        write-block-size: 1048576
+      transaction-pending-limit: 0
+      write-commit-level-override: master
+network:
+    fabric:
+        port: 3001
+    heartbeat:
+        mesh-seed-address-ports:
+            - test_dns_name:4000
+            - test_dns_name:4000
+        mode: mesh
+        port: 3002
+    service:
+        access-addresses:
+            - 127.0.0.1
+        access-port: 3000
+        alternate-access-addresses:
+            - 127.0.0.1
+        alternate-access-port: 3000
+        port: 3000
+service:
+    cluster-name: the_cluster_name
+    feature-key-file: /etc/aerospike/features.conf
+    node-id: 1a0
+    proto-fd-max: 90000

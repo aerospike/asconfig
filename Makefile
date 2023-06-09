@@ -65,7 +65,7 @@ test: integration unit
 PHONY: integration
 integration: dependencies
 	mkdir testdata/coverage/integration || true
-	go test -tags=integration
+	go test -tags=integration -timeout 30m
 
 	mkdir testdata/coverage/tmp_merged
 	go tool covdata merge -i=testdata/coverage/integration -o=testdata/coverage/tmp_merged

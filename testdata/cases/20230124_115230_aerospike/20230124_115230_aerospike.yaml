@@ -1,0 +1,186 @@
+logging:
+    - any: critical
+      name: /dummy/file/path5
+      udf: info
+    - any: info
+      name: /dummy/file/path4
+mod-lua:
+    user-path: /home/dvservices/aerospike/aerospike-server/usr/udf/lua
+namespaces:
+    - default-ttl: 0
+      high-water-disk-pct: 80
+      high-water-memory-pct: 80
+      memory-size: 3221225472
+      name: ns3
+      nsup-period: 120
+      replication-factor: 3
+      single-bin: true
+      storage-engine:
+        data-in-memory: true
+        files:
+            - /dummy/file/path10
+            - /dummy/file/path11
+        filesize: 3221225472
+        type: device
+    - default-ttl: 120
+      high-water-memory-pct: 90
+      memory-size: 1073741824
+      migrate-sleep: 0
+      name: ns2
+      nsup-period: 120
+      replication-factor: 1
+      storage-engine:
+        type: memory
+    - default-ttl: 0
+      high-water-disk-pct: 80
+      high-water-memory-pct: 80
+      memory-size: 64424509440
+      migrate-sleep: 0
+      name: ns1
+      nsup-period: 120
+      replication-factor: 3
+      sets:
+        - name: set2
+          set-disable-eviction: true
+        - name: set1
+          set-disable-eviction: true
+      storage-engine:
+        data-in-memory: true
+        files:
+            - /dummy/file/path6
+            - /dummy/file/path7
+            - /dummy/file/path8
+            - /dummy/file/path9
+        filesize: 37580963840
+        type: device
+network:
+    fabric:
+        addresses:
+            - 127.0.0.1
+        port: 3001
+    heartbeat:
+        addresses:
+            - 127.0.0.1
+        interval: 150
+        mesh-seed-address-ports:
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+        mode: mesh
+        port: 3002
+        timeout: 20
+    info:
+        addresses:
+            - 127.0.0.1
+        port: 3003
+    service:
+        access-addresses:
+            - 127.0.0.1
+        port: 3000
+service:
+    cluster-name: the_cluster_name
+    feature-key-file: /etc/aerospike/features.conf
+    group: root
+    microsecond-histograms: true
+    migrate-max-num-incoming: 11
+    pidfile: /dummy/file/path2
+    proto-fd-max: 15000
+    run-as-daemon: true
+    user: root
+    work-directory: /home/dvservices/aerospike/aerospike-server/var
+xdr:
+    dcs:
+        - connector: true
+          name: dc8
+          namespaces:
+            - compression-level: 5
+              enable-compression: true
+              ignore-sets:
+                - set17
+                - set18
+              name: ns12
+              remote-namespace: ns13
+          node-address-ports:
+            - test_dns_name:4000
+        - name: dc7
+          namespaces:
+            - compression-level: 5
+              enable-compression: true
+              ignore-sets:
+                - set15
+                - set16
+              name: ns11
+          node-address-ports:
+            - test_dns_name:4000
+        - name: dc6
+          namespaces:
+            - compression-level: 5
+              enable-compression: true
+              ignore-sets:
+                - set13
+                - set14
+              name: ns10
+          node-address-ports:
+            - test_dns_name:4000
+        - name: dc5
+          namespaces:
+            - compression-level: 5
+              enable-compression: true
+              ignore-sets:
+                - set11
+                - set12
+              name: ns9
+          node-address-ports:
+            - test_dns_name:4000
+        - name: dc4
+          namespaces:
+            - compression-level: 5
+              enable-compression: true
+              name: ns8
+            - compression-level: 5
+              enable-compression: true
+              ignore-sets:
+                - set9
+                - set10
+              name: ns7
+          node-address-ports:
+            - test_dns_name:4000
+        - name: dc3
+          namespaces:
+            - compression-level: 5
+              enable-compression: true
+              ignore-sets:
+                - set7
+                - set8
+              name: ns6
+          node-address-ports:
+            - test_dns_name:4000
+        - name: dc2
+          namespaces:
+            - compression-level: 5
+              enable-compression: true
+              ignore-sets:
+                - set5
+                - set6
+              name: ns5
+          node-address-ports:
+            - test_dns_name:4000
+        - name: dc1
+          namespaces:
+            - compression-level: 5
+              enable-compression: true
+              ignore-sets:
+                - set3
+                - set4
+              name: ns4
+          node-address-ports:
+            - test_dns_name:4000

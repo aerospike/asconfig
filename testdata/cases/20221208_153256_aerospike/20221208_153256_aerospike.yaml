@@ -1,0 +1,129 @@
+logging:
+    - name: /dummy/file/path6
+      xdr: detail
+    - any: info
+      name: /dummy/file/path5
+namespaces:
+    - default-ttl: 0
+      memory-size: 4294967296
+      name: ns3
+      nsup-period: 120
+      replication-factor: 3
+      storage-engine:
+        devices:
+            - /dummy/device2
+        type: device
+        write-block-size: 131072
+    - default-ttl: 0
+      memory-size: 4294967296
+      name: ns2
+      nsup-period: 120
+      replication-factor: 3
+      storage-engine:
+        devices:
+            - /dummy/device1
+        type: device
+        write-block-size: 131072
+    - allow-ttl-without-nsup: true
+      default-ttl: 345600
+      high-water-disk-pct: 50
+      high-water-memory-pct: 60
+      memory-size: 2147483648
+      name: ns1
+      replication-factor: 2
+      storage-engine:
+        type: memory
+network:
+    fabric:
+        addresses:
+            - 127.0.0.1
+        tls-name: tls1
+        tls-port: 3011
+    heartbeat:
+        addresses:
+            - 127.0.0.1
+        interval: 250
+        mode: mesh
+        timeout: 10
+        tls-mesh-seed-address-ports:
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+        tls-name: tls1
+        tls-port: 3012
+    info:
+        addresses:
+            - 127.0.0.1
+    service:
+        addresses:
+            - 127.0.0.1
+        tls-addresses:
+            - 127.0.0.1
+        tls-authenticate-client: "false"
+        tls-name: tls1
+        tls-port: 4333
+    tls:
+        - ca-file: /x/aerospike/x509_certificates/dummy_ca
+          ca-path: /path/to/ca
+          cert-file: /x/aerospike/x509_certificates/dummy_cert
+          cipher-suite: ALL:!COMPLEMENTOFDEFAULT:!eNULL
+          key-file: /x/aerospike/x509_certificates/dummy_key
+          key-file-password: file:/security/aerospike/keypwd.txt
+          name: tls_cluster_name1
+          protocols: TLSv1.2
+security:
+    ldap:
+        polling-period: 30
+        query-base-dn: dc=dc1,dc=dc2,dc=dc3
+        query-user-dn: CN=ldapcn,OU=service,DC=dc1,DC=dc2
+        query-user-password-file: /dummy/pw/file
+        role-query-patterns:
+            - (&(objectClass=group)(member=))
+        server: ldaps://test.test_server
+        tls-ca-file: /x/aerospike/x509_certificates/dummy_ca
+        user-query-pattern: (&(sAMAccountName=${un})(|(objectClass=person)(objectClass=group)))
+    log:
+        report-authentication: true
+        report-sys-admin: true
+        report-user-admin: true
+        report-violation: true
+    syslog:
+        local: 0
+        report-authentication: true
+        report-sys-admin: true
+        report-user-admin: true
+        report-violation: true
+service:
+    cluster-name: the_cluster_name
+    feature-key-file: /etc/aerospike/features.conf
+    group: root
+    migrate-fill-delay: 600
+    node-id: a1
+    pidfile: /dummy/file/path1
+    proto-fd-idle-ms: 60000
+    proto-fd-max: 15000
+    user: root
+    vault-ca: /path/to/vault-ca
+    vault-path: /path/to/vault
+    vault-token-file: /dummy/file/path3
+    vault-url: https://vaulttools
+xdr:
+    dcs:
+        - auth-mode: external
+          auth-password-file: /dummy/file/path12
+          auth-user: root
+          name: dc1
+          namespaces:
+            - name: ns5
+            - name: ns4
+          node-address-ports:
+            - test_dns_name:4000:127.0.0.1
+            - test_dns_name:4000:127.0.0.1
+            - test_dns_name:4000:127.0.0.1
+            - test_dns_name:4000:127.0.0.1
+            - test_dns_name:4000:127.0.0.1
+            - test_dns_name:4000:127.0.0.1
+          tls-name: tls1

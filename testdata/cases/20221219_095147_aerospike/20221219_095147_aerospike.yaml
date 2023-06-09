@@ -1,0 +1,94 @@
+logging:
+    - any: info
+      name: console
+    - any: info
+      name: /dummy/file/path4
+namespaces:
+    - conflict-resolution-policy: last-update-time
+      default-ttl: 220752000
+      high-water-disk-pct: 60
+      high-water-memory-pct: 60
+      memory-size: 193273528320
+      name: ns2
+      nsup-period: 120
+      prefer-uniform-balance: true
+      replication-factor: 2
+      storage-engine:
+        defrag-sleep: 5000
+        devices:
+            - /dummy/device1
+            - /dummy/device2
+            - /dummy/device3
+            - /dummy/device4
+            - /dummy/device5
+            - /dummy/device6
+            - /dummy/device7
+            - /dummy/device8
+            - /dummy/device9
+            - /dummy/device10
+            - /dummy/device11
+            - /dummy/device12
+            - /dummy/device13
+            - /dummy/device14
+            - /dummy/device15
+            - /dummy/device16
+            - /dummy/device17
+            - /dummy/device18
+            - /dummy/device19
+            - /dummy/device20
+        encryption: aes-256
+        encryption-key-file: /x/aerospike/x509_certificates/dummy_key
+        post-write-queue: 4096
+        read-page-cache: true
+        tomb-raider-sleep: 2000
+        type: device
+network:
+    fabric:
+        port: 3001
+    heartbeat:
+        addresses:
+            - any
+        interval: 150
+        mesh-seed-address-ports:
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+        mode: mesh
+        port: 3002
+        timeout: 20
+    info:
+        port: 3003
+    service:
+        addresses:
+            - any
+        port: 3000
+security:
+    enable-security: true
+    log:
+        report-authentication: true
+        report-sys-admin: true
+        report-user-admin: true
+        report-violation: true
+service:
+    cluster-name: the_cluster_name
+    feature-key-file: /etc/aerospike/features.conf
+    group: root
+    min-cluster-size: 2
+    node-id: a0
+    paxos-single-replica-limit: 1
+    pidfile: /dummy/file/path2
+    proto-fd-idle-ms: 60000
+    proto-fd-max: 40000
+    query-threads: 10
+    user: root
+xdr:
+    dcs:
+        - auth-password-file: /dummy/file/path5
+          auth-user: root
+          name: dc1
+          namespaces:
+            - name: ns1
+          node-address-ports:
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000

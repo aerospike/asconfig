@@ -1,0 +1,50 @@
+logging:
+    - any: info
+      name: /dummy/file/path2
+      security: detail
+namespaces:
+    - default-ttl: 2592000
+      memory-size: 4294967296
+      name: ns3
+      nsup-period: 120
+      replication-factor: 2
+      storage-engine:
+        type: memory
+    - default-ttl: 2592000
+      memory-size: 4294967296
+      name: ns2
+      nsup-period: 120
+      replication-factor: 2
+      storage-engine:
+        type: memory
+network:
+    fabric:
+        port: 3001
+    heartbeat:
+        addresses:
+            - 127.0.0.1
+        interval: 150
+        mode: mesh
+        port: 3002
+        timeout: 10
+    info:
+        port: 3003
+    service:
+        addresses:
+            - any
+        port: 3000
+service:
+    feature-key-file: /etc/aerospike/features.conf
+    group: root
+    paxos-single-replica-limit: 1
+    proto-fd-max: 15000
+    user: root
+xdr:
+    dcs:
+        - connector: true
+          name: dc1
+          namespaces:
+            - bin-policy: only-changed
+              name: ns1
+          node-address-ports:
+            - test_dns_name:4000

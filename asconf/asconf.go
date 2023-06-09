@@ -183,7 +183,6 @@ func (ac *asconf) loadAsConf() error {
 	cmap := *c.ToMap()
 
 	mapToStats(cmap, []mapping{
-		// toList,
 		typedContextsToObject,
 		toPlural,
 	})
@@ -193,6 +192,10 @@ func (ac *asconf) loadAsConf() error {
 		ac.aerospikeVersion,
 		cmap,
 	)
+
+	if err != nil {
+		return err
+	}
 
 	ac.cfg = c
 

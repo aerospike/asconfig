@@ -1,0 +1,118 @@
+logging:
+    - any: info
+      name: /dummy/file/path2
+namespaces:
+    - default-ttl: 1209600
+      evict-tenths-pct: 5
+      high-water-disk-pct: 60
+      high-water-memory-pct: 90
+      index-type:
+        mounts:
+            - /dummy/mount/point1
+            - /dummy/mount/point2
+            - /dummy/mount/point3
+            - /dummy/mount/point4
+        mounts-size-limit: 1202590842880
+        type: flash
+      memory-size: 206158430208
+      migrate-sleep: 0
+      name: ns1
+      nsup-period: 60
+      nsup-threads: 6
+      partition-tree-sprigs: 524288
+      rack-id: 305
+      replication-factor: 2
+      sets:
+        - disable-eviction: false
+          name: set1
+      stop-writes-pct: 90
+      storage-engine:
+        compression: lz4
+        defrag-lwm-pct: 60
+        defrag-sleep: 1000
+        devices:
+            - /dummy/device1
+            - /dummy/device2
+            - /dummy/device3
+            - /dummy/device4
+            - /dummy/device5
+            - /dummy/device6
+            - /dummy/device7
+            - /dummy/device8
+            - /dummy/device9
+            - /dummy/device10
+            - /dummy/device11
+            - /dummy/device12
+            - /dummy/device13
+            - /dummy/device14
+            - /dummy/device15
+            - /dummy/device16
+            - /dummy/device17
+            - /dummy/device18
+            - /dummy/device19
+            - /dummy/device20
+            - /dummy/device21
+            - /dummy/device22
+            - /dummy/device23
+            - /dummy/device24
+            - /dummy/device25
+            - /dummy/device26
+            - /dummy/device27
+            - /dummy/device28
+        type: device
+        write-block-size: 524288
+network:
+    fabric:
+        addresses:
+            - eth0
+        channel-bulk-fds: 2
+        channel-bulk-recv-threads: 6
+        port: 8081
+    heartbeat:
+        addresses:
+            - eth0
+        interval: 150
+        mesh-seed-address-ports:
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+        mode: mesh
+        port: 8082
+        timeout: 10
+    info:
+        addresses:
+            - eth0
+        port: 8083
+    service:
+        addresses:
+            - eth0
+        port: 8080
+service:
+    cluster-name: the_cluster_name
+    group: root
+    info-threads: 16
+    migrate-fill-delay: 0
+    migrate-max-num-incoming: 20
+    migrate-threads: 6
+    min-cluster-size: 16
+    node-id: 78ac446a0e78
+    pidfile: /dummy/file/path1
+    proto-fd-idle-ms: 0
+    proto-fd-max: 15000
+    user: root

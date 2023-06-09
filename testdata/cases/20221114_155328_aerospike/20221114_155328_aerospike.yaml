@@ -1,0 +1,698 @@
+logging:
+    - any: info
+      name: /dummy/file/path1
+namespaces:
+    - default-ttl: 86400
+      disallow-null-setname: true
+      high-water-disk-pct: 50
+      high-water-memory-pct: 70
+      memory-size: 2147483648
+      name: ns7
+      nsup-period: 120
+      partition-tree-sprigs: 4096
+      rack-id: 97
+      replication-factor: 2
+      storage-engine:
+        devices:
+            - /dummy/device24
+        post-write-queue: 512
+        read-page-cache: true
+        type: device
+    - default-ttl: 31536000
+      disallow-null-setname: true
+      high-water-disk-pct: 50
+      high-water-memory-pct: 70
+      memory-size: 76235669504
+      name: ns6
+      nsup-period: 120
+      partition-tree-sprigs: 4096
+      rack-id: 97
+      replication-factor: 2
+      sets:
+        - enable-index: true
+          name: set8
+        - enable-index: true
+          name: set7
+        - enable-index: true
+          name: set6
+        - enable-index: true
+          name: set5
+        - enable-index: true
+          name: set4
+      storage-engine:
+        compression: zstd
+        compression-level: 1
+        devices:
+            - /dummy/device20
+            - /dummy/device21
+            - /dummy/device22
+            - /dummy/device23
+        post-write-queue: 512
+        read-page-cache: true
+        type: device
+    - default-ttl: 31536000
+      disallow-null-setname: true
+      high-water-disk-pct: 50
+      high-water-memory-pct: 70
+      memory-size: 6442450944
+      name: ns5
+      nsup-period: 120
+      partition-tree-sprigs: 4096
+      rack-id: 97
+      replication-factor: 2
+      storage-engine:
+        compression: zstd
+        compression-level: 1
+        devices:
+            - /dummy/device19
+        post-write-queue: 512
+        read-page-cache: true
+        type: device
+    - default-ttl: 31536000
+      disallow-null-setname: true
+      high-water-disk-pct: 50
+      high-water-memory-pct: 70
+      memory-size: 408021893120
+      name: ns4
+      nsup-period: 120
+      partition-tree-sprigs: 4096
+      rack-id: 97
+      replication-factor: 2
+      sets:
+        - enable-index: true
+          name: set3
+        - enable-index: true
+          name: set2
+        - enable-index: true
+          name: set1
+      storage-engine:
+        compression: zstd
+        compression-level: 1
+        devices:
+            - /dummy/device5
+            - /dummy/device6
+            - /dummy/device7
+            - /dummy/device8
+            - /dummy/device9
+            - /dummy/device10
+            - /dummy/device11
+            - /dummy/device12
+            - /dummy/device13
+            - /dummy/device14
+            - /dummy/device15
+            - /dummy/device16
+            - /dummy/device17
+            - /dummy/device18
+        max-write-cache: 134217728
+        post-write-queue: 512
+        read-page-cache: true
+        type: device
+    - disallow-null-setname: true
+      high-water-disk-pct: 50
+      high-water-memory-pct: 70
+      memory-size: 37580963840
+      name: ns3
+      nsup-period: 120
+      partition-tree-sprigs: 4096
+      rack-id: 97
+      replication-factor: 2
+      storage-engine:
+        compression: zstd
+        compression-level: 1
+        devices:
+            - /dummy/device2
+            - /dummy/device3
+            - /dummy/device4
+        post-write-queue: 512
+        read-page-cache: true
+        type: device
+      transaction-pending-limit: 40
+    - data-in-index: true
+      default-ttl: 86400
+      disallow-null-setname: true
+      high-water-disk-pct: 50
+      high-water-memory-pct: 70
+      memory-size: 10485760
+      name: ns2
+      nsup-period: 120
+      partition-tree-sprigs: 1024
+      rack-id: 97
+      replication-factor: 2
+      single-bin: true
+      storage-engine:
+        data-in-memory: true
+        files:
+            - /dummy/file/path2
+        filesize: 41943040
+        type: device
+    - default-ttl: 86400
+      disallow-null-setname: true
+      high-water-disk-pct: 50
+      high-water-memory-pct: 70
+      memory-size: 6442450944
+      name: ns1
+      nsup-period: 120
+      partition-tree-sprigs: 4096
+      rack-id: 97
+      replication-factor: 2
+      storage-engine:
+        compression: zstd
+        compression-level: 1
+        devices:
+            - /dummy/device1
+        max-write-cache: 134217728
+        post-write-queue: 512
+        read-page-cache: true
+        type: device
+network:
+    fabric:
+        addresses:
+            - any
+        port: 3001
+    heartbeat:
+        addresses:
+            - any
+        interval: 250
+        mesh-seed-address-ports:
+            - test_dns_name:4000
+        mode: mesh
+        port: 3002
+        timeout: 20
+    info:
+        addresses:
+            - any
+        port: 3003
+    service:
+        addresses:
+            - any
+        port: 3000
+security:
+    enable-quotas: true
+    syslog:
+        report-authentication: true
+        report-sys-admin: true
+        report-user-admin: true
+        report-violation: true
+service:
+    cluster-name: the_cluster_name
+    group: root
+    log-millis: true
+    migrate-fill-delay: 300
+    min-cluster-size: 4
+    proto-fd-max: 60000
+    query-threads-limit: 32
+    user: root
+xdr:
+    dcs:
+        - auth-mode: internal
+          auth-password-file: /dummy/file/path7
+          auth-user: root
+          name: dc5
+          namespaces:
+            - name: ns29
+            - name: ns28
+            - name: ns27
+            - name: ns26
+              ship-only-specified-sets: true
+              ship-sets:
+                - set319
+                - set320
+                - set321
+                - set322
+                - set323
+                - set324
+                - set325
+                - set326
+                - set327
+                - set328
+                - set329
+                - set330
+                - set331
+                - set332
+                - set333
+                - set334
+                - set335
+                - set336
+                - set337
+                - set338
+                - set339
+                - set340
+                - set341
+                - set342
+                - set343
+                - set344
+                - set345
+                - set346
+                - set347
+                - set348
+                - set349
+                - set350
+                - set351
+                - set352
+                - set353
+                - set354
+                - set355
+                - set356
+                - set357
+                - set358
+                - set359
+                - set360
+                - set361
+                - set362
+                - set363
+                - set364
+                - set365
+                - set366
+                - set367
+                - set368
+                - set369
+                - set370
+                - set371
+                - set372
+                - set373
+                - set374
+                - set375
+                - set376
+                - set377
+                - set378
+                - set379
+                - set380
+                - set381
+                - set382
+                - set383
+                - set384
+                - set385
+                - set386
+                - set387
+                - set388
+                - set389
+                - set390
+                - set391
+                - set392
+                - set393
+                - set394
+                - set395
+                - set396
+                - set397
+                - set398
+                - set399
+                - set400
+                - set401
+                - set402
+                - set403
+                - set404
+                - set405
+                - set406
+                - set407
+                - set408
+                - set409
+                - set410
+                - set411
+                - set412
+                - set413
+                - set414
+                - set415
+                - set416
+                - set417
+                - set418
+                - set419
+                - set420
+                - set421
+                - set422
+                - set423
+            - name: ns25
+              ship-only-specified-sets: true
+              ship-sets:
+                - set317
+                - set318
+          node-address-ports:
+            - test_dns_name:4000
+        - auth-mode: internal
+          auth-password-file: /dummy/file/path6
+          auth-user: root
+          name: dc4
+          namespaces:
+            - name: ns24
+              ship-only-specified-sets: true
+              ship-sets:
+                - set305
+                - set306
+                - set307
+                - set308
+                - set309
+                - set310
+                - set311
+                - set312
+                - set313
+                - set314
+                - set315
+                - set316
+            - name: ns23
+              ship-only-specified-sets: true
+              ship-sets:
+                - set289
+                - set290
+                - set291
+                - set292
+                - set293
+                - set294
+                - set295
+                - set296
+                - set297
+                - set298
+                - set299
+                - set300
+                - set301
+                - set302
+                - set303
+                - set304
+          node-address-ports:
+            - test_dns_name:4000
+        - auth-mode: internal
+          auth-password-file: /dummy/file/path5
+          auth-user: root
+          name: dc3
+          namespaces:
+            - name: ns22
+            - name: ns21
+            - name: ns20
+            - name: ns19
+              ship-only-specified-sets: true
+              ship-sets:
+                - set205
+                - set206
+                - set207
+                - set208
+                - set209
+                - set210
+                - set211
+                - set212
+                - set213
+                - set214
+                - set215
+                - set216
+                - set217
+                - set218
+                - set219
+                - set220
+                - set221
+                - set222
+                - set223
+                - set224
+                - set225
+                - set226
+                - set227
+                - set228
+                - set229
+                - set230
+                - set231
+                - set232
+                - set233
+                - set234
+                - set235
+                - set236
+                - set237
+                - set238
+                - set239
+                - set240
+                - set241
+                - set242
+                - set243
+                - set244
+                - set245
+                - set246
+                - set247
+                - set248
+                - set249
+                - set250
+                - set251
+                - set252
+                - set253
+                - set254
+                - set255
+                - set256
+                - set257
+                - set258
+                - set259
+                - set260
+                - set261
+                - set262
+                - set263
+                - set264
+                - set265
+                - set266
+                - set267
+                - set268
+                - set269
+                - set270
+                - set271
+                - set272
+                - set273
+                - set274
+                - set275
+                - set276
+                - set277
+                - set278
+                - set279
+                - set280
+                - set281
+                - set282
+                - set283
+                - set284
+                - set285
+                - set286
+                - set287
+                - set288
+            - name: ns18
+              ship-only-specified-sets: true
+              ship-sets:
+                - set203
+                - set204
+          node-address-ports:
+            - test_dns_name:4000
+        - auth-mode: internal
+          auth-password-file: /dummy/file/path4
+          auth-user: root
+          name: dc2
+          namespaces:
+            - name: ns17
+            - name: ns16
+            - name: ns15
+            - name: ns14
+              ship-only-specified-sets: true
+              ship-sets:
+                - set119
+                - set120
+                - set121
+                - set122
+                - set123
+                - set124
+                - set125
+                - set126
+                - set127
+                - set128
+                - set129
+                - set130
+                - set131
+                - set132
+                - set133
+                - set134
+                - set135
+                - set136
+                - set137
+                - set138
+                - set139
+                - set140
+                - set141
+                - set142
+                - set143
+                - set144
+                - set145
+                - set146
+                - set147
+                - set148
+                - set149
+                - set150
+                - set151
+                - set152
+                - set153
+                - set154
+                - set155
+                - set156
+                - set157
+                - set158
+                - set159
+                - set160
+                - set161
+                - set162
+                - set163
+                - set164
+                - set165
+                - set166
+                - set167
+                - set168
+                - set169
+                - set170
+                - set171
+                - set172
+                - set173
+                - set174
+                - set175
+                - set176
+                - set177
+                - set178
+                - set179
+                - set180
+                - set181
+                - set182
+                - set183
+                - set184
+                - set185
+                - set186
+                - set187
+                - set188
+                - set189
+                - set190
+                - set191
+                - set192
+                - set193
+                - set194
+                - set195
+                - set196
+                - set197
+                - set198
+                - set199
+                - set200
+                - set201
+                - set202
+            - name: ns13
+              ship-only-specified-sets: true
+              ship-sets:
+                - set117
+                - set118
+          node-address-ports:
+            - test_dns_name:4000
+        - auth-mode: internal
+          auth-password-file: /dummy/file/path3
+          auth-user: root
+          name: dc1
+          namespaces:
+            - name: ns9
+              ship-only-specified-sets: true
+              ship-sets:
+                - set11
+                - set12
+                - set13
+                - set14
+                - set15
+                - set16
+                - set17
+                - set18
+                - set19
+                - set20
+                - set21
+                - set22
+                - set23
+                - set24
+                - set25
+                - set26
+                - set27
+                - set28
+                - set29
+                - set30
+                - set31
+                - set32
+                - set33
+                - set34
+                - set35
+                - set36
+                - set37
+                - set38
+                - set39
+                - set40
+                - set41
+                - set42
+                - set43
+                - set44
+                - set45
+                - set46
+                - set47
+                - set48
+                - set49
+                - set50
+                - set51
+                - set52
+                - set53
+                - set54
+                - set55
+                - set56
+                - set57
+                - set58
+                - set59
+                - set60
+                - set61
+                - set62
+                - set63
+                - set64
+                - set65
+                - set66
+                - set67
+                - set68
+                - set69
+                - set70
+                - set71
+                - set72
+                - set73
+                - set74
+                - set75
+                - set76
+                - set77
+                - set78
+                - set79
+                - set80
+                - set81
+                - set82
+                - set83
+                - set84
+                - set85
+                - set86
+                - set87
+                - set88
+                - set89
+                - set90
+                - set91
+                - set92
+                - set93
+                - set94
+                - set95
+                - set96
+                - set97
+                - set98
+                - set99
+                - set100
+                - set101
+                - set102
+                - set103
+                - set104
+                - set105
+                - set106
+                - set107
+                - set108
+                - set109
+                - set110
+                - set111
+                - set112
+                - set113
+                - set114
+                - set115
+                - set116
+            - name: ns8
+              ship-only-specified-sets: true
+              ship-sets:
+                - set9
+                - set10
+            - name: ns12
+            - name: ns11
+            - name: ns10
+          node-address-ports:
+            - test_dns_name:4000

@@ -1,0 +1,55 @@
+logging:
+    - any: info
+      name: /dummy/file/path2
+namespaces:
+    - default-ttl: 0
+      memory-size: 1073741824
+      name: ns2
+      nsup-period: 120
+      replication-factor: 3
+      storage-engine:
+        type: memory
+    - default-ttl: 0
+      high-water-disk-pct: 80
+      memory-size: 33285996544
+      name: ns1
+      nsup-period: 120
+      replication-factor: 3
+      storage-engine:
+        cold-start-empty: true
+        devices:
+            - /dummy/device1
+        type: device
+network:
+    fabric:
+        port: 3001
+    heartbeat:
+        interval: 250
+        mesh-seed-address-ports:
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+        mode: mesh
+        port: 3002
+        timeout: 50
+    info:
+        port: 3003
+    service:
+        addresses:
+            - any
+        port: 3000
+service:
+    cluster-name: the_cluster_name
+    group: root
+    pidfile: /dummy/file/path1
+    proto-fd-max: 20000
+    query-threads-limit: 300
+    service-threads: 12
+    user: root

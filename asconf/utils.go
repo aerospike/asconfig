@@ -154,7 +154,7 @@ func toPlural(k string, v any, m lib.Stats) {
 
 // isListOrString returns true for special config fields that may be a
 // single string value or a list with multiple strings in the schema files
-// NOTE: any time schema the changes to make a value
+// NOTE: any time the schema changes to make a value
 // a string or a list (array) that value needs to be added here
 func isListOrString(name string) bool {
 	switch name {
@@ -220,6 +220,7 @@ var singularToPlural = map[string]string{
 	"namespace":                    "namespaces",
 	"node-address-port":            "node-address-ports",
 	"report-data-op":               "report-data-op",
+	"report-data-op-user":          "report-data-op-user",
 	"role-query-pattern":           "role-query-patterns",
 	"set":                          "sets",
 	"ship-bin":                     "ship-bins",

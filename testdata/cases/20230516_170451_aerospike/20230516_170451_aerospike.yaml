@@ -1,0 +1,100 @@
+logging:
+    - any: info
+      name: /dummy/file/path1
+namespaces:
+    - default-ttl: 0
+      memory-size: 17179869184
+      name: ns4
+      nsup-period: 120
+      replication-factor: 2
+      storage-engine:
+        devices:
+            - /dummy/device5
+            - /dummy/device6
+            - /dummy/device7
+            - /dummy/device8
+        type: device
+        write-block-size: 1048576
+    - default-ttl: 0
+      memory-size: 34359738368
+      name: ns3
+      nsup-period: 120
+      replication-factor: 2
+      storage-engine:
+        devices:
+            - /dummy/device1
+            - /dummy/device2
+            - /dummy/device3
+            - /dummy/device4
+        type: device
+        write-block-size: 1048576
+network:
+    fabric:
+        tls-name: tls1
+        tls-port: 3011
+    heartbeat:
+        addresses:
+            - any
+        interval: 250
+        mode: mesh
+        timeout: 10
+        tls-mesh-seed-address-ports:
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+        tls-name: tls1
+        tls-port: 3012
+    info:
+        port: 3003
+    service:
+        access-addresses:
+            - 127.0.0.1
+        addresses:
+            - any
+        tls-addresses:
+            - any
+        tls-authenticate-client: "false"
+        tls-name: tls1
+        tls-port: 4333
+    tls:
+        - ca-file: /x/aerospike/x509_certificates/dummy_ca
+          cert-file: /x/aerospike/x509_certificates/dummy_cert
+          key-file: /x/aerospike/x509_certificates/dummy_key
+          key-file-password: file:/etc/aerospike/secrets/capw
+          name: tls_cluster_name1
+security:
+    enable-quotas: true
+    ldap:
+        disable-tls: false
+        polling-period: 90
+        query-base-dn: dc=dc1,dc=dc2,dc=dc3
+        query-user-dn: CN=ldapcn,OU=service,DC=dc1,DC=dc2
+        query-user-password-file: /dummy/pw/file
+        role-query-patterns:
+            - (&(objectClass=group)(member=)) memberof
+        role-query-search-ou: false
+        server: ldaps://test.test_server
+        tls-ca-file: /x/aerospike/x509_certificates/dummy_ca
+        user-query-pattern: (sAMAccountName=${un})
+    log:
+        report-authentication: true
+        report-sys-admin: true
+        report-user-admin: true
+        report-violation: true
+service:
+    cluster-name: the_cluster_name
+    proto-fd-max: 15000
+xdr:
+    dcs:
+        - auth-mode: internal
+          auth-password-file: /dummy/file/path2
+          auth-user: root
+          name: dc1
+          namespaces:
+            - name: ns2
+            - name: ns1
+          node-address-ports:
+            - test_dns_name:4000:127.0.0.1
+            - test_dns_name:4000:127.0.0.1
+            - test_dns_name:4000:127.0.0.1
+          tls-name: tls1

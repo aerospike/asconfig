@@ -1,0 +1,55 @@
+logging:
+    - any: info
+      name: console
+    - any: info
+      name: /dummy/file/path2
+namespaces:
+    - default-ttl: 3600
+      memory-size: 161061273600
+      name: ns1
+      nsup-period: 120
+      replication-factor: 2
+      storage-engine:
+        data-in-memory: false
+        devices:
+            - /dummy/device1
+            - /dummy/device2
+            - /dummy/device3
+            - /dummy/device4
+            - /dummy/device5
+            - /dummy/device6
+            - /dummy/device7
+            - /dummy/device8
+        post-write-queue: 4096
+        read-page-cache: true
+        type: device
+        write-block-size: 131072
+network:
+    fabric:
+        addresses:
+            - any
+        port: 3001
+    heartbeat:
+        addresses:
+            - any
+        mesh-seed-address-ports:
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+        mode: mesh
+        port: 3002
+    service:
+        access-addresses:
+            - 127.0.0.1
+        addresses:
+            - any
+        port: 3000
+service:
+    cluster-name: the_cluster_name
+    feature-key-file: /etc/aerospike/features.conf
+    group: root
+    migrate-fill-delay: 3600
+    proto-fd-max: 60000
+    user: root
