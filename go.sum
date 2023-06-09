@@ -3,6 +3,8 @@ github.com/Microsoft/go-winio v0.6.0 h1:slsWYD/zyx7lCXoZVlvQrj0hPTM1HI4+v1sIda2y
 github.com/Microsoft/go-winio v0.6.0/go.mod h1:cTAf44im0RAYeL23bpB+fzCyDH2MJiz2BO69KH/soAE=
 github.com/aerospike/aerospike-management-lib v0.0.0-20230608222538-48edefa4585d h1:Wce/3GjCBHsSgeB9Rhb6r5UECZrX40On2Ubh8BhMxSY=
 github.com/aerospike/aerospike-management-lib v0.0.0-20230608222538-48edefa4585d/go.mod h1:RdUDVojTVpPkaTq5+HRrxsUcC+pVXjNq0GHodurMHhg=
+github.com/aerospike/aerospike-management-lib v0.0.0-20230609231436-68ac2a4ae4f9 h1:Ji4uphYV+o8Q1EIWa51IzODN8wxh0bBykSzB0BSoZJc=
+github.com/aerospike/aerospike-management-lib v0.0.0-20230609231436-68ac2a4ae4f9/go.mod h1:sTlH+QtluBfc1ZkUaB3sfpZxd4aIux13ENkztyh0lsY=
 github.com/bombsimon/logrusr/v4 v4.0.0 h1:Pm0InGphX0wMhPqC02t31onlq9OVyJ98eP/Vh63t1Oo=
 github.com/bombsimon/logrusr/v4 v4.0.0/go.mod h1:pjfHC5e59CvjTBIU3V3sGhFWFAnsnhOR03TRc6im0l8=
 github.com/cpuguy83/go-md2man/v2 v2.0.2/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46tRHOmNcaadrF8o=
