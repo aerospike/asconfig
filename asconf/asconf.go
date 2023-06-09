@@ -45,7 +45,7 @@ type asconf struct {
 func ParseFmtString(in string) (fmt Format, err error) {
 
 	switch strings.ToLower(in) {
-	case "yaml":
+	case "yaml", "yml":
 		fmt = YAML
 	case "asconfig", "conf", "asconf":
 		fmt = AsConfig

@@ -6,28 +6,31 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strings"
 
 	"github.com/spf13/cobra"
 )
 
 var (
-	errConfigsDiffer = fmt.Errorf("configuration files are not equal")
+	errDiffConfigsDiffer = fmt.Errorf("configuration files are not equal")
 )
 
 func init() {
 	rootCmd.AddCommand(diffCommand)
 }
 
-var diffCommand = newDiffCommand()
+var diffCommand = newDiffCmd()
 
-func newDiffCommand() *cobra.Command {
+func newDiffCmd() *cobra.Command {
 	res := &cobra.Command{
 		Use:   "diff [flags] <path/to/config1> <path/to/config2>",
-		Short: "Diff yaml and conf Aerospike configuration files.",
+		Short: "Diff yaml or conf Aerospike configuration files.",
 		Long: `Diff is used to compare differences between Aerospike configuration files.
-				It is used on two files of any type supported by the asconfig tool.
-				Schema validation is not performed on either file.`,
+				It is used on two files of the same format from any format
+				supported by the asconfig tool, e.g. yaml or Aerospike config.
+				Schema validation is not performed on either file. The file names must end with
+				extensions signifying their formats, e.g. .conf or .yaml.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger.Debug("Running diff command")
 
@@ -38,17 +41,25 @@ func newDiffCommand() *cobra.Command {
 			path1 := args[0]
 			path2 := args[1]
 
-			ext1 := filepath.Ext(path1)[1:]
+			logger.Debugf("Diff file 1 is %s", path1)
+			logger.Debugf("Diff file 2 is %s", path2)
+
+			ext1 := filepath.Ext(path1)
+			ext1 = strings.TrimPrefix(ext1, ".")
 			fmt1, err := asconf.ParseFmtString(ext1)
 			if err != nil {
 				return err
 			}
 
-			ext2 := filepath.Ext(path2)[1:]
+			ext2 := filepath.Ext(path2)
+			ext2 = strings.TrimPrefix(ext2, ".")
 			fmt2, err := asconf.ParseFmtString(ext2)
 			if err != nil {
 				return err
 			}
+
+			logger.Debugf("Diff file 1 format is %s", ext1)
+			logger.Debugf("Diff file 2 format is %s", ext2)
 
 			if ext2 != ext1 {
 				return fmt.Errorf("mismatched file formats, detected %s and %s", ext1, ext2)
@@ -64,6 +75,7 @@ func newDiffCommand() *cobra.Command {
 				return err
 			}
 
+			// not performing any validation so server version is "" (not needed)
 			conf1, err := asconf.NewAsconf(
 				f1,
 				fmt1,
@@ -99,7 +111,9 @@ func newDiffCommand() *cobra.Command {
 
 			if len(diffs) > 0 {
 				fmt.Println(strings.Join(diffs, ""))
-				return errConfigsDiffer
+				cmd.SilenceUsage = true
+				cmd.SilenceErrors = true
+				return errDiffConfigsDiffer
 			}
 
 			return nil
@@ -124,7 +138,13 @@ func diffFlatMaps(m1 map[string]any, m2 map[string]any) []string {
 		allKeys[k] = struct{}{}
 	}
 
+	var keysList []string
 	for k := range allKeys {
+		keysList = append(keysList, k)
+	}
+	sort.Strings(keysList)
+
+	for _, k := range keysList {
 		// "index" is a metadata key added by
 		// the management lib to these flat maps
 		// ignore it

@@ -734,3 +734,103 @@ func diff(path1 string, path2 string) ([]byte, error) {
 	}
 	return diff, err
 }
+
+type diffTest struct {
+	path1          string
+	path2          string
+	expectError    bool
+	expectedResult string
+}
+
+var diffTests = []diffTest{
+	{
+		path1:          filepath.Join(sourcePath, "pmem_cluster_cr.yaml"),
+		path2:          filepath.Join(sourcePath, "pmem_cluster_cr.yaml"),
+		expectError:    false,
+		expectedResult: "",
+	},
+	{
+		path1:       filepath.Join(sourcePath, "pmem_cluster_cr.yaml"),
+		path2:       filepath.Join(sourcePath, "ldap_cluster_cr.yaml"),
+		expectError: true,
+		expectedResult: `
+	+: namespaces.{test}.index-type.mounts
+
+	+: namespaces.{test}.index-type.mounts-size-limit
+
+	+: namespaces.{test}.index-type.type
+
+	+: namespaces.{test}.storage-engine.files
+
+	+: namespaces.{test}.storage-engine.filesize
+
+namespaces.{test}.storage-engine.type:
+	-: pmem
+	+: memory
+
+	+: network.fabric.port
+
+	-: network.fabric.tls-name
+
+	-: network.fabric.tls-port
+
+	+: network.heartbeat.port
+
+	-: network.heartbeat.tls-name
+
+	-: network.heartbeat.tls-port
+
+	+: network.service.port
+
+	-: network.service.tls-authenticate-client
+
+	-: network.service.tls-name
+
+	-: network.service.tls-port
+
+	-: network.tls.{aerospike-a-0.test-runner}.ca-file
+
+	-: network.tls.{aerospike-a-0.test-runner}.cert-file
+
+	-: network.tls.{aerospike-a-0.test-runner}.key-file
+
+	-: network.tls.{aerospike-a-0.test-runner}.name
+
+	+: security
+
+	-: security.ldap.disable-tls
+
+	-: security.ldap.polling-period
+
+	-: security.ldap.query-base-dn
+
+	-: security.ldap.query-user-dn
+
+	-: security.ldap.query-user-password-file
+
+	-: security.ldap.role-query-patterns
+
+	-: security.ldap.role-query-search-ou
+
+	-: security.ldap.server
+
+	-: security.ldap.user-dn-pattern
+
+`,
+	},
+}
+
+func TestDiff(t *testing.T) {
+	for _, tf := range diffTests {
+		output, err := diff(tf.path1, tf.path2)
+
+		if tf.expectError == (err == nil) {
+			t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf.path1, err)
+		}
+
+		if string(output) != tf.expectedResult {
+			t.Errorf("\nTESTCASE: %+v\nACTUAL: %s\n EXPECTED: %s", tf.path1, output, tf.expectedResult)
+		}
+
+	}
+}
