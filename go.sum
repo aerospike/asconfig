@@ -6,8 +6,8 @@ github.com/Microsoft/go-winio v0.6.0/go.mod h1:cTAf44im0RAYeL23bpB+fzCyDH2MJiz2B
 github.com/NYTimes/gziphandler v0.0.0-20170623195520-56545f4a5d46/go.mod h1:3wb06e3pkSAbeQ52E9H9iFoQsEEwGN64994WTCIhntQ=
 github.com/PuerkitoBio/purell v1.1.1/go.mod h1:c11w/QuzBsJSee3cPx9rAFu61PvFxuPbtSwDGJws/X0=
 github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578/go.mod h1:uGdkoq3SwY9Y+13GIhn11/XLaGBb4BfwItxLd5jeuXE=
-github.com/aerospike/aerospike-management-lib v0.0.0-20230609231436-68ac2a4ae4f9 h1:Ji4uphYV+o8Q1EIWa51IzODN8wxh0bBykSzB0BSoZJc=
-github.com/aerospike/aerospike-management-lib v0.0.0-20230609231436-68ac2a4ae4f9/go.mod h1:sTlH+QtluBfc1ZkUaB3sfpZxd4aIux13ENkztyh0lsY=
+github.com/aerospike/aerospike-management-lib v0.0.0-20230609234330-88f97849fb38 h1:3pDT4n8F799s+pZEE8gG1FR4Hy53aHkCWhkelA0zK/k=
+github.com/aerospike/aerospike-management-lib v0.0.0-20230609234330-88f97849fb38/go.mod h1:sTlH+QtluBfc1ZkUaB3sfpZxd4aIux13ENkztyh0lsY=
 github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a/go.mod h1:lB+ZfQJz7igIIfQNfa7Ml4HSf2uFQQRzpGGRXenZAgY=
 github.com/bombsimon/logrusr/v4 v4.0.0 h1:Pm0InGphX0wMhPqC02t31onlq9OVyJ98eP/Vh63t1Oo=
 github.com/bombsimon/logrusr/v4 v4.0.0/go.mod h1:pjfHC5e59CvjTBIU3V3sGhFWFAnsnhOR03TRc6im0l8=
