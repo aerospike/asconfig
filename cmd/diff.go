@@ -122,6 +122,7 @@ func newDiffCmd() *cobra.Command {
 			)
 
 			if len(diffs) > 0 {
+				fmt.Printf("\nDifferences shown from %s to %s, '-' are deletions, '+' are additions.\n", path1, path2)
 				fmt.Println(strings.Join(diffs, ""))
 				cmd.SilenceUsage = true
 				cmd.SilenceErrors = true

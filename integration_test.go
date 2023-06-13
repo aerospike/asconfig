@@ -761,6 +761,8 @@ var diffTests = []diffTest{
 		path2:       filepath.Join(sourcePath, "ldap_cluster_cr.yaml"),
 		expectError: true,
 		expectedResult: `
+Differences shown from testdata/sources/pmem_cluster_cr.yaml to testdata/sources/ldap_cluster_cr.yaml, '-' are deletions, '+' are additions.
+
 	+: namespaces.{test}.index-type.mounts
 
 	+: namespaces.{test}.index-type.mounts-size-limit
@@ -836,7 +838,7 @@ func TestDiff(t *testing.T) {
 		}
 
 		if string(output) != tf.expectedResult {
-			t.Errorf("\nTESTCASE: %+v\nACTUAL: %s\n EXPECTED: %s", tf.path1, output, tf.expectedResult)
+			t.Errorf("\nTESTCASE: %+v\nACTUAL: %s\nEXPECTED: %s", tf.path1, output, tf.expectedResult)
 		}
 
 	}
