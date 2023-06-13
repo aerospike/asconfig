@@ -4,6 +4,7 @@
 package cmd
 
 import (
+	"aerospike/asconfig/asconf"
 	"errors"
 	"testing"
 )
