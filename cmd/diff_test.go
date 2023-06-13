@@ -63,12 +63,13 @@ var testArgs = []runTestDiff{
 
 func TestRunEDiff(t *testing.T) {
 	cmd := newDiffCmd()
+	rootCmd.AddCommand(cmd)
 
-	for _, test := range testArgs {
+	for i, test := range testArgs {
 		cmd.ParseFlags(test.flags)
 		err := cmd.RunE(cmd, test.arguments)
 		if test.expectError == (err == nil) {
-			t.Fatalf("expectError: %v does not match err: %v", test.expectError, err)
+			t.Fatalf("case: %d, expectError: %v does not match err: %v", i, test.expectError, err)
 		}
 	}
 }

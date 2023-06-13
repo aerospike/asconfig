@@ -38,7 +38,7 @@ func newConvertCmd() *cobra.Command {
 		Use:   "convert [flags] <path/to/config.yaml>",
 		Short: "Convert yaml to Aerospike config format.",
 		Long: `Convert is used to convert between yaml and aerospike configuration
-				files. In the future, this command may be able to convert from asconf back to yaml.
+				files. Input files are converted to their opposite format, yaml -> conf, conf -> yaml.
 				Specifying the server version that will use the aerospike.conf is required.
 				Usage examples...
 				convert local file "aerospike.yaml" to aerospike config format for version 6.2.0 and
@@ -47,7 +47,10 @@ func newConvertCmd() *cobra.Command {
 				Short form flags and source file only conversions are also supported.
 				In this case, -a is the server version and using only a source file means
 				the result will be written to stdout.
-				EX: asconfig convert -a "6.2.0" aerospike.yaml`,
+				EX: asconfig convert -a "6.2.0" aerospike.yaml
+				Normally the file format is inferred from file extensions ".yaml" ".conf" etc.
+				Source format can be forced with the --format flag.
+				EX: asconfig convert -a "6.2.0" --format yaml example_file`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger.Debug("Running convert command")
 
@@ -72,12 +75,19 @@ func newConvertCmd() *cobra.Command {
 				return err
 			}
 
+			srcExt := filepath.Ext(srcPath)
+			srcExt = strings.TrimPrefix(srcExt, ".")
+
+			if formatString == "" {
+				formatString = srcExt
+			}
+
+			logger.Debugf("Processing flag format value=%s", formatString)
+
 			format, err := asconf.ParseFmtString(formatString)
 			if err != nil {
 				return err
 			}
-
-			logger.Debugf("Processing flag format value=%s", format)
 
 			logger.Debug("Processing source file")
 
@@ -166,8 +176,6 @@ func newConvertCmd() *cobra.Command {
 				multiErr = fmt.Errorf("%w, %w", multiErr, errNotEnoughArguments)
 			}
 
-			//TODO validate the --format flag
-
 			if len(args) > convertArgMax {
 				logger.Errorf("Expected no more than %d argument(s)", convertArgMax)
 				// multiErr = errors.Join(multiErr, errTooManyArguments) TODO use this in go 1.20
@@ -238,7 +246,6 @@ func newConvertCmd() *cobra.Command {
 	res.Flags().StringP("aerospike-version", "a", "", "Aerospike server version for the configuration file. Ex: 6.2.0.\nThe first 3 digits of the Aerospike version number are required.\nThis option is required unless --force is used")
 	res.Flags().BoolP("force", "f", false, "Override checks for supported server version and config validation")
 	res.Flags().StringP("output", "o", os.Stdout.Name(), "File path to write output to")
-	res.Flags().StringP("format", "F", "yaml", "The format of the source file. It will be converted to its opposite format. Valid options are: yaml, asconfig. Default value is yaml")
 
 	res.Version = VERSION
 

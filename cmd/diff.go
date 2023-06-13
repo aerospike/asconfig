@@ -46,23 +46,35 @@ func newDiffCmd() *cobra.Command {
 
 			ext1 := filepath.Ext(path1)
 			ext1 = strings.TrimPrefix(ext1, ".")
+
+			ext2 := filepath.Ext(path2)
+			ext2 = strings.TrimPrefix(ext2, ".")
+
+			formatString, err := cmd.Flags().GetString("format")
+			if err != nil {
+				return err
+			}
+
+			if formatString != "" {
+				ext1 = formatString
+				ext2 = formatString
+			}
+
+			logger.Debugf("Diff file 1 format is %v", ext1)
+			logger.Debugf("Diff file 2 format is %v", ext2)
+
+			if ext2 != ext1 {
+				return fmt.Errorf("mismatched file formats, detected %s and %s", ext1, ext2)
+			}
+
 			fmt1, err := asconf.ParseFmtString(ext1)
 			if err != nil {
 				return err
 			}
 
-			ext2 := filepath.Ext(path2)
-			ext2 = strings.TrimPrefix(ext2, ".")
 			fmt2, err := asconf.ParseFmtString(ext2)
 			if err != nil {
 				return err
-			}
-
-			logger.Debugf("Diff file 1 format is %s", ext1)
-			logger.Debugf("Diff file 2 format is %s", ext2)
-
-			if ext2 != ext1 {
-				return fmt.Errorf("mismatched file formats, detected %s and %s", ext1, ext2)
 			}
 
 			f1, err := os.ReadFile(args[0])

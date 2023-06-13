@@ -1,6 +1,7 @@
 package asconf
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 
@@ -181,16 +182,16 @@ var singularToPlural = map[string]string{
 	"tls-authenticate-client":      "tls-authenticate-client",
 }
 
-func ParseFmtString(in string) (fmt Format, err error) {
+func ParseFmtString(in string) (f Format, err error) {
 
 	switch strings.ToLower(in) {
 	case "yaml", "yml":
-		fmt = YAML
+		f = YAML
 	case "asconfig", "conf", "asconf":
-		fmt = AsConfig
+		f = AsConfig
 	default:
-		fmt = Invalid
-		err = errInvalidFormat
+		f = Invalid
+		err = fmt.Errorf("%w: %s", ErrInvalidFormat, f)
 	}
 
 	return

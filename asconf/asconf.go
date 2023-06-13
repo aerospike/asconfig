@@ -20,8 +20,8 @@ const (
 )
 
 var (
-	errInvalidFormat    = fmt.Errorf("invalid config format")
-	errConfigValidation = fmt.Errorf("error while validating config")
+	ErrInvalidFormat    = fmt.Errorf("invalid config format")
+	ErrConfigValidation = fmt.Errorf("error while validating config")
 )
 
 // TODO maybe use mockery here
@@ -73,7 +73,7 @@ func (ac *asconf) Validate() error {
 	}
 
 	if !valid || err != nil || len(validationErrors) > 0 {
-		return fmt.Errorf("%w, %w", errConfigValidation, err)
+		return fmt.Errorf("%w, %w", ErrConfigValidation, err)
 	}
 
 	return err
@@ -88,7 +88,7 @@ func (ac *asconf) MarshalText() (text []byte, err error) {
 		m := ac.cfg.ToMap()
 		text, err = yaml.Marshal(m)
 	default:
-		err = fmt.Errorf("%w %s", errInvalidFormat, ac.outFmt)
+		err = fmt.Errorf("%w %s", ErrInvalidFormat, ac.outFmt)
 	}
 
 	return
@@ -106,7 +106,7 @@ func (ac *asconf) load() (err error) {
 	case AsConfig:
 		err = ac.loadAsConf()
 	default:
-		return fmt.Errorf("%w %s", errInvalidFormat, ac.srcFmt)
+		return fmt.Errorf("%w %s", ErrInvalidFormat, ac.srcFmt)
 	}
 
 	if err != nil {

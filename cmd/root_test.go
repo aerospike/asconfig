@@ -32,6 +32,20 @@ var preTestsRoot = []preTestRoot{
 			errInvalidLogLevel,
 		},
 	},
+	{
+		flags:     []string{"--format", "bad_fmt"},
+		arguments: []string{},
+		expectedErrors: []error{
+			asconf.ErrInvalidFormat,
+		},
+	},
+	{
+		flags:     []string{"-F", "bad_fmt"},
+		arguments: []string{},
+		expectedErrors: []error{
+			asconf.ErrInvalidFormat,
+		},
+	},
 }
 
 func TestPersistentPreRunRoot(t *testing.T) {
