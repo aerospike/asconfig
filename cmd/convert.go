@@ -84,7 +84,7 @@ func newConvertCmd() *cobra.Command {
 
 			logger.Debugf("Processing flag format value=%s", formatString)
 
-			format, err := asconf.ParseFmtString(formatString)
+			srcFormat, err := asconf.ParseFmtString(formatString)
 			if err != nil {
 				return err
 			}
@@ -97,7 +97,7 @@ func newConvertCmd() *cobra.Command {
 			}
 
 			var outFmt asconf.Format
-			switch format {
+			switch srcFormat {
 			case asconf.AsConfig:
 				outFmt = asconf.YAML
 			case asconf.YAML:
@@ -106,7 +106,7 @@ func newConvertCmd() *cobra.Command {
 
 			conf, err := asconf.NewAsconf(
 				fdata,
-				format,
+				srcFormat,
 				outFmt,
 				version,
 				logger,

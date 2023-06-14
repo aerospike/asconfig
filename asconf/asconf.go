@@ -16,7 +16,6 @@ const (
 	Invalid  Format = ""
 	YAML     Format = "yaml"
 	AsConfig Format = "asconfig"
-	JSON     Format = "json"
 )
 
 var (
@@ -42,9 +41,9 @@ type asconf struct {
 	aerospikeVersion    string
 }
 
-func NewAsconf(source []byte, srcFmt, outFmt Format, aerospikeVersion string, logger *logrus.Logger, managementLibLogger logr.Logger) (ac *asconf, err error) {
+func NewAsconf(source []byte, srcFmt, outFmt Format, aerospikeVersion string, logger *logrus.Logger, managementLibLogger logr.Logger) (*asconf, error) {
 
-	ac = &asconf{
+	ac := &asconf{
 		logger:              logger,
 		managementLibLogger: managementLibLogger,
 		srcFmt:              srcFmt,
@@ -53,13 +52,10 @@ func NewAsconf(source []byte, srcFmt, outFmt Format, aerospikeVersion string, lo
 		aerospikeVersion:    aerospikeVersion,
 	}
 
-	// sets AsConfig
-	err = ac.load()
-	if err != nil {
-		return
-	}
+	// sets ac.cfg
+	err := ac.load()
 
-	return
+	return ac, err
 }
 
 func (ac *asconf) Validate() error {
@@ -113,9 +109,12 @@ func (ac *asconf) load() (err error) {
 		return err
 	}
 
+	// recreate the management lib config
+	// with a sorted config map so that output
+	// is always in the same order
 	cmap := *ac.cfg.ToMap()
 
-	mapToStats(cmap, []mapping{
+	mutateMap(cmap, []mapping{
 		sortLists,
 	})
 
@@ -168,7 +167,7 @@ func (ac *asconf) loadAsConf() error {
 	// so we modify the map here to match that format
 	cmap := *c.ToMap()
 
-	mapToStats(cmap, []mapping{
+	mutateMap(cmap, []mapping{
 		typedContextsToObject,
 		toPlural,
 	})

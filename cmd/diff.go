@@ -88,10 +88,11 @@ func newDiffCmd() *cobra.Command {
 			}
 
 			// not performing any validation so server version is "" (not needed)
+			// won't be marshaling these configs to text so use Invalid output format
 			conf1, err := asconf.NewAsconf(
 				f1,
 				fmt1,
-				asconf.JSON,
+				asconf.Invalid,
 				"",
 				logger,
 				managementLibLogger,
@@ -103,7 +104,7 @@ func newDiffCmd() *cobra.Command {
 			conf2, err := asconf.NewAsconf(
 				f2,
 				fmt2,
-				asconf.JSON,
+				asconf.Invalid,
 				"",
 				logger,
 				managementLibLogger,

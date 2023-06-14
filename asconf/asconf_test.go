@@ -1,3 +1,6 @@
+//go:build unit
+// +build unit
+
 package asconf
 
 import (
@@ -5,7 +8,6 @@ import (
 	"reflect"
 	"testing"
 
-	lib "github.com/aerospike/aerospike-management-lib"
 	"github.com/aerospike/aerospike-management-lib/asconfig"
 	"github.com/go-logr/logr"
 	"github.com/sirupsen/logrus"
@@ -252,7 +254,7 @@ func Test_asconf_GetIntermediateConfig(t *testing.T) {
 			name: "return flat conf",
 			fields: fields{
 				cfg: &mockCFG{
-					flatConf: &lib.Stats{"ns": 1},
+					flatConf: &configMap{"ns": 1},
 				},
 			},
 			want: map[string]any{"ns": 1},
