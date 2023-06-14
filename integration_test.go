@@ -760,70 +760,39 @@ var diffTests = []diffTest{
 		path1:       filepath.Join(sourcePath, "pmem_cluster_cr.yaml"),
 		path2:       filepath.Join(sourcePath, "ldap_cluster_cr.yaml"),
 		expectError: true,
-		expectedResult: `
-Differences shown from testdata/sources/pmem_cluster_cr.yaml to testdata/sources/ldap_cluster_cr.yaml, '-' are deletions, '+' are additions.
-
-	+: namespaces.{test}.index-type.mounts
-
-	+: namespaces.{test}.index-type.mounts-size-limit
-
-	+: namespaces.{test}.index-type.type
-
-	+: namespaces.{test}.storage-engine.files
-
-	+: namespaces.{test}.storage-engine.filesize
-
+		expectedResult: `Differences shown from testdata/sources/pmem_cluster_cr.yaml to testdata/sources/ldap_cluster_cr.yaml, '<' are from file1, '>' are from file2.
+<: namespaces.{test}.index-type.mounts
+<: namespaces.{test}.index-type.mounts-size-limit
+<: namespaces.{test}.index-type.type
+<: namespaces.{test}.storage-engine.files
+<: namespaces.{test}.storage-engine.filesize
 namespaces.{test}.storage-engine.type:
-	-: pmem
-	+: memory
-
-	+: network.fabric.port
-
-	-: network.fabric.tls-name
-
-	-: network.fabric.tls-port
-
-	+: network.heartbeat.port
-
-	-: network.heartbeat.tls-name
-
-	-: network.heartbeat.tls-port
-
-	+: network.service.port
-
-	-: network.service.tls-authenticate-client
-
-	-: network.service.tls-name
-
-	-: network.service.tls-port
-
-	-: network.tls.{aerospike-a-0.test-runner}.ca-file
-
-	-: network.tls.{aerospike-a-0.test-runner}.cert-file
-
-	-: network.tls.{aerospike-a-0.test-runner}.key-file
-
-	-: network.tls.{aerospike-a-0.test-runner}.name
-
-	+: security
-
-	-: security.ldap.disable-tls
-
-	-: security.ldap.polling-period
-
-	-: security.ldap.query-base-dn
-
-	-: security.ldap.query-user-dn
-
-	-: security.ldap.query-user-password-file
-
-	-: security.ldap.role-query-patterns
-
-	-: security.ldap.role-query-search-ou
-
-	-: security.ldap.server
-
-	-: security.ldap.user-dn-pattern
+	<: pmem
+	>: memory
+<: network.fabric.port
+>: network.fabric.tls-name
+>: network.fabric.tls-port
+<: network.heartbeat.port
+>: network.heartbeat.tls-name
+>: network.heartbeat.tls-port
+<: network.service.port
+>: network.service.tls-authenticate-client
+>: network.service.tls-name
+>: network.service.tls-port
+>: network.tls.{aerospike-a-0.test-runner}.ca-file
+>: network.tls.{aerospike-a-0.test-runner}.cert-file
+>: network.tls.{aerospike-a-0.test-runner}.key-file
+>: network.tls.{aerospike-a-0.test-runner}.name
+<: security
+>: security.ldap.disable-tls
+>: security.ldap.polling-period
+>: security.ldap.query-base-dn
+>: security.ldap.query-user-dn
+>: security.ldap.query-user-password-file
+>: security.ldap.role-query-patterns
+>: security.ldap.role-query-search-ou
+>: security.ldap.server
+>: security.ldap.user-dn-pattern
 
 `,
 	},

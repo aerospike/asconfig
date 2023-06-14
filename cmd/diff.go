@@ -17,10 +17,10 @@ var (
 )
 
 func init() {
-	rootCmd.AddCommand(diffCommand)
+	rootCmd.AddCommand(diffCmd)
 }
 
-var diffCommand = newDiffCmd()
+var diffCmd = newDiffCmd()
 
 func newDiffCmd() *cobra.Command {
 	res := &cobra.Command{
@@ -30,7 +30,7 @@ func newDiffCmd() *cobra.Command {
 				It is used on two files of the same format from any format
 				supported by the asconfig tool, e.g. yaml or Aerospike config.
 				Schema validation is not performed on either file. The file names must end with
-				extensions signifying their formats, e.g. .conf or .yaml.`,
+				extensions signifying their formats, e.g. .conf or .yaml, or --format must be used.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger.Debug("Running diff command")
 
@@ -123,7 +123,7 @@ func newDiffCmd() *cobra.Command {
 			)
 
 			if len(diffs) > 0 {
-				fmt.Printf("\nDifferences shown from %s to %s, '-' are deletions, '+' are additions.\n", path1, path2)
+				fmt.Printf("Differences shown from %s to %s, '<' are from file1, '>' are from file2.\n", path1, path2)
 				fmt.Println(strings.Join(diffs, ""))
 				cmd.SilenceUsage = true
 				cmd.SilenceErrors = true
@@ -168,18 +168,18 @@ func diffFlatMaps(m1 map[string]any, m2 map[string]any) []string {
 
 		v1, ok := m1[k]
 		if !ok {
-			res = append(res, fmt.Sprintf("\n\t-: %s\n", k))
+			res = append(res, fmt.Sprintf(">: %s\n", k))
 			continue
 		}
 
 		v2, ok := m2[k]
 		if !ok {
-			res = append(res, fmt.Sprintf("\n\t+: %s\n", k))
+			res = append(res, fmt.Sprintf("<: %s\n", k))
 			continue
 		}
 
 		if !reflect.DeepEqual(v1, v2) {
-			res = append(res, fmt.Sprintf("\n%s:\n\t-: %v\n\t+: %v\n", k, v1, v2))
+			res = append(res, fmt.Sprintf("%s:\n\t<: %v\n\t>: %v\n", k, v1, v2))
 		}
 	}
 

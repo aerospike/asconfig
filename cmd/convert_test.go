@@ -63,8 +63,7 @@ var preTestsConvert = []preTestConvert{
 }
 
 func TestPreRunConvert(t *testing.T) {
-	cmd := newConvertCmd()
-	rootCmd.AddCommand(cmd)
+	cmd := convertCmd
 
 	for _, test := range preTestsConvert {
 		cmd.ParseFlags(test.flags)

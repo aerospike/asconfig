@@ -36,21 +36,21 @@ var convertCmd = newConvertCmd()
 func newConvertCmd() *cobra.Command {
 	res := &cobra.Command{
 		Use:   "convert [flags] <path/to/config.yaml>",
-		Short: "Convert yaml to Aerospike config format.",
+		Short: "Convert between yaml and Aerospike config format.",
 		Long: `Convert is used to convert between yaml and aerospike configuration
 				files. Input files are converted to their opposite format, yaml -> conf, conf -> yaml.
 				Specifying the server version that will use the aerospike.conf is required.
 				Usage examples...
 				convert local file "aerospike.yaml" to aerospike config format for version 6.2.0 and
 				write it to local file "aerospike.conf."
-				EX: asconfig convert --aerospike-version "6.2.0" aerospike.yaml --output aerospike.conf
+				Ex: asconfig convert --aerospike-version "6.2.0" aerospike.yaml --output aerospike.conf
 				Short form flags and source file only conversions are also supported.
 				In this case, -a is the server version and using only a source file means
 				the result will be written to stdout.
-				EX: asconfig convert -a "6.2.0" aerospike.yaml
+				Ex: asconfig convert -a "6.2.0" aerospike.yaml
 				Normally the file format is inferred from file extensions ".yaml" ".conf" etc.
 				Source format can be forced with the --format flag.
-				EX: asconfig convert -a "6.2.0" --format yaml example_file`,
+				Ex: asconfig convert -a "6.2.0" --format yaml example_file`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger.Debug("Running convert command")
 
@@ -102,6 +102,8 @@ func newConvertCmd() *cobra.Command {
 				outFmt = asconf.YAML
 			case asconf.YAML:
 				outFmt = asconf.AsConfig
+			default:
+				return fmt.Errorf("%w: %s", errInvalidFormat, srcFormat)
 			}
 
 			conf, err := asconf.NewAsconf(

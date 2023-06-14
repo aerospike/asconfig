@@ -1,6 +1,3 @@
-//go:build unit
-// +build unit
-
 package cmd
 
 import (
@@ -62,8 +59,7 @@ var testArgs = []runTestDiff{
 }
 
 func TestRunEDiff(t *testing.T) {
-	cmd := newDiffCmd()
-	rootCmd.AddCommand(cmd)
+	cmd := diffCmd
 
 	for i, test := range testArgs {
 		cmd.ParseFlags(test.flags)
