@@ -89,6 +89,7 @@ func newDiffCmd() *cobra.Command {
 
 			// not performing any validation so server version is "" (not needed)
 			// won't be marshaling these configs to text so use Invalid output format
+			// TODO decouple output format from asconf, probably pass it as an arg to marshal text
 			conf1, err := asconf.NewAsconf(
 				f1,
 				fmt1,

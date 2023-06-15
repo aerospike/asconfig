@@ -72,40 +72,42 @@ func mutateMap(in configMap, funcs []mapping) {
 	}
 }
 
-// sortLists sorts slices of config sections by the "name" or "type"
-// key that the management lib adds to config list items
-// Ex config:
-// namespace ns2 {}
-// namespace ns1 {}
-// ->
-// namespace ns1 {}
-// namespace ns2 {}
-//
-// Ex matching configMap
-//
-//	configMap{
-//		"namespace": []configMap{
-//			configMap{
-//				"name": "ns2",
-//			},
-//			configMap{
-//				"name": "ns1",
-//			},
-//		}
-//	}
-//
-// ->
-//
-//	configMap{
-//		"namespace": []configMap{
-//			configMap{
-//				"name": "ns1",
-//			},
-//			configMap{
-//				"name": "ns2",
-//			},
-//		}
-//	}
+/*
+sortLists sorts slices of config sections by the "name" or "type"
+key that the management lib adds to config list items
+Ex config:
+namespace ns2 {}
+namespace ns1 {}
+->
+namespace ns1 {}
+namespace ns2 {}
+
+Ex matching configMap
+
+	configMap{
+		"namespace": []configMap{
+			configMap{
+				"name": "ns2",
+			},
+			configMap{
+				"name": "ns1",
+			},
+		}
+	}
+
+->
+
+	configMap{
+		"namespace": []configMap{
+			configMap{
+				"name": "ns1",
+			},
+			configMap{
+				"name": "ns2",
+			},
+		}
+	}
+*/
 func sortLists(k string, v any, m configMap) {
 	if v, ok := v.([]configMap); ok {
 		sort.Slice(v, func(i int, j int) bool {
@@ -149,21 +151,23 @@ func sortLists(k string, v any, m configMap) {
 	}
 }
 
-// typedContextsToObject converts config entries that the management asconf parsers
-// parses as literal strings into the objects that the yaml schemas expect.
-// Ex configMap
-//
-//	configMap{
-//		"storage-engine": "memory"
-//	}
-//
-// ->
-//
-//	configMap{
-//		"storage-engine": configMap{
-//			"type": "memory"
-//		}
-//	}
+/*
+typedContextsToObject converts config entries that the management lib
+parses as literal strings into the objects that the yaml schemas expect.
+Ex configMap
+
+	configMap{
+		"storage-engine": "memory"
+	}
+
+->
+
+	configMap{
+		"storage-engine": configMap{
+			"type": "memory"
+		}
+	}
+*/
 func typedContextsToObject(k string, v any, m configMap) {
 
 	if isTypedContext(k) {
@@ -178,23 +182,25 @@ func typedContextsToObject(k string, v any, m configMap) {
 	}
 }
 
-// toPlural converts the keys that the management lib asconf parser
-// parses as singular, to the plural keys that the yaml schemas expect
-// Ex configMap
-//
-//	configMap{
-//		"namespace": []configMap{
-//			...
-//		}
-//	}
-//
-// ->
-//
-//	configMap{
-//		"namespaces": []configMap{
-//			...
-//		}
-//	}
+/*
+toPlural converts the keys that the management lib asconf parser
+parses as singular, to the plural keys that the yaml schemas expect
+Ex configMap
+
+	configMap{
+		"namespace": []configMap{
+			...
+		}
+	}
+
+->
+
+	configMap{
+		"namespaces": []configMap{
+			...
+		}
+	}
+*/
 func toPlural(k string, v any, m configMap) {
 
 	// convert asconfig fields/contexts that need to be plural

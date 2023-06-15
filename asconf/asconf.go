@@ -36,9 +36,10 @@ type asconf struct {
 	logger              *logrus.Logger
 	managementLibLogger logr.Logger
 	srcFmt              Format
-	outFmt              Format
-	src                 []byte
-	aerospikeVersion    string
+	// TODO decouple output format from asconf, probably pass it as an arg to marshal text
+	outFmt           Format
+	src              []byte
+	aerospikeVersion string
 }
 
 func NewAsconf(source []byte, srcFmt, outFmt Format, aerospikeVersion string, logger *logrus.Logger, managementLibLogger logr.Logger) (*asconf, error) {
