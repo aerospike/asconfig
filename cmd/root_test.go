@@ -4,6 +4,7 @@
 package cmd
 
 import (
+	"aerospike/asconfig/asconf"
 	"errors"
 	"testing"
 )
@@ -30,6 +31,20 @@ var preTestsRoot = []preTestRoot{
 		arguments: []string{},
 		expectedErrors: []error{
 			errInvalidLogLevel,
+		},
+	},
+	{
+		flags:     []string{"--format", "bad_fmt"},
+		arguments: []string{},
+		expectedErrors: []error{
+			asconf.ErrInvalidFormat,
+		},
+	},
+	{
+		flags:     []string{"-F", "bad_fmt"},
+		arguments: []string{},
+		expectedErrors: []error{
+			asconf.ErrInvalidFormat,
 		},
 	},
 }

@@ -1,0 +1,48 @@
+logging:
+    - any: info
+      name: /dummy/file/path1
+namespaces:
+    - default-ttl: 7200
+      memory-size: 21474836480
+      name: ns2
+      nsup-period: 3600
+      replication-factor: 2
+      storage-engine:
+        data-in-memory: false
+        files:
+            - /dummy/file/path3
+        filesize: 85899345920
+        type: device
+        write-block-size: 8388608
+    - default-ttl: 0
+      memory-size: 42949672960
+      name: ns1
+      replication-factor: 2
+      storage-engine:
+        data-in-memory: false
+        files:
+            - /dummy/file/path2
+        filesize: 128849018880
+        type: device
+        write-block-size: 8388608
+network:
+    fabric:
+        port: 3001
+    heartbeat:
+        interval: 250
+        mesh-seed-address-ports:
+            - test_dns_name:4000
+        mode: mesh
+        port: 3002
+        timeout: 10
+    info:
+        port: 3003
+    service:
+        access-addresses:
+            - 127.0.0.1
+        addresses:
+            - any
+        port: 3000
+service:
+    proto-fd-max: 100000
+    service-threads: 24

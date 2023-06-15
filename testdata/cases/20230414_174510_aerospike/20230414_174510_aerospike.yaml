@@ -1,0 +1,165 @@
+logging:
+    - any: info
+      name: /dummy/file/path2
+namespaces:
+    - default-ttl: 0
+      high-water-memory-pct: 70
+      index-stage-size: 17179869184
+      index-type:
+        mounts:
+            - /dummy/mount/point1
+            - /dummy/mount/point2
+            - /dummy/mount/point3
+            - /dummy/mount/point4
+            - /dummy/mount/point5
+            - /dummy/mount/point6
+            - /dummy/mount/point7
+            - /dummy/mount/point8
+            - /dummy/mount/point9
+            - /dummy/mount/point10
+            - /dummy/mount/point11
+            - /dummy/mount/point12
+            - /dummy/mount/point13
+            - /dummy/mount/point14
+            - /dummy/mount/point15
+            - /dummy/mount/point16
+        mounts-size-limit: 33822867456000
+        type: flash
+      memory-size: 483183820800
+      name: ns1
+      nsup-period: 120
+      partition-tree-sprigs: 16777216
+      replication-factor: 2
+      storage-engine:
+        compression: zstd
+        compression-level: 1
+        data-in-memory: false
+        devices:
+            - /dummy/device1
+            - /dummy/device2
+            - /dummy/device3
+            - /dummy/device4
+            - /dummy/device5
+            - /dummy/device6
+            - /dummy/device7
+            - /dummy/device8
+            - /dummy/device9
+            - /dummy/device10
+            - /dummy/device11
+            - /dummy/device12
+            - /dummy/device13
+            - /dummy/device14
+            - /dummy/device15
+            - /dummy/device16
+            - /dummy/device17
+            - /dummy/device18
+            - /dummy/device19
+            - /dummy/device20
+            - /dummy/device21
+            - /dummy/device22
+            - /dummy/device23
+            - /dummy/device24
+            - /dummy/device25
+            - /dummy/device26
+            - /dummy/device27
+            - /dummy/device28
+            - /dummy/device29
+            - /dummy/device30
+            - /dummy/device31
+            - /dummy/device32
+            - /dummy/device33
+            - /dummy/device34
+            - /dummy/device35
+            - /dummy/device36
+            - /dummy/device37
+            - /dummy/device38
+            - /dummy/device39
+            - /dummy/device40
+            - /dummy/device41
+            - /dummy/device42
+            - /dummy/device43
+            - /dummy/device44
+            - /dummy/device45
+            - /dummy/device46
+            - /dummy/device47
+            - /dummy/device48
+            - /dummy/device49
+            - /dummy/device50
+            - /dummy/device51
+            - /dummy/device52
+            - /dummy/device53
+            - /dummy/device54
+            - /dummy/device55
+            - /dummy/device56
+            - /dummy/device57
+            - /dummy/device58
+            - /dummy/device59
+            - /dummy/device60
+            - /dummy/device61
+            - /dummy/device62
+            - /dummy/device63
+            - /dummy/device64
+            - /dummy/device65
+            - /dummy/device66
+            - /dummy/device67
+            - /dummy/device68
+            - /dummy/device69
+            - /dummy/device70
+            - /dummy/device71
+            - /dummy/device72
+            - /dummy/device73
+            - /dummy/device74
+            - /dummy/device75
+            - /dummy/device76
+            - /dummy/device77
+            - /dummy/device78
+            - /dummy/device79
+            - /dummy/device80
+        scheduler-mode: noop
+        type: device
+        write-block-size: 1048576
+network:
+    fabric:
+        port: 3001
+    heartbeat:
+        addresses:
+            - 127.0.0.1
+        interval: 150
+        mesh-seed-address-ports:
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+        mode: mesh
+        port: 3002
+        protocol: v3
+        timeout: 20
+    info:
+        port: 3003
+    service:
+        addresses:
+            - any
+        port: 3000
+security:
+    log:
+        report-violation: true
+service:
+    group: root
+    min-cluster-size: 17
+    node-id: "4"
+    pidfile: /dummy/file/path1
+    proto-fd-max: 15000
+    user: root

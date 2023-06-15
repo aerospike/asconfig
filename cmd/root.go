@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"aerospike/asconfig/asconf"
 	"aerospike/asconfig/log"
 	"aerospike/asconfig/schema"
 	"fmt"
@@ -47,6 +48,16 @@ func newRootCmd() *cobra.Command {
 
 			logger.SetLevel(lvlCode)
 
+			formatString, err := cmd.Flags().GetString("format")
+			if err != nil {
+				multiErr = fmt.Errorf("%w, %w", multiErr, err)
+			}
+
+			_, err = asconf.ParseFmtString(formatString)
+			if err != nil && formatString != "" {
+				multiErr = fmt.Errorf("%w, %w", multiErr, err)
+			}
+
 			return multiErr
 		},
 	}
@@ -56,6 +67,7 @@ func newRootCmd() *cobra.Command {
 	logLevelUsage := fmt.Sprintf("Set the logging detail level. Valid levels are: %v", log.GetLogLevels())
 	res.PersistentFlags().StringP("log-level", "l", "info", logLevelUsage)
 	res.PersistentFlags().BoolP("version", "V", false, "Version for asconfig.")
+	res.PersistentFlags().StringP("format", "F", "", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
 
 	return res
 }

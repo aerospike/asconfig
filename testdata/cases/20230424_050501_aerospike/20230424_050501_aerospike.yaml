@@ -1,0 +1,87 @@
+logging:
+    - any: info
+      migrate: debug
+      name: /dummy/file/path5
+namespaces:
+    - default-ttl: 1296000
+      enable-xdr: true
+      high-water-disk-pct: 60
+      high-water-memory-pct: 70
+      memory-size: 214748364800
+      name: ns1
+      nsup-period: 120
+      replication-factor: 2
+      stop-writes-pct: 90
+      storage-engine:
+        data-in-memory: true
+        defrag-lwm-pct: 50
+        defrag-startup-minimum: 10
+        files:
+            - /dummy/file/path6
+        filesize: 858993459200
+        type: device
+        write-block-size: 131072
+      strong-consistency: true
+      strong-consistency-allow-expunge: true
+      xdr-remote-datacenters:
+        - dc1
+        - dc2
+network:
+    fabric:
+        tls-addresses:
+            - 127.0.0.1
+        tls-name: tls1
+        tls-port: 3011
+    heartbeat:
+        addresses:
+            - 127.0.0.1
+        interval: 150
+        mesh-seed-address-ports:
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+        mode: mesh
+        port: 3002
+        timeout: 10
+    info:
+        port: 3003
+    service:
+        tls-addresses:
+            - 127.0.0.1
+        tls-authenticate-client: "false"
+        tls-name: tls1
+        tls-port: 4333
+    tls:
+        - ca-path: /path/to/ca
+          cert-file: /x/aerospike/x509_certificates/dummy_cert
+          key-file: /x/aerospike/x509_certificates/dummy_key
+          name: tls_cluster_name1
+security:
+    enable-security: true
+service:
+    cluster-name: the_cluster_name
+    feature-key-file: /etc/aerospike/features.conf
+    log-local-time: true
+    node-id: 43578c640ba6722e
+    paxos-single-replica-limit: 1
+    proto-fd-max: 90000
+xdr:
+    datacenters:
+        - dc-type: http
+          http-urls:
+            - http://test-dc-url
+            - http://test-dc-url
+            - http://test-dc-url
+          http-version: v1
+          name: dc4
+        - dc-security-config-file: /dummy/file/path7
+          name: dc1
+          tls-name: tls1
+          tls-nodes:
+            - 127.0.0.1+tls-name+4000
+            - 127.0.0.1+tls-name+4000
+            - 127.0.0.1+tls-name+4000
+    enable-change-notification: true
+    enable-xdr: true
+    forward-xdr-writes: true
+    xdr-digestlog-path: /var/lib/aerospike/xdr/digestlog 107374182400

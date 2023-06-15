@@ -9,7 +9,7 @@ import (
 
 // this file is copied from the aerospike kubernetes operator
 
-//go:embed json
+//go:embed schemas/json/aerospike
 var schemas embed.FS
 
 type SchemaMap map[string]string

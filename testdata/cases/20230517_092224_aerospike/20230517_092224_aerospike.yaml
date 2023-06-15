@@ -1,0 +1,47 @@
+logging:
+    - any: info
+      migrate: debug
+      name: /dummy/file/path2
+namespaces:
+    - default-ttl: 0
+      high-water-disk-pct: 60
+      high-water-memory-pct: 80
+      memory-size: 36507222016
+      name: ns1
+      replication-factor: 3
+      stop-writes-pct: 80
+      storage-engine:
+        devices:
+            - /dummy/device1
+        type: device
+network:
+    fabric:
+        port: 3001
+    heartbeat:
+        interval: 250
+        mesh-seed-address-ports:
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+        mode: mesh
+        port: 3002
+        timeout: 100
+    info:
+        port: 3003
+    service:
+        addresses:
+            - any
+        port: 3000
+service:
+    group: root
+    pidfile: /dummy/file/path1
+    proto-fd-max: 15000
+    service-threads: 12
+    user: root

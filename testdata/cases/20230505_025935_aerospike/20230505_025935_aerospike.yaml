@@ -1,0 +1,524 @@
+logging:
+    - any: info
+      name: console
+    - any: info
+      name: /dummy/file/path1
+      scan: warning
+namespaces:
+    - conflict-resolve-writes: true
+      default-ttl: 0
+      index-type:
+        type: shmem
+      memory-size: 85899345920
+      migrate-sleep: 0
+      name: ns9
+      nsup-period: 15
+      rack-id: 1
+      replication-factor: 2
+      storage-engine:
+        compression: zstd
+        compression-level: 1
+        devices:
+            - /dummy/device10
+        encryption: aes-256
+        encryption-key-file: /x/aerospike/x509_certificates/dummy_key
+        serialize-tomb-raider: true
+        type: device
+        write-block-size: 1048576
+      strong-consistency: true
+    - conflict-resolve-writes: true
+      default-ttl: 0
+      index-type:
+        type: shmem
+      memory-size: 85899345920
+      migrate-sleep: 0
+      name: ns8
+      nsup-period: 15
+      rack-id: 1
+      replication-factor: 2
+      storage-engine:
+        compression: zstd
+        compression-level: 1
+        devices:
+            - /dummy/device9
+        encryption: aes-256
+        encryption-key-file: /x/aerospike/x509_certificates/dummy_key
+        serialize-tomb-raider: true
+        type: device
+        write-block-size: 1048576
+      strong-consistency: true
+    - conflict-resolve-writes: true
+      default-ttl: 0
+      index-type:
+        type: shmem
+      memory-size: 85899345920
+      migrate-sleep: 0
+      name: ns7
+      nsup-period: 15
+      rack-id: 1
+      replication-factor: 2
+      storage-engine:
+        compression: zstd
+        compression-level: 1
+        devices:
+            - /dummy/device8
+        encryption: aes-256
+        encryption-key-file: /x/aerospike/x509_certificates/dummy_key
+        serialize-tomb-raider: true
+        type: device
+        write-block-size: 1048576
+      strong-consistency: true
+    - conflict-resolve-writes: true
+      default-ttl: 0
+      index-type:
+        type: shmem
+      memory-size: 85899345920
+      migrate-sleep: 0
+      name: ns6
+      nsup-period: 15
+      rack-id: 1
+      replication-factor: 2
+      storage-engine:
+        compression: zstd
+        compression-level: 1
+        devices:
+            - /dummy/device7
+        encryption: aes-256
+        encryption-key-file: /x/aerospike/x509_certificates/dummy_key
+        serialize-tomb-raider: true
+        type: device
+        write-block-size: 1048576
+      strong-consistency: true
+    - conflict-resolve-writes: true
+      default-ttl: 0
+      index-type:
+        type: shmem
+      memory-size: 85899345920
+      migrate-sleep: 0
+      name: ns5
+      nsup-period: 15
+      rack-id: 1
+      replication-factor: 2
+      storage-engine:
+        compression: zstd
+        compression-level: 1
+        devices:
+            - /dummy/device5
+            - /dummy/device6
+        encryption: aes-256
+        encryption-key-file: /x/aerospike/x509_certificates/dummy_key
+        serialize-tomb-raider: true
+        type: device
+        write-block-size: 1048576
+      strong-consistency: true
+    - conflict-resolve-writes: true
+      default-ttl: 0
+      index-type:
+        type: shmem
+      memory-size: 85899345920
+      migrate-sleep: 0
+      name: ns4
+      nsup-period: 15
+      rack-id: 1
+      replication-factor: 2
+      storage-engine:
+        compression: zstd
+        compression-level: 1
+        devices:
+            - /dummy/device4
+        encryption: aes-256
+        encryption-key-file: /x/aerospike/x509_certificates/dummy_key
+        serialize-tomb-raider: true
+        type: device
+        write-block-size: 1048576
+      strong-consistency: true
+    - conflict-resolve-writes: true
+      default-ttl: 0
+      index-type:
+        type: shmem
+      memory-size: 1073741824
+      migrate-sleep: 0
+      name: ns3
+      nsup-period: 15
+      rack-id: 1
+      replication-factor: 2
+      storage-engine:
+        compression: zstd
+        compression-level: 1
+        devices:
+            - /dummy/device3
+        encryption: aes-256
+        encryption-key-file: /x/aerospike/x509_certificates/dummy_key
+        serialize-tomb-raider: true
+        type: device
+        write-block-size: 131072
+      strong-consistency: true
+    - conflict-resolve-writes: true
+      default-ttl: 0
+      index-type:
+        type: shmem
+      memory-size: 85899345920
+      migrate-sleep: 0
+      name: ns2
+      nsup-period: 15
+      rack-id: 1
+      replication-factor: 2
+      storage-engine:
+        compression: zstd
+        compression-level: 1
+        devices:
+            - /dummy/device2
+        encryption: aes-256
+        encryption-key-file: /x/aerospike/x509_certificates/dummy_key
+        serialize-tomb-raider: true
+        type: device
+        write-block-size: 131072
+      strong-consistency: true
+    - conflict-resolve-writes: true
+      default-ttl: 0
+      memory-size: 5368709120
+      migrate-sleep: 0
+      name: ns13
+      nsup-period: 15
+      replication-factor: 2
+      storage-engine:
+        type: memory
+    - conflict-resolve-writes: true
+      default-ttl: 0
+      index-type:
+        type: shmem
+      memory-size: 85899345920
+      migrate-sleep: 0
+      name: ns12
+      nsup-period: 15
+      rack-id: 1
+      replication-factor: 2
+      storage-engine:
+        compression: zstd
+        compression-level: 1
+        devices:
+            - /dummy/device13
+        encryption: aes-256
+        encryption-key-file: /x/aerospike/x509_certificates/dummy_key
+        serialize-tomb-raider: true
+        type: device
+        write-block-size: 1048576
+      strong-consistency: true
+    - conflict-resolve-writes: true
+      default-ttl: 0
+      index-type:
+        type: shmem
+      memory-size: 85899345920
+      migrate-sleep: 0
+      name: ns11
+      nsup-period: 15
+      rack-id: 1
+      replication-factor: 2
+      storage-engine:
+        compression: zstd
+        compression-level: 1
+        devices:
+            - /dummy/device12
+        encryption: aes-256
+        encryption-key-file: /x/aerospike/x509_certificates/dummy_key
+        serialize-tomb-raider: true
+        type: device
+        write-block-size: 1048576
+      strong-consistency: true
+    - conflict-resolve-writes: true
+      default-ttl: 0
+      index-type:
+        type: shmem
+      memory-size: 85899345920
+      migrate-sleep: 0
+      name: ns10
+      nsup-period: 15
+      rack-id: 1
+      replication-factor: 2
+      storage-engine:
+        compression: zstd
+        compression-level: 1
+        devices:
+            - /dummy/device11
+        encryption: aes-256
+        encryption-key-file: /x/aerospike/x509_certificates/dummy_key
+        serialize-tomb-raider: true
+        type: device
+        write-block-size: 1048576
+      strong-consistency: true
+    - conflict-resolve-writes: true
+      default-ttl: 0
+      index-type:
+        type: shmem
+      memory-size: 85899345920
+      migrate-sleep: 0
+      name: ns1
+      nsup-period: 900
+      rack-id: 1
+      replication-factor: 2
+      sets:
+        - enable-index: true
+          name: set1
+      storage-engine:
+        compression: zstd
+        compression-level: 1
+        devices:
+            - /dummy/device1
+        encryption: aes-256
+        encryption-key-file: /x/aerospike/x509_certificates/dummy_key
+        serialize-tomb-raider: true
+        type: device
+        write-block-size: 131072
+      strong-consistency: true
+network:
+    fabric:
+        tls-addresses:
+            - 127.0.0.1
+        tls-name: tls1
+        tls-port: 4001
+    heartbeat:
+        interval: 250
+        mode: mesh
+        timeout: 20
+        tls-addresses:
+            - 127.0.0.1
+        tls-mesh-seed-address-ports:
+            - test_dns_name:4000
+        tls-name: tls1
+        tls-port: 4002
+    info:
+        port: 4003
+    service:
+        tls-access-addresses:
+            - 127.0.0.1
+        tls-access-port: 4000
+        tls-alternate-access-addresses:
+            - 127.0.0.1
+        tls-alternate-access-port: 4000
+        tls-authenticate-client: any
+        tls-name: tls1
+        tls-port: 4000
+    tls:
+        - ca-file: /x/aerospike/x509_certificates/dummy_ca
+          cert-file: /x/aerospike/x509_certificates/dummy_cert
+          cipher-suite: ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-ECDSA-AES256-SHA384:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256
+          key-file: /x/aerospike/x509_certificates/dummy_key
+          name: tls_cluster_name1
+security: {}
+service:
+    cluster-name: the_cluster_name
+    feature-key-file: /etc/aerospike/features.conf
+    migrate-fill-delay: 0
+    migrate-max-num-incoming: 11
+    migrate-threads: 3
+    node-id: 1a0
+    paxos-single-replica-limit: 1
+    proto-fd-idle-ms: 0
+    proto-fd-max: 320000
+    scan-threads-limit: 50
+    service-threads: 200
+xdr:
+    dcs:
+        - connector: true
+          max-used-service-threads: 20
+          name: dc6
+          namespaces:
+            - bin-policy: only-changed
+              enable-compression: true
+              forward: true
+              max-throughput: 5000
+              name: ns28
+              ship-bin-luts: true
+              ship-nsup-deletes: false
+              ship-only-specified-sets: true
+              ship-sets:
+                - set23
+            - bin-policy: only-changed
+              enable-compression: true
+              forward: true
+              max-throughput: 5000
+              name: ns27
+              ship-bin-luts: true
+              ship-nsup-deletes: false
+              ship-only-specified-sets: true
+              ship-sets:
+                - set21
+                - set22
+          node-address-ports:
+            - test_dns_name:4000:127.0.0.1
+          tls-name: tls1
+        - connector: true
+          name: dc5
+          namespaces:
+            - bin-policy: only-changed
+              enable-compression: true
+              forward: false
+              max-throughput: 5000
+              name: ns26
+              ship-bin-luts: true
+              ship-nsup-deletes: false
+              ship-only-specified-sets: true
+              ship-sets:
+                - set20
+              write-policy: update
+            - bin-policy: only-changed
+              enable-compression: true
+              forward: false
+              max-throughput: 5000
+              name: ns25
+              ship-bin-luts: true
+              ship-nsup-deletes: false
+              ship-only-specified-sets: true
+              ship-sets:
+                - set18
+                - set19
+              write-policy: update
+          node-address-ports:
+            - test_dns_name:4000
+        - connector: true
+          name: dc4
+          namespaces:
+            - bin-policy: only-changed
+              enable-compression: true
+              forward: false
+              max-throughput: 5000
+              name: ns24
+              ship-bin-luts: true
+              ship-nsup-deletes: false
+              ship-only-specified-sets: true
+              ship-sets:
+                - set17
+              write-policy: update
+            - bin-policy: only-changed
+              enable-compression: true
+              forward: false
+              max-throughput: 5000
+              name: ns23
+              ship-bin-luts: true
+              ship-nsup-deletes: false
+              ship-only-specified-sets: true
+              ship-sets:
+                - set15
+                - set16
+              write-policy: update
+          node-address-ports:
+            - test_dns_name:4000
+        - connector: true
+          name: dc3
+          namespaces:
+            - bin-policy: only-changed
+              enable-compression: true
+              forward: false
+              max-throughput: 5000
+              name: ns22
+              ship-bin-luts: true
+              ship-nsup-deletes: false
+              ship-only-specified-sets: true
+              ship-sets:
+                - set14
+              write-policy: update
+            - bin-policy: only-changed
+              enable-compression: true
+              forward: false
+              max-throughput: 5000
+              name: ns21
+              ship-bin-luts: true
+              ship-nsup-deletes: false
+              ship-only-specified-sets: true
+              ship-sets:
+                - set12
+                - set13
+              write-policy: update
+          node-address-ports:
+            - test_dns_name:4000
+        - connector: true
+          name: dc2
+          namespaces:
+            - bin-policy: only-changed
+              enable-compression: true
+              forward: false
+              max-throughput: 5000
+              name: ns20
+              ship-bin-luts: true
+              ship-nsup-deletes: false
+              ship-only-specified-sets: true
+              ship-sets:
+                - set11
+              write-policy: update
+            - bin-policy: only-changed
+              enable-compression: true
+              forward: false
+              max-throughput: 5000
+              name: ns19
+              ship-bin-luts: true
+              ship-nsup-deletes: false
+              ship-only-specified-sets: true
+              ship-sets:
+                - set9
+                - set10
+              write-policy: update
+            - bin-policy: only-changed
+              enable-compression: true
+              forward: false
+              max-throughput: 5000
+              name: ns18
+              ship-bin-luts: true
+              ship-nsup-deletes: false
+              ship-only-specified-sets: true
+              ship-sets:
+                - set8
+              write-policy: update
+          node-address-ports:
+            - test_dns_name:4000
+        - connector: true
+          name: dc1
+          namespaces:
+            - bin-policy: only-changed
+              enable-compression: true
+              forward: true
+              max-throughput: 5000
+              name: ns17
+              ship-bin-luts: true
+              ship-nsup-deletes: false
+              ship-only-specified-sets: true
+              ship-sets:
+                - set7
+              write-policy: update
+            - bin-policy: only-changed
+              enable-compression: true
+              forward: false
+              max-throughput: 5000
+              name: ns16
+              ship-bin-luts: true
+              ship-nsup-deletes: false
+              ship-only-specified-sets: true
+              ship-sets:
+                - set6
+              write-policy: update
+            - bin-policy: only-changed
+              enable-compression: true
+              forward: false
+              max-throughput: 5000
+              name: ns15
+              ship-bin-luts: true
+              ship-nsup-deletes: false
+              ship-only-specified-sets: true
+              ship-sets:
+                - set3
+                - set4
+                - set5
+              write-policy: update
+            - bin-policy: only-changed
+              enable-compression: true
+              forward: false
+              max-throughput: 5000
+              name: ns14
+              ship-bin-luts: true
+              ship-nsup-deletes: false
+              ship-only-specified-sets: true
+              ship-sets:
+                - set2
+              write-policy: update
+          node-address-ports:
+            - test_dns_name:4000
+    src-id: 101

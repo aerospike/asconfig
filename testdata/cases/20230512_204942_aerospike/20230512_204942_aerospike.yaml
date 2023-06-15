@@ -1,0 +1,471 @@
+logging:
+    - any: info
+      name: /dummy/file/path3
+namespaces:
+    - default-ttl: 0
+      high-water-disk-pct: 100
+      high-water-memory-pct: 100
+      index-type:
+        mounts:
+            - /dummy/mount/point6
+            - /dummy/mount/point7
+            - /dummy/mount/point8
+            - /dummy/mount/point9
+        mounts-size-limit: 549755813888
+        type: flash
+      memory-size: 53687091200
+      name: ns8
+      nsup-period: 120
+      partition-tree-sprigs: 65536
+      rack-id: 2
+      replication-factor: 2
+      sets:
+        - enable-index: true
+          name: set83
+        - enable-index: true
+          name: set82
+        - enable-index: true
+          name: set81
+        - enable-index: true
+          name: set80
+        - enable-index: true
+          name: set79
+        - enable-index: true
+          name: set78
+        - enable-index: true
+          name: set77
+        - enable-index: true
+          name: set76
+        - enable-index: true
+          name: set75
+        - enable-index: true
+          name: set74
+        - enable-index: true
+          name: set73
+        - enable-index: true
+          name: set72
+        - enable-index: true
+          name: set71
+        - enable-index: true
+          name: set70
+        - enable-index: true
+          name: set69
+        - enable-index: true
+          name: set68
+        - enable-index: true
+          name: set67
+        - enable-index: true
+          name: set66
+        - enable-index: true
+          name: set65
+        - enable-index: true
+          name: set64
+        - enable-index: true
+          name: set63
+        - enable-index: true
+          name: set62
+        - enable-index: true
+          name: set61
+        - enable-index: true
+          name: set60
+        - enable-index: true
+          name: set59
+        - enable-index: true
+          name: set58
+        - enable-index: true
+          name: set57
+        - enable-index: true
+          name: set56
+        - enable-index: true
+          name: set55
+        - enable-index: true
+          name: set54
+        - enable-index: true
+          name: set53
+        - enable-index: true
+          name: set52
+        - enable-index: true
+          name: set51
+        - enable-index: true
+          name: set50
+      storage-engine:
+        cold-start-empty: false
+        compression: zstd
+        compression-level: 1
+        defrag-lwm-pct: 50
+        devices:
+            - /dummy/device42
+            - /dummy/device43
+            - /dummy/device44
+            - /dummy/device45
+            - /dummy/device46
+            - /dummy/device47
+            - /dummy/device48
+            - /dummy/device49
+            - /dummy/device50
+            - /dummy/device51
+            - /dummy/device52
+            - /dummy/device53
+            - /dummy/device54
+            - /dummy/device55
+            - /dummy/device56
+            - /dummy/device57
+            - /dummy/device58
+            - /dummy/device59
+            - /dummy/device60
+            - /dummy/device61
+            - /dummy/device62
+            - /dummy/device63
+        encryption: aes-256
+        encryption-key-file: /x/aerospike/x509_certificates/dummy_key
+        type: device
+        write-block-size: 1048576
+      strong-consistency: true
+    - default-ttl: 0
+      high-water-disk-pct: 100
+      high-water-memory-pct: 100
+      index-type:
+        mounts:
+            - /dummy/mount/point4
+            - /dummy/mount/point5
+        mounts-size-limit: 549755813888
+        type: flash
+      memory-size: 53687091200
+      name: ns7
+      nsup-period: 120
+      partition-tree-sprigs: 65536
+      rack-id: 2
+      replication-factor: 2
+      sets:
+        - enable-index: true
+          name: set9
+        - enable-index: true
+          name: set8
+        - enable-index: true
+          name: set49
+        - enable-index: true
+          name: set48
+        - enable-index: true
+          name: set47
+        - enable-index: true
+          name: set46
+        - enable-index: true
+          name: set45
+        - enable-index: true
+          name: set44
+        - enable-index: true
+          name: set43
+        - enable-index: true
+          name: set42
+        - enable-index: true
+          name: set41
+        - enable-index: true
+          name: set40
+        - enable-index: true
+          name: set39
+        - enable-index: true
+          name: set38
+        - enable-index: true
+          name: set37
+        - enable-index: true
+          name: set36
+        - enable-index: true
+          name: set35
+        - enable-index: true
+          name: set34
+        - enable-index: true
+          name: set33
+        - enable-index: true
+          name: set32
+        - enable-index: true
+          name: set31
+        - enable-index: true
+          name: set30
+        - enable-index: true
+          name: set29
+        - enable-index: true
+          name: set28
+        - enable-index: true
+          name: set27
+        - enable-index: true
+          name: set26
+        - enable-index: true
+          name: set25
+        - enable-index: true
+          name: set24
+        - enable-index: true
+          name: set23
+        - enable-index: true
+          name: set22
+        - enable-index: true
+          name: set21
+        - enable-index: true
+          name: set20
+        - enable-index: true
+          name: set19
+        - enable-index: true
+          name: set18
+        - enable-index: true
+          name: set17
+        - enable-index: true
+          name: set16
+        - enable-index: true
+          name: set15
+        - enable-index: true
+          name: set14
+        - enable-index: true
+          name: set13
+        - enable-index: true
+          name: set12
+        - enable-index: true
+          name: set11
+        - enable-index: true
+          name: set10
+      storage-engine:
+        cold-start-empty: false
+        defrag-lwm-pct: 50
+        devices:
+            - /dummy/device31
+            - /dummy/device32
+            - /dummy/device33
+            - /dummy/device34
+            - /dummy/device35
+            - /dummy/device36
+            - /dummy/device37
+            - /dummy/device38
+            - /dummy/device39
+            - /dummy/device40
+            - /dummy/device41
+        encryption: aes-256
+        encryption-key-file: /x/aerospike/x509_certificates/dummy_key
+        type: device
+        write-block-size: 1048576
+      strong-consistency: true
+    - default-ttl: 0
+      high-water-disk-pct: 100
+      high-water-memory-pct: 100
+      memory-size: 53687091200
+      name: ns6
+      nsup-period: 120
+      rack-id: 2
+      replication-factor: 2
+      sets:
+        - enable-index: true
+          name: set7
+        - enable-index: true
+          name: set6
+        - enable-index: true
+          name: set5
+        - enable-index: true
+          name: set4
+        - enable-index: true
+          name: set3
+        - enable-index: true
+          name: set2
+      storage-engine:
+        cold-start-empty: false
+        defrag-lwm-pct: 50
+        devices:
+            - /dummy/device27
+            - /dummy/device28
+            - /dummy/device29
+            - /dummy/device30
+        encryption: aes-256
+        encryption-key-file: /x/aerospike/x509_certificates/dummy_key
+        type: device
+        write-block-size: 1048576
+      strong-consistency: true
+    - default-ttl: 0
+      high-water-disk-pct: 100
+      high-water-memory-pct: 100
+      index-type:
+        mounts:
+            - /dummy/mount/point1
+            - /dummy/mount/point2
+            - /dummy/mount/point3
+        mounts-size-limit: 2254857830400
+        type: flash
+      memory-size: 161061273600
+      name: ns5
+      nsup-period: 120
+      partition-tree-sprigs: 262144
+      rack-id: 2
+      replication-factor: 2
+      storage-engine:
+        cold-start-empty: false
+        compression: lz4
+        defrag-lwm-pct: 50
+        devices:
+            - /dummy/device1
+            - /dummy/device2
+            - /dummy/device3
+            - /dummy/device4
+            - /dummy/device5
+            - /dummy/device6
+            - /dummy/device7
+            - /dummy/device8
+            - /dummy/device9
+            - /dummy/device10
+            - /dummy/device11
+            - /dummy/device12
+            - /dummy/device13
+            - /dummy/device14
+            - /dummy/device15
+            - /dummy/device16
+            - /dummy/device17
+            - /dummy/device18
+            - /dummy/device19
+            - /dummy/device20
+            - /dummy/device21
+            - /dummy/device22
+            - /dummy/device23
+            - /dummy/device24
+            - /dummy/device25
+            - /dummy/device26
+        encryption: aes-256
+        encryption-key-file: /x/aerospike/x509_certificates/dummy_key
+        type: device
+        write-block-size: 1048576
+      strong-consistency: true
+network:
+    fabric:
+        addresses:
+            - 127.0.0.1
+        tls-addresses:
+            - 127.0.0.1
+        tls-name: tls1
+        tls-port: 3001
+    heartbeat:
+        addresses:
+            - 127.0.0.1
+        interval: 150
+        mode: mesh
+        protocol: v3
+        timeout: 20
+        tls-addresses:
+            - 127.0.0.1
+        tls-mesh-seed-address-ports:
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+        tls-name: tls1
+        tls-port: 3005
+    info:
+        addresses:
+            - 127.0.0.1
+        port: 3003
+    service:
+        addresses:
+            - 127.0.0.1
+        port: 4333
+        tls-addresses:
+            - 127.0.0.1
+        tls-alternate-access-addresses:
+            - 127.0.0.1
+        tls-authenticate-client: "false"
+        tls-name: tls1
+        tls-port: 3000
+    tls:
+        - ca-file: /x/aerospike/x509_certificates/dummy_ca
+          cert-file: /x/aerospike/x509_certificates/dummy_cert
+          cipher-suite: kEECDH+AESGCM+aRSA+TLSv1.2:kEECDH+AESCCM+aRSA+TLSv1.2:kEDH+aRSA+AESGCM+TLSv1.2:kEDH+aRSA+AESCCM+TLSv1.2
+          key-file: /x/aerospike/x509_certificates/dummy_key
+          name: tls_cluster_name1
+          protocols: TLSv1.2
+security:
+    enable-quotas: true
+    ldap:
+        disable-tls: false
+        polling-period: 86400
+        query-base-dn: dc=dc1,dc=dc2,dc=dc3
+        query-user-dn: CN=ldapcn,OU=service,DC=dc1,DC=dc2
+        query-user-password-file: /dummy/pw/file
+        role-query-patterns:
+            - (&(objectClass=group)(member=))
+            - (&(objectClass=group)(member=))
+        role-query-search-ou: false
+        server: ldaps://test.test_server
+        tls-ca-file: /x/aerospike/x509_certificates/dummy_ca
+        user-query-pattern: (&(objectClass=user)(sAMAccountName=${un}))
+    syslog:
+        local: 0
+        report-authentication: true
+        report-sys-admin: true
+        report-user-admin: true
+        report-violation: true
+service:
+    cluster-name: the_cluster_name
+    feature-key-file: /etc/aerospike/features.conf
+    group: root
+    log-local-time: true
+    migrate-fill-delay: 32400
+    node-id: a22
+    paxos-single-replica-limit: 1
+    pidfile: /dummy/file/path1
+    proto-fd-max: 50000
+    scan-threads-limit: 128
+    user: root
+xdr:
+    dcs:
+        - auth-mode: external
+          auth-password-file: /dummy/file/path10
+          auth-user: root
+          name: dc1
+          namespaces:
+            - name: ns4
+              sc-replication-wait-ms: 25
+            - name: ns3
+              sc-replication-wait-ms: 25
+            - name: ns2
+              sc-replication-wait-ms: 25
+            - ignore-sets:
+                - set1
+              name: ns1
+              sc-replication-wait-ms: 25
+          node-address-ports:
+            - test_dns_name:4000:127.0.0.1
+            - test_dns_name:4000:127.0.0.1
+            - test_dns_name:4000:127.0.0.1
+            - test_dns_name:4000:127.0.0.1
+            - test_dns_name:4000:127.0.0.1
+            - test_dns_name:4000:127.0.0.1
+            - test_dns_name:4000:127.0.0.1
+            - test_dns_name:4000:127.0.0.1
+            - test_dns_name:4000:127.0.0.1
+            - test_dns_name:4000:127.0.0.1
+            - test_dns_name:4000:127.0.0.1
+            - test_dns_name:4000:127.0.0.1
+            - test_dns_name:4000:127.0.0.1
+            - test_dns_name:4000:127.0.0.1
+            - test_dns_name:4000:127.0.0.1
+            - test_dns_name:4000:127.0.0.1
+            - test_dns_name:4000:127.0.0.1
+            - test_dns_name:4000:127.0.0.1
+            - test_dns_name:4000:127.0.0.1
+            - test_dns_name:4000:127.0.0.1
+            - test_dns_name:4000:127.0.0.1
+            - test_dns_name:4000:127.0.0.1
+            - test_dns_name:4000:127.0.0.1
+          period-ms: 25
+          tls-name: tls1
+          use-alternate-access-address: true

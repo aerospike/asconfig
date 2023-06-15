@@ -1,0 +1,129 @@
+logging:
+    - any: critical
+      name: /dummy/file/path3
+      security: info
+    - any: info
+      name: /dummy/file/path2
+      security: critical
+namespaces:
+    - conflict-resolution-policy: last-update-time
+      default-ttl: 0
+      high-water-memory-pct: 95
+      memory-size: 32212254720
+      name: ns2
+      nsup-period: 120
+      partition-tree-sprigs: 4096
+      rack-id: 42
+      read-consistency-level-override: all
+      replication-factor: 2
+      stop-writes-pct: 90
+      storage-engine:
+        type: memory
+    - conflict-resolution-policy: last-update-time
+      default-ttl: 0
+      high-water-memory-pct: 95
+      memory-size: 75161927680
+      name: ns1
+      nsup-period: 120
+      partition-tree-sprigs: 4096
+      rack-id: 42
+      read-consistency-level-override: all
+      replication-factor: 2
+      stop-writes-pct: 90
+      storage-engine:
+        type: memory
+network:
+    fabric:
+        tls-addresses:
+            - 127.0.0.1
+        tls-name: tls1
+        tls-port: 3011
+    heartbeat:
+        interval: 150
+        mode: mesh
+        timeout: 20
+        tls-addresses:
+            - 127.0.0.1
+        tls-mesh-seed-address-ports:
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+        tls-name: tls1
+        tls-port: 3012
+    info:
+        addresses:
+            - 127.0.0.1
+        port: 3003
+    service:
+        addresses:
+            - 127.0.0.1
+        port: 3000
+        tls-addresses:
+            - 127.0.0.1
+        tls-authenticate-client: "false"
+        tls-name: tls1
+        tls-port: 4333
+    tls:
+        - ca-file: /x/aerospike/x509_certificates/dummy_ca
+          cert-file: /x/aerospike/x509_certificates/dummy_cert
+          cipher-suite: ALL:!COMPLEMENTOFDEFAULT:!eNULL
+          key-file: /x/aerospike/x509_certificates/dummy_key
+          name: tls_cluster_name4
+        - ca-file: /x/aerospike/x509_certificates/dummy_ca
+          cert-file: /x/aerospike/x509_certificates/dummy_cert
+          cipher-suite: ALL:!COMPLEMENTOFDEFAULT:!eNULL
+          key-file: /x/aerospike/x509_certificates/dummy_key
+          name: tls_cluster_name3
+        - ca-file: /x/aerospike/x509_certificates/dummy_ca
+          cipher-suite: ALL:!COMPLEMENTOFDEFAULT:!eNULL
+          name: tls_cluster_name2
+        - ca-file: /x/aerospike/x509_certificates/dummy_ca
+          cipher-suite: ALL:!COMPLEMENTOFDEFAULT:!eNULL
+          name: tls_cluster_name1
+security:
+    enable-ldap: true
+    enable-security: true
+    ldap:
+        disable-tls: false
+        polling-period: 20
+        query-base-dn: dc=dc1,dc=dc2,dc=dc3
+        query-user-dn: CN=ldapcn,OU=service,DC=dc1,DC=dc2
+        query-user-password-file: /dummy/pw/file
+        role-query-patterns:
+            - (&(objectClass=group)(member=))
+            - (&(objectClass=group)(member=))
+            - (&(objectClass=group)(member=))
+        role-query-search-ou: true
+        server: ldaps://test.test_server
+        tls-ca-file: /x/aerospike/x509_certificates/dummy_ca
+        user-query-pattern: (sAMAccountName=${un})
+    log:
+        report-authentication: false
+        report-sys-admin: true
+        report-user-admin: true
+        report-violation: true
+service:
+    cluster-name: the_cluster_name
+    group: root
+    migrate-fill-delay: 0
+    node-id: 2A061534B4E6C9
+    paxos-single-replica-limit: 1
+    pidfile: /dummy/file/path1
+    proto-fd-max: 25000
+    transaction-max-ms: 5000
+    user: root

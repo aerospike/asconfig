@@ -1,0 +1,29 @@
+logging:
+    - any: info
+      name: console
+namespaces:
+    - index-type:
+        mounts:
+            - /test/dev/xvdf-index
+        mounts-size-limit: 4294967296
+        type: flash
+      memory-size: 3000000000
+      name: test
+      replication-factor: 2
+      storage-engine:
+        devices:
+            - /test/dev/xvdf
+        type: device
+network:
+    fabric:
+        port: 3001
+    heartbeat:
+        mode: mesh
+        port: 3002
+    service:
+        port: 3000
+security: {}
+service:
+    feature-key-files:
+      - /etc/aerospike/secret/features.conf
+      - /etc/aerospike/secret/features.conf

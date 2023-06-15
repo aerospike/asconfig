@@ -1,0 +1,228 @@
+logging:
+    - any: info
+      name: /dummy/file/path2
+namespaces:
+    - allow-ttl-without-nsup: false
+      background-query-max-rps: 100000
+      default-ttl: 2592000
+      high-water-disk-pct: 75
+      high-water-memory-pct: 85
+      memory-size: 21474836480
+      name: ns6
+      nsup-period: 300
+      replication-factor: 2
+      stop-writes-pct: 95
+      storage-engine:
+        defrag-lwm-pct: 50
+        devices:
+            - /dummy/device7
+        max-write-cache: 134217728
+        read-page-cache: true
+        type: device
+        write-block-size: 524288
+    - allow-ttl-without-nsup: false
+      background-query-max-rps: 100000
+      default-ttl: 2592000
+      high-water-disk-pct: 65
+      high-water-memory-pct: 65
+      memory-size: 5368709120
+      name: ns5
+      nsup-period: 1800
+      replication-factor: 2
+      stop-writes-pct: 90
+      storage-engine:
+        defrag-lwm-pct: 60
+        devices:
+            - /dummy/device6
+        max-write-cache: 134217728
+        read-page-cache: true
+        type: device
+        write-block-size: 1048576
+    - allow-ttl-without-nsup: false
+      background-query-max-rps: 100000
+      default-ttl: 2592000
+      high-water-disk-pct: 75
+      high-water-memory-pct: 85
+      memory-size: 204010946560
+      name: ns4
+      nsup-period: 300
+      replication-factor: 2
+      stop-writes-pct: 95
+      storage-engine:
+        defrag-lwm-pct: 50
+        devices:
+            - /dummy/device3
+            - /dummy/device4
+            - /dummy/device5
+        max-write-cache: 134217728
+        read-page-cache: true
+        type: device
+        write-block-size: 1048576
+    - allow-ttl-without-nsup: false
+      background-query-max-rps: 100000
+      default-ttl: 2592000
+      high-water-disk-pct: 50
+      high-water-memory-pct: 60
+      memory-size: 5368709120
+      name: ns3
+      nsup-period: 120
+      replication-factor: 2
+      stop-writes-pct: 90
+    - allow-ttl-without-nsup: false
+      background-query-max-rps: 100000
+      default-ttl: 2592000
+      high-water-disk-pct: 50
+      high-water-memory-pct: 60
+      memory-size: 10737418240
+      name: ns2
+      nsup-period: 120
+      replication-factor: 2
+      stop-writes-pct: 90
+      storage-engine:
+        defrag-lwm-pct: 70
+        devices:
+            - /dummy/device1
+            - /dummy/device2
+        max-write-cache: 134217728
+        read-page-cache: true
+        type: device
+        write-block-size: 1048576
+    - allow-ttl-without-nsup: false
+      background-query-max-rps: 100000
+      default-ttl: 2592000
+      high-water-disk-pct: 50
+      high-water-memory-pct: 60
+      memory-size: 4294967296
+      name: ns1
+      nsup-period: 120
+      replication-factor: 2
+      stop-writes-pct: 90
+network:
+    fabric:
+        addresses:
+            - any
+        port: 3001
+    heartbeat:
+        interval: 150
+        mesh-seed-address-ports:
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+        mode: mesh
+        port: 3002
+        timeout: 20
+    info:
+        addresses:
+            - any
+        port: 3003
+    service:
+        addresses:
+            - any
+        port: 3000
+service:
+    batch-max-buffers-per-queue: 512
+    cluster-name: the_cluster_name
+    feature-key-file: /etc/aerospike/features.conf
+    group: root
+    migrate-max-num-incoming: 5
+    migrate-threads: 1
+    proto-fd-idle-ms: 70000
+    proto-fd-max: 190000
+    user: root
+xdr:
+    dcs:
+        - max-used-service-threads: 8
+          name: dc3
+          namespaces:
+            - enable-compression: true
+              name: ns18
+              ship-only-specified-sets: true
+              ship-sets:
+                - set16
+              transaction-queue-limit: 1048576
+            - enable-compression: true
+              name: ns17
+              transaction-queue-limit: 1048576
+            - enable-compression: true
+              name: ns16
+              transaction-queue-limit: 1048576
+            - enable-compression: true
+              name: ns15
+              ship-only-specified-sets: true
+              ship-sets:
+                - set12
+                - set13
+                - set14
+                - set15
+              transaction-queue-limit: 1048576
+          node-address-ports:
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+        - max-used-service-threads: 8
+          name: dc2
+          namespaces:
+            - enable-compression: true
+              name: ns14
+              ship-only-specified-sets: true
+              ship-sets:
+                - set11
+              transaction-queue-limit: 1048576
+            - enable-compression: true
+              name: ns13
+              transaction-queue-limit: 1048576
+            - enable-compression: true
+              name: ns12
+              transaction-queue-limit: 1048576
+            - enable-compression: true
+              name: ns11
+              ship-only-specified-sets: true
+              ship-sets:
+                - set6
+                - set7
+                - set8
+                - set9
+                - set10
+              transaction-queue-limit: 1048576
+          node-address-ports:
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+        - max-used-service-threads: 8
+          name: dc1
+          namespaces:
+            - enable-compression: true
+              name: ns9
+              transaction-queue-limit: 1048576
+            - enable-compression: true
+              name: ns8
+              transaction-queue-limit: 1048576
+            - enable-compression: true
+              name: ns7
+              ship-only-specified-sets: true
+              ship-sets:
+                - set1
+                - set2
+                - set3
+                - set4
+              transaction-queue-limit: 1048576
+            - enable-compression: true
+              name: ns10
+              ship-only-specified-sets: true
+              ship-sets:
+                - set5
+              transaction-queue-limit: 1048576
+          node-address-ports:
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000

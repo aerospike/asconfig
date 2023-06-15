@@ -1,0 +1,113 @@
+logging:
+    - any: info
+      name: /dummy/file/path2
+namespaces:
+    - default-ttl: 7776000
+      high-water-disk-pct: 50
+      high-water-memory-pct: 80
+      index-type:
+        mounts:
+            - /dummy/mount/point3
+            - /dummy/mount/point4
+        mounts-high-water-pct: 50
+        mounts-size-limit: 64424509440
+        type: flash
+      memory-size: 209715200
+      migrate-sleep: 0
+      name: ns3
+      nsup-period: 120
+      partition-tree-sprigs: 8192
+      prefer-uniform-balance: true
+      rack-id: 1
+      replication-factor: 2
+      storage-engine:
+        devices:
+            - /dummy/device9
+            - /dummy/device10
+        max-write-cache: 268435456
+        post-write-queue: 256
+        read-page-cache: true
+        type: device
+        write-block-size: 131072
+      write-commit-level-override: master
+    - default-ttl: 2592000
+      high-water-disk-pct: 50
+      high-water-memory-pct: 80
+      index-type:
+        mounts:
+            - /dummy/mount/point1
+            - /dummy/mount/point2
+        mounts-high-water-pct: 50
+        mounts-size-limit: 535822336000
+        type: flash
+      memory-size: 2147483648
+      name: ns2
+      nsup-period: 120
+      partition-tree-sprigs: 65536
+      prefer-uniform-balance: true
+      rack-id: 1
+      replication-factor: 2
+      storage-engine:
+        devices:
+            - /dummy/device7
+            - /dummy/device8
+        max-write-cache: 268435456
+        post-write-queue: 256
+        read-page-cache: true
+        type: device
+        write-block-size: 131072
+      write-commit-level-override: master
+    - default-ttl: 7776000
+      high-water-disk-pct: 50
+      high-water-memory-pct: 80
+      memory-size: 191126044672
+      migrate-sleep: 0
+      name: ns1
+      nsup-period: 120
+      partition-tree-sprigs: 262144
+      prefer-uniform-balance: true
+      rack-id: 1
+      replication-factor: 2
+      storage-engine:
+        devices:
+            - /dummy/device1
+            - /dummy/device2
+            - /dummy/device3
+            - /dummy/device4
+            - /dummy/device5
+            - /dummy/device6
+        max-write-cache: 268435456
+        post-write-queue: 256
+        read-page-cache: true
+        type: device
+        write-block-size: 131072
+      write-commit-level-override: master
+network:
+    fabric:
+        port: 3001
+    heartbeat:
+        interval: 150
+        mesh-seed-address-ports:
+            - test_dns_name:4000
+        mode: mesh
+        port: 3002
+        timeout: 20
+    info:
+        addresses:
+            - 127.0.0.1
+        port: 3003
+    service:
+        access-addresses:
+            - 127.0.0.1
+        addresses:
+            - eth0
+        port: 3000
+service:
+    cluster-name: the_cluster_name
+    group: root
+    migrate-max-num-incoming: 32
+    migrate-threads: 8
+    paxos-single-replica-limit: 1
+    pidfile: /dummy/file/path1
+    proto-fd-max: 60000
+    user: root

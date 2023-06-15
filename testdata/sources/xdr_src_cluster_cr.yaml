@@ -1,36 +1,34 @@
-service:
-  feature-key-file: /etc/aerospike/secret/features.conf
-
-security: {}
-
-network:
-  service:
-    port: 3000
-  fabric:
-    port: 3001
-  heartbeat:
-    mode: multicast
-    port: 3002
-
-xdr:
-  dcs:
-    - name: dc1
-      node-address-ports:
-        - aeroclusterdst-0-0 3000
-
-      auth-user: admin
-      auth-password-file: /etc/aerospike/secret/password_DC1.txt
-      auth-mode: internal
-      namespaces:
-        - name: test
-
+logging:
+    - any: info
+      name: console
 namespaces:
-  - name: test
-    memory-size: 3000000000
-    replication-factor: 2
-    storage-engine:
-      type: device
-      files:
-        - /opt/aerospike/data/test.dat
-      filesize: 2000000000
-      data-in-memory: true
+    - memory-size: 3000000000
+      name: test
+      replication-factor: 2
+      storage-engine:
+        data-in-memory: true
+        files:
+            - /opt/aerospike/data/test.dat
+        filesize: 2000000000
+        type: device
+network:
+    fabric:
+        port: 3001
+    heartbeat:
+        mode: multicast
+        port: 3002
+    service:
+        port: 3000
+security: {}
+service:
+    feature-key-file: /etc/aerospike/secret/features.conf
+xdr:
+    dcs:
+        - auth-mode: internal
+          auth-password-file: /etc/aerospike/secret/password_DC1.txt
+          auth-user: admin
+          name: dc1
+          namespaces:
+            - name: test
+          node-address-ports:
+            - aeroclusterdst-0-0:3000

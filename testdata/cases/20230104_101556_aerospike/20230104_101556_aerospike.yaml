@@ -1,0 +1,113 @@
+logging:
+    - any: info
+      name: /dummy/file/path2
+namespaces:
+    - default-ttl: 0
+      memory-size: 25769803776
+      name: ns9
+      nsup-period: 120
+      storage-engine:
+        data-in-memory: false
+        devices:
+            - /dummy/device1
+        read-page-cache: true
+        type: device
+        write-block-size: 1048576
+    - default-ttl: 0
+      memory-size: 6442450944
+      name: ns12
+      nsup-period: 120
+      storage-engine:
+        data-in-memory: false
+        devices:
+            - /dummy/device4
+        read-page-cache: true
+        type: device
+        write-block-size: 8192
+    - default-ttl: 0
+      memory-size: 6442450944
+      name: ns11
+      nsup-period: 120
+      storage-engine:
+        data-in-memory: false
+        devices:
+            - /dummy/device3
+        read-page-cache: true
+        type: device
+        write-block-size: 524288
+    - default-ttl: 0
+      memory-size: 27917287424
+      name: ns10
+      nsup-period: 120
+      storage-engine:
+        data-in-memory: false
+        devices:
+            - /dummy/device2
+        read-page-cache: true
+        type: device
+        write-block-size: 524288
+network:
+    fabric:
+        port: 3001
+    heartbeat:
+        interval: 150
+        mesh-seed-address-ports:
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+        mode: mesh
+        port: 3002
+        timeout: 20
+    info:
+        port: 3003
+    service:
+        access-addresses:
+            - 127.0.0.1
+        addresses:
+            - any
+        alternate-access-addresses:
+            - 127.0.0.1
+        port: 3000
+service:
+    feature-key-file: /etc/aerospike/features.conf
+    proto-fd-max: 60000
+xdr:
+    dcs:
+        - name: dc2
+          namespaces:
+            - enable-compression: true
+              max-throughput: 5000
+              name: ns8
+            - enable-compression: true
+              max-throughput: 5000
+              name: ns7
+            - enable-compression: true
+              max-throughput: 2500
+              name: ns6
+            - enable-compression: true
+              max-throughput: 2500
+              name: ns5
+          node-address-ports:
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+          use-alternate-access-address: true
+        - name: dc1
+          namespaces:
+            - enable-compression: true
+              max-throughput: 5000
+              name: ns4
+            - enable-compression: true
+              max-throughput: 5000
+              name: ns3
+            - enable-compression: true
+              max-throughput: 2500
+              name: ns2
+            - enable-compression: true
+              max-throughput: 2500
+              name: ns1
+          node-address-ports:
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+          use-alternate-access-address: true

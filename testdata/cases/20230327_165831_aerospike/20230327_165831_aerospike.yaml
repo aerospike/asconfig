@@ -1,0 +1,37 @@
+logging:
+    - any: info
+      name: /dummy/file/path1
+namespaces:
+    - memory-size: 4294967296
+      name: ns2
+      replication-factor: 2
+      storage-engine:
+        type: memory
+    - memory-size: 4294967296
+      name: ns1
+      replication-factor: 2
+      storage-engine:
+        type: memory
+network:
+    fabric:
+        port: 3001
+    heartbeat:
+        interval: 150
+        mesh-seed-address-ports:
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+        mode: mesh
+        port: 3002
+        timeout: 10
+    info:
+        port: 3003
+    service:
+        addresses:
+            - any
+        port: 3000
+service:
+    cluster-name: the_cluster_name
+    proto-fd-max: 15000

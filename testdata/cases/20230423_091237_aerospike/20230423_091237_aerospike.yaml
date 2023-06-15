@@ -1,0 +1,89 @@
+logging:
+    - any: info
+      name: /dummy/file/path1
+namespaces:
+    - default-ttl: 0
+      enable-benchmarks-read: true
+      enable-benchmarks-write: true
+      memory-size: 96636764160
+      name: ns3
+      nsup-period: 120
+      replication-factor: 2
+      storage-engine:
+        compression: lz4
+        data-in-memory: false
+        defrag-sleep: 25000
+        devices:
+            - /dummy/device1
+            - /dummy/device2
+            - /dummy/device3
+            - /dummy/device4
+            - /dummy/device5
+            - /dummy/device6
+        read-page-cache: true
+        type: device
+        write-block-size: 2097152
+      transaction-pending-limit: 200
+network:
+    fabric:
+        port: 3001
+    heartbeat:
+        interval: 150
+        mesh-seed-address-ports:
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+        mode: mesh
+        port: 3002
+        timeout: 20
+    info:
+        port: 3003
+    service:
+        addresses:
+            - any
+        port: 3000
+service:
+    cluster-name: the_cluster_name
+    proto-fd-max: 60000
+xdr:
+    dcs:
+        - name: dc2
+          namespaces:
+            - bin-policy: only-changed
+              max-throughput: 4000
+              name: ns2
+              ship-only-specified-sets: true
+              ship-sets:
+                - set3
+                - set4
+          node-address-ports:
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+        - name: dc1
+          namespaces:
+            - bin-policy: only-changed
+              ignore-sets:
+                - set1
+                - set2
+              max-throughput: 2000
+              name: ns1
+          node-address-ports:
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000
+            - test_dns_name:4000

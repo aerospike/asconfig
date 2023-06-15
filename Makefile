@@ -12,9 +12,9 @@ ifdef GOARCH
 GO_ENV_VARS += GOARCH=$(GOARCH)
 endif
 
-# Builds exporter binary
+# Builds asconfig binary
 .PHONY: asconfig
-asconfig:
+asconfig: dependencies
 	$(GO_ENV_VARS) go build -ldflags="-X 'aerospike/asconfig/cmd.VERSION=$(VERSION)'" -o bin/asconfig .
 
 # Clean up
@@ -27,11 +27,16 @@ clean:
 
 PHONY: dependencies
 dependencies:
+	git submodule update --init
+
+PHONY: coverage-dependencies
+coverage-dependencies:
+	git submodule update --init
 	go get github.com/wadey/gocovmerge
 	go install github.com/wadey/gocovmerge
 
 PHONY: install
-install:
+install: asconfig
 	install -m 755 ./bin/asconfig $(INSTALL_DIR)
 
 PHONY: uninstall
@@ -58,9 +63,9 @@ tar: asconfig
 test: integration unit
 
 PHONY: integration
-integration:
+integration: dependencies
 	mkdir testdata/coverage/integration || true
-	go test -tags=integration
+	go test -tags=integration -timeout 30m
 
 	mkdir testdata/coverage/tmp_merged
 	go tool covdata merge -i=testdata/coverage/integration -o=testdata/coverage/tmp_merged
@@ -70,12 +75,12 @@ integration:
 	rm -r testdata/coverage/integration
 
 PHONY: unit
-unit:
+unit: dependencies
 	mkdir testdata/coverage || true
 	go test ./... -coverprofile testdata/coverage/unit.cov -coverpkg ./... -tags=unit
 
 PHONY: coverage
-coverage: dependencies integration unit
+coverage: coverage-dependencies integration unit
 	gocovmerge testdata/coverage/*.cov > testdata/coverage/total.cov
 
 PHONY: view-coverage

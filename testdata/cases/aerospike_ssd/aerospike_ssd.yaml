@@ -1,0 +1,35 @@
+logging:
+    - any: info
+      name: /var/log/aerospike/aerospike.log
+namespaces:
+    - memory-size: 4294967296
+      name: test
+      replication-factor: 2
+      storage-engine:
+        devices:
+            - /dev/sdb
+            - /dev/sdc
+        scheduler-mode: noop
+        type: device
+        write-block-size: 131072
+network:
+    fabric:
+        port: 3001
+    heartbeat:
+        interval: 150
+        mode: multicast
+        multicast-groups:
+            - 239.1.99.222
+        port: 9918
+        timeout: 10
+    info:
+        port: 3003
+    service:
+        addresses:
+            - any
+        port: 3000
+service:
+    group: root
+    pidfile: /var/run/aerospike/asd.pid
+    proto-fd-max: 15000
+    user: root

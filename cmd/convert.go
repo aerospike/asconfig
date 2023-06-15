@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"aerospike/asconfig/asconf"
 	"errors"
 	"fmt"
 	"os"
@@ -9,7 +10,6 @@ import (
 
 	"github.com/aerospike/aerospike-management-lib/asconfig"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -23,8 +23,8 @@ var (
 	errFileNotExist                = fmt.Errorf("file does not exist")
 	errInvalidAerospikeVersion     = fmt.Errorf("aerospike version must be in the form <a>.<b>.<c>")
 	errUnsupportedAerospikeVersion = fmt.Errorf("aerospike version unsupported")
-	errConfigValidation            = fmt.Errorf("error while validating aerospike config")
-	errInvalidOutput               = fmt.Errorf("Invalid output flag")
+	errInvalidOutput               = fmt.Errorf("invalid output flag")
+	errInvalidFormat               = fmt.Errorf("invalid format flag")
 )
 
 func init() {
@@ -36,23 +36,25 @@ var convertCmd = newConvertCmd()
 func newConvertCmd() *cobra.Command {
 	res := &cobra.Command{
 		Use:   "convert [flags] <path/to/config.yaml>",
-		Short: "Convert yaml to aerospike config format.",
+		Short: "Convert between yaml and Aerospike config format.",
 		Long: `Convert is used to convert between yaml and aerospike configuration
-				files. In the future, this command may be able to convert from asconf back to yaml.
+				files. Input files are converted to their opposite format, yaml -> conf, conf -> yaml.
 				Specifying the server version that will use the aerospike.conf is required.
 				Usage examples...
 				convert local file "aerospike.yaml" to aerospike config format for version 6.2.0 and
 				write it to local file "aerospike.conf."
-				EX: asconfig convert --aerospike-version "6.2.0" aerospike.yaml --output aerospike.conf
+				Ex: asconfig convert --aerospike-version "6.2.0" aerospike.yaml --output aerospike.conf
 				Short form flags and source file only conversions are also supported.
 				In this case, -a is the server version and using only a source file means
 				the result will be written to stdout.
-				EX: asconfig convert -a "6.2.0" aerospike.yaml`,
+				Ex: asconfig convert -a "6.2.0" aerospike.yaml
+				Normally the file format is inferred from file extensions ".yaml" ".conf" etc.
+				Source format can be forced with the --format flag.
+				Ex: asconfig convert -a "6.2.0" --format yaml example_file`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger.Debug("Running convert command")
 
 			srcPath := args[0]
-			logger.Debug("Processing source file")
 
 			version, err := cmd.Flags().GetString("aerospike-version")
 			if err != nil {
@@ -68,40 +70,66 @@ func newConvertCmd() *cobra.Command {
 
 			logger.Debugf("Processing flag force value=%t", force)
 
+			formatString, err := cmd.Flags().GetString("format")
+			if err != nil {
+				return err
+			}
+
+			srcExt := filepath.Ext(srcPath)
+			srcExt = strings.TrimPrefix(srcExt, ".")
+
+			if formatString == "" {
+				formatString = srcExt
+			}
+
+			logger.Debugf("Processing flag format value=%s", formatString)
+
+			srcFormat, err := asconf.ParseFmtString(formatString)
+			if err != nil {
+				return err
+			}
+
+			logger.Debug("Processing source file")
+
 			fdata, err := os.ReadFile(srcPath)
 			if err != nil {
 				return err
 			}
 
-			var data map[string]any
-			err = yaml.Unmarshal(fdata, &data)
+			var outFmt asconf.Format
+			switch srcFormat {
+			case asconf.AsConfig:
+				outFmt = asconf.YAML
+			case asconf.YAML:
+				outFmt = asconf.AsConfig
+			default:
+				return fmt.Errorf("%w: %s", errInvalidFormat, srcFormat)
+			}
+
+			conf, err := asconf.NewAsconf(
+				fdata,
+				srcFormat,
+				outFmt,
+				version,
+				logger,
+				managementLibLogger,
+			)
+
 			if err != nil {
 				return err
 			}
 
-			asConf, err := asconfig.NewMapAsConfig(managementLibLogger, version, data)
-			if err != nil {
-				return fmt.Errorf("failed to initialize AsConfig from yaml: %w", err)
-			}
-
 			if !force {
-				valid, validationErrors, err := asConf.IsValid(managementLibLogger, version)
-				if !valid {
-					logger.Errorf("Invalid aerospike configuration file: %s", srcPath)
-				}
-				if len(validationErrors) > 0 {
-					for _, e := range validationErrors {
-						logger.Errorf("Aerospike config validation error: %+v", e)
-					}
-				}
-				if !valid || err != nil {
-					return fmt.Errorf("%w, %w", errConfigValidation, err)
+				err = conf.Validate()
+				if err != nil {
+					return err
 				}
 			}
 
-			confFile := asConf.ToConfFile()
-
-			// TODO asconf to yaml
+			out, err := conf.MarshalText()
+			if err != nil {
+				return err
+			}
 
 			outputPath, err := cmd.Flags().GetString("output")
 			if err != nil {
@@ -114,7 +142,13 @@ func newConvertCmd() *cobra.Command {
 				srcFileName = strings.TrimSuffix(srcFileName, filepath.Ext(srcFileName))
 
 				outputPath = filepath.Join(outputPath, srcFileName)
-				outputPath += ".conf"
+				if outFmt == asconf.YAML {
+					outputPath += ".yaml"
+				} else if outFmt == asconf.AsConfig {
+					outputPath += ".conf"
+				} else {
+					return fmt.Errorf("output format unrecognized %w", errInvalidFormat)
+				}
 			}
 
 			var outFile *os.File
@@ -130,7 +164,7 @@ func newConvertCmd() *cobra.Command {
 			}
 
 			logger.Debugf("Writing converted data to: %s", outputPath)
-			_, err = outFile.Write([]byte(confFile))
+			_, err = outFile.Write([]byte(out))
 			return err
 
 		},
@@ -183,6 +217,12 @@ func newConvertCmd() *cobra.Command {
 			}
 
 			if !force {
+				if av == "" {
+					logger.Error("missing required flag '--aerospike-version'")
+					// multiErr = errors.Join(multiErr, errInvalidAerospikeVersion, err) TODO use this in go 1.20
+					multiErr = fmt.Errorf("%w, missing required flag '--aerospike-version' %w", multiErr, errInvalidAerospikeVersion)
+				}
+
 				supported, err := asconfig.IsSupportedVersion(av)
 				if err != nil {
 					logger.Errorf("Failed to check aerospike version %s for compatibility", av)
