@@ -13,12 +13,11 @@ import (
 )
 
 const (
-	convertArgMin = 1
-	convertArgMax = 1
+	convertArgMax         = 1
+	defaultOutputFileName = "conf"
 )
 
 var (
-	errNotEnoughArguments          = fmt.Errorf("expected a minimum of %d arguments", convertArgMin)
 	errTooManyArguments            = fmt.Errorf("expected a maximum of %d arguments", convertArgMax)
 	errFileNotExist                = fmt.Errorf("file does not exist")
 	errInvalidAerospikeVersion     = fmt.Errorf("aerospike version must be in the form <a>.<b>.<c>")
@@ -50,11 +49,18 @@ func newConvertCmd() *cobra.Command {
 				Ex: asconfig convert -a "6.2.0" aerospike.yaml
 				Normally the file format is inferred from file extensions ".yaml" ".conf" etc.
 				Source format can be forced with the --format flag.
-				Ex: asconfig convert -a "6.2.0" --format yaml example_file`,
+				Ex: asconfig convert -a "6.2.0" --format yaml example_file
+				Instead of a file path, the argument to convert may also be stdin.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger.Debug("Running convert command")
 
-			srcPath := args[0]
+			// read stdin by default
+			var srcPath string
+			if len(args) == 0 {
+				srcPath = os.Stdin.Name()
+			} else {
+				srcPath = args[0]
+			}
 
 			version, err := cmd.Flags().GetString("aerospike-version")
 			if err != nil {
@@ -70,26 +76,12 @@ func newConvertCmd() *cobra.Command {
 
 			logger.Debugf("Processing flag force value=%t", force)
 
-			formatString, err := cmd.Flags().GetString("format")
+			srcFormat, err := getConfFileFormat(srcPath, cmd)
 			if err != nil {
 				return err
 			}
 
-			srcExt := filepath.Ext(srcPath)
-			srcExt = strings.TrimPrefix(srcExt, ".")
-
-			if formatString == "" {
-				formatString = srcExt
-			}
-
-			logger.Debugf("Processing flag format value=%s", formatString)
-
-			srcFormat, err := asconf.ParseFmtString(formatString)
-			if err != nil {
-				return err
-			}
-
-			logger.Debug("Processing source file")
+			logger.Debugf("Processing flag format value=%v", srcFormat)
 
 			fdata, err := os.ReadFile(srcPath)
 			if err != nil {
@@ -138,10 +130,14 @@ func newConvertCmd() *cobra.Command {
 
 			if stat, err := os.Stat(outputPath); !errors.Is(err, os.ErrNotExist) && stat.IsDir() {
 				// output path is a directory so write a new file to it
-				srcFileName := filepath.Base(srcPath)
-				srcFileName = strings.TrimSuffix(srcFileName, filepath.Ext(srcFileName))
+				outFileName := filepath.Base(srcPath)
+				if srcPath == os.Stdin.Name() {
+					outFileName = defaultOutputFileName
+				}
 
-				outputPath = filepath.Join(outputPath, srcFileName)
+				outFileName = strings.TrimSuffix(outFileName, filepath.Ext(outFileName))
+
+				outputPath = filepath.Join(outputPath, outFileName)
 				if outFmt == asconf.YAML {
 					outputPath += ".yaml"
 				} else if outFmt == asconf.AsConfig {
@@ -170,13 +166,6 @@ func newConvertCmd() *cobra.Command {
 		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			var multiErr error
-
-			// validate arguments
-			if len(args) < convertArgMin {
-				logger.Errorf("Expected atleast %d argument(s)", convertArgMin)
-				// multiErr = errors.Join(multiErr, errNotEnoughArguments) TODO use this in go 1.20
-				multiErr = fmt.Errorf("%w, %w", multiErr, errNotEnoughArguments)
-			}
 
 			if len(args) > convertArgMax {
 				logger.Errorf("Expected no more than %d argument(s)", convertArgMax)

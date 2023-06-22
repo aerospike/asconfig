@@ -735,6 +735,7 @@ func TestConfToYaml(t *testing.T) {
 
 func diff(path1 string, path2 string) ([]byte, error) {
 	com := exec.Command(binPath+"/asconfig.test", "diff", path1, path2)
+	com.Env = []string{"GOCOVERDIR=" + coveragePath}
 	diff, err := com.Output()
 	if err != nil {
 		err = fmt.Errorf("diff failed err: %s, out: %s", err, string(diff))
@@ -810,5 +811,120 @@ func TestDiff(t *testing.T) {
 			t.Errorf("\nTESTCASE: %+v\nACTUAL: %s\nEXPECTED: %s", tf.path1, output, tf.expectedResult)
 		}
 
+	}
+}
+
+var diffStdinTests = []diffTest{
+	{
+		path1:          filepath.Join(sourcePath, "pmem_cluster_cr.yaml"),
+		path2:          filepath.Join(sourcePath, "pmem_cluster_cr.yaml"),
+		expectError:    false,
+		expectedResult: "",
+	},
+	{
+		path1:       filepath.Join(sourcePath, "pmem_cluster_cr.yaml"),
+		path2:       filepath.Join(sourcePath, "ldap_cluster_cr.yaml"),
+		expectError: true,
+		expectedResult: `Differences shown from /dev/stdin to testdata/sources/ldap_cluster_cr.yaml, '<' are from file1, '>' are from file2.
+<: namespaces.{test}.index-type.mounts
+<: namespaces.{test}.index-type.mounts-size-limit
+<: namespaces.{test}.index-type.type
+<: namespaces.{test}.storage-engine.files
+<: namespaces.{test}.storage-engine.filesize
+namespaces.{test}.storage-engine.type:
+	<: pmem
+	>: memory
+<: network.fabric.port
+>: network.fabric.tls-name
+>: network.fabric.tls-port
+<: network.heartbeat.port
+>: network.heartbeat.tls-name
+>: network.heartbeat.tls-port
+<: network.service.port
+>: network.service.tls-authenticate-client
+>: network.service.tls-name
+>: network.service.tls-port
+>: network.tls.{aerospike-a-0.test-runner}.ca-file
+>: network.tls.{aerospike-a-0.test-runner}.cert-file
+>: network.tls.{aerospike-a-0.test-runner}.key-file
+>: network.tls.{aerospike-a-0.test-runner}.name
+<: security
+>: security.ldap.disable-tls
+>: security.ldap.polling-period
+>: security.ldap.query-base-dn
+>: security.ldap.query-user-dn
+>: security.ldap.query-user-password-file
+>: security.ldap.role-query-patterns
+>: security.ldap.role-query-search-ou
+>: security.ldap.server
+>: security.ldap.user-dn-pattern
+
+`,
+	},
+}
+
+func TestDiffStdin(t *testing.T) {
+	for _, tf := range diffStdinTests {
+		in, err := os.Open(tf.path1)
+		if err != nil {
+			t.Error(err)
+		}
+		defer in.Close()
+
+		com := exec.Command(binPath+"/asconfig.test", "diff", tf.path2)
+		com.Stdin = in
+		com.Env = []string{"GOCOVERDIR=" + coveragePath}
+		output, err := com.Output()
+		if err != nil {
+			err = fmt.Errorf("diff failed err: %s, out: %s", err, string(output))
+		}
+
+		if tf.expectError == (err == nil) {
+			t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf.path1, err)
+		}
+
+		if string(output) != tf.expectedResult {
+			t.Errorf("\nTESTCASE: %+v\nACTUAL: %s\nEXPECTED: %s", tf.path1, output, tf.expectedResult)
+		}
+	}
+}
+
+var testStdinConvert = []testutils.TestData{
+	{
+		Source:    filepath.Join(sourcePath, "all_flash_cluster_cr.yaml"),
+		Expected:  filepath.Join(expectedPath, "all_flash_cluster_cr.conf"),
+		Arguments: []string{"convert", "-a", "6.2.0.2"},
+	},
+	{
+		Source:    filepath.Join(expectedPath, "all_flash_cluster_cr.conf"),
+		Expected:  filepath.Join(sourcePath, "all_flash_cluster_cr.yaml"),
+		Arguments: []string{"convert", "-a", "6.2.0.2", "--format", "conf"},
+	},
+}
+
+func TestConvertStdin(t *testing.T) {
+	for _, tf := range testStdinConvert {
+		in, err := os.Open(tf.Source)
+		if err != nil {
+			t.Error(err)
+		}
+		defer in.Close()
+
+		tf.Arguments = append(tf.Arguments, tf.Source)
+		com := exec.Command(binPath+"/asconfig.test", tf.Arguments...)
+		com.Env = []string{"GOCOVERDIR=" + coveragePath}
+		com.Stdin = in
+		output, err := com.Output()
+		if err != nil {
+			t.Errorf("convert failed err: %s, out: %s", err, string(output))
+		}
+
+		com = exec.Command(binPath+"/asconfig.test", "diff", tf.Expected)
+		com.Stdin = bytes.NewReader(output)
+		com.Env = []string{"GOCOVERDIR=" + coveragePath}
+		output, err = com.Output()
+		if err != nil {
+			t.Errorf("diff failed err: %s, out: %s", err, string(output))
+		}
 	}
 }

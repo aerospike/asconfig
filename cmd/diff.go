@@ -4,7 +4,6 @@ import (
 	"aerospike/asconfig/asconf"
 	"fmt"
 	"os"
-	"path/filepath"
 	"reflect"
 	"sort"
 	"strings"
@@ -12,8 +11,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	diffArgMin = 1
+	diffArgMax = 2
+)
+
 var (
 	errDiffConfigsDiffer = fmt.Errorf("configuration files are not equal")
+	errDiffTooFewArgs    = fmt.Errorf("diff requires atleast %d file paths as arguments", diffArgMin)
+	errDiffTooManyArgs   = fmt.Errorf("diff requires no more than %d file paths as arguments", diffArgMax)
 )
 
 func init() {
@@ -30,59 +36,62 @@ func newDiffCmd() *cobra.Command {
 				It is used on two files of the same format from any format
 				supported by the asconfig tool, e.g. yaml or Aerospike config.
 				Schema validation is not performed on either file. The file names must end with
-				extensions signifying their formats, e.g. .conf or .yaml, or --format must be used.`,
+				extensions signifying their formats, e.g. .conf or .yaml, or --format must be used.
+				The first argument may be stdin.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger.Debug("Running diff command")
 
-			if len(args) < 2 {
-				return fmt.Errorf("diff requires 2 file paths as arguments")
+			if len(args) < diffArgMin {
+				return errDiffTooFewArgs
 			}
 
-			path1 := args[0]
-			path2 := args[1]
+			if len(args) > diffArgMax {
+				return errDiffTooManyArgs
+			}
+
+			// if only 1 argument is given assume the first
+			// file is stdin
+			var path1, path2 string
+			if len(args) == 1 {
+				path1 = os.Stdin.Name()
+				path2 = args[0]
+			} else if len(args) == 2 {
+				path1 = args[0]
+				path2 = args[1]
+			}
 
 			logger.Debugf("Diff file 1 is %s", path1)
 			logger.Debugf("Diff file 2 is %s", path2)
 
-			ext1 := filepath.Ext(path1)
-			ext1 = strings.TrimPrefix(ext1, ".")
-
-			ext2 := filepath.Ext(path2)
-			ext2 = strings.TrimPrefix(ext2, ".")
-
-			formatString, err := cmd.Flags().GetString("format")
+			fmt1, err := getConfFileFormat(path1, cmd)
 			if err != nil {
 				return err
 			}
 
-			if formatString != "" {
-				ext1 = formatString
-				ext2 = formatString
-			}
-
-			logger.Debugf("Diff file 1 format is %v", ext1)
-			logger.Debugf("Diff file 2 format is %v", ext2)
-
-			if ext2 != ext1 {
-				return fmt.Errorf("mismatched file formats, detected %s and %s", ext1, ext2)
-			}
-
-			fmt1, err := asconf.ParseFmtString(ext1)
+			fmt2, err := getConfFileFormat(path2, cmd)
 			if err != nil {
 				return err
 			}
 
-			fmt2, err := asconf.ParseFmtString(ext2)
+			// assume that if file 1 is stdin
+			// its format probably matches file 2
+			if path1 == os.Stdin.Name() {
+				fmt1 = fmt2
+			}
+
+			logger.Debugf("Diff file 1 format is %v", fmt1)
+			logger.Debugf("Diff file 2 format is %v", fmt2)
+
+			if fmt1 != fmt2 {
+				return fmt.Errorf("mismatched file formats, detected %s and %s", fmt1, fmt2)
+			}
+
+			f1, err := os.ReadFile(path1)
 			if err != nil {
 				return err
 			}
 
-			f1, err := os.ReadFile(args[0])
-			if err != nil {
-				return err
-			}
-
-			f2, err := os.ReadFile(args[1])
+			f2, err := os.ReadFile(path2)
 			if err != nil {
 				return err
 			}
