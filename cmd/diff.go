@@ -37,7 +37,7 @@ func newDiffCmd() *cobra.Command {
 				supported by the asconfig tool, e.g. yaml or Aerospike config.
 				Schema validation is not performed on either file. The file names must end with
 				extensions signifying their formats, e.g. .conf or .yaml, or --format must be used.
-				The first argument may be stdin.`,
+				If only one file path is provided diff reads the other file contents from stdin.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger.Debug("Running diff command")
 
