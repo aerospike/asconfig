@@ -14,7 +14,7 @@ import (
 
 const (
 	convertArgMax         = 1
-	defaultOutputFileName = "conf"
+	defaultOutputFileName = "config"
 )
 
 var (
