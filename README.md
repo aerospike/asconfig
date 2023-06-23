@@ -4,7 +4,7 @@ A CLI tool for managing Aerospike configuration files.
 
 ## Overview
 
-Asconfig allows you to manage and create Aerospike configuration using a versioned schema directory.
+Asconfig allows you to validate and compare Aerospike configuration using a versioned YAML schema directory.
 For more information and usage examples see the [Aerospike Configuration Tool docs](https://docs.aerospike.com/tools/asconfig).
 
 ## Build
