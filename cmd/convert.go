@@ -50,7 +50,7 @@ func newConvertCmd() *cobra.Command {
 				Normally the file format is inferred from file extensions ".yaml" ".conf" etc.
 				Source format can be forced with the --format flag.
 				Ex: asconfig convert -a "6.2.0" --format yaml example_file
-				Instead of a file path, the argument to convert may also be stdin.`,
+				If a file path is not provided, asconfig reads the file contents from stdin.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger.Debug("Running convert command")
 
