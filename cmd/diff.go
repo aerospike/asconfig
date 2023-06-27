@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	diffArgMin = 1
+	diffArgMin = 2
 	diffArgMax = 2
 )
 
@@ -36,8 +36,7 @@ func newDiffCmd() *cobra.Command {
 				It is used on two files of the same format from any format
 				supported by the asconfig tool, e.g. yaml or Aerospike config.
 				Schema validation is not performed on either file. The file names must end with
-				extensions signifying their formats, e.g. .conf or .yaml, or --format must be used.
-				If only one file path is provided diff reads the other file contents from stdin.`,
+				extensions signifying their formats, e.g. .conf or .yaml, or --format must be used.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger.Debug("Running diff command")
 
@@ -49,16 +48,8 @@ func newDiffCmd() *cobra.Command {
 				return errDiffTooManyArgs
 			}
 
-			// if only 1 argument is given assume the first
-			// file is stdin
-			var path1, path2 string
-			if len(args) == 1 {
-				path1 = os.Stdin.Name()
-				path2 = args[0]
-			} else if len(args) == 2 {
-				path1 = args[0]
-				path2 = args[1]
-			}
+			path1 := args[0]
+			path2 := args[1]
 
 			logger.Debugf("Diff file 1 is %s", path1)
 			logger.Debugf("Diff file 2 is %s", path2)
@@ -71,12 +62,6 @@ func newDiffCmd() *cobra.Command {
 			fmt2, err := getConfFileFormat(path2, cmd)
 			if err != nil {
 				return err
-			}
-
-			// assume that if file 1 is stdin
-			// its format probably matches file 2
-			if path1 == os.Stdin.Name() {
-				fmt1 = fmt2
 			}
 
 			logger.Debugf("Diff file 1 format is %v", fmt1)
