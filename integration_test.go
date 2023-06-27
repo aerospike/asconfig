@@ -733,8 +733,9 @@ func TestConfToYaml(t *testing.T) {
 	}
 }
 
-func diff(path1 string, path2 string) ([]byte, error) {
-	com := exec.Command(binPath+"/asconfig.test", "diff", path1, path2)
+func diff(args ...string) ([]byte, error) {
+	args = append([]string{"diff"}, args...)
+	com := exec.Command(binPath+"/asconfig.test", args...)
 	com.Env = []string{"GOCOVERDIR=" + coveragePath}
 	diff, err := com.Output()
 	if err != nil {
@@ -835,7 +836,9 @@ func TestConvertStdin(t *testing.T) {
 		}
 		defer in.Close()
 
-		tf.Arguments = append(tf.Arguments, tf.Source)
+		tmpOutFileName := filepath.Join(destinationPath, "stdinConvertTmp")
+
+		tf.Arguments = append(tf.Arguments, tf.Source, "-o", tmpOutFileName)
 		com := exec.Command(binPath+"/asconfig.test", tf.Arguments...)
 		com.Env = []string{"GOCOVERDIR=" + coveragePath}
 		com.Stdin = in
@@ -844,12 +847,12 @@ func TestConvertStdin(t *testing.T) {
 			t.Errorf("convert failed err: %s, out: %s", err, string(output))
 		}
 
-		com = exec.Command(binPath+"/asconfig.test", "diff", tf.Expected)
-		com.Stdin = bytes.NewReader(output)
-		com.Env = []string{"GOCOVERDIR=" + coveragePath}
-		output, err = com.Output()
-		if err != nil {
-			t.Errorf("diff failed err: %s, out: %s", err, string(output))
+		diffFormat := filepath.Ext(tf.Expected)
+		diffFormat = strings.TrimPrefix(diffFormat, ".")
+
+		if _, err := diff(tmpOutFileName, tf.Expected, "--format", diffFormat); err != nil {
+			t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf.Source, err)
 		}
+
 	}
 }
