@@ -3,7 +3,7 @@ module aerospike/asconfig
 go 1.19
 
 require (
-	github.com/aerospike/aerospike-management-lib v0.0.0-20230609234330-88f97849fb38
+	github.com/aerospike/aerospike-management-lib v0.0.0-20230628001501-9fe4e850c22f
 	github.com/bombsimon/logrusr/v4 v4.0.0
 	github.com/docker/docker v23.0.3+incompatible
 	github.com/go-logr/logr v1.2.3
@@ -27,7 +27,6 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/qdm12/reprint v0.0.0-20200326205758-722754a53494 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/wadey/gocovmerge v0.0.0-20160331181800-b5bfa59ec0ad // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
