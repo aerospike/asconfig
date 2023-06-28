@@ -21,13 +21,6 @@ var preTestsConvert = []preTestConvert{
 		expectedErrors: []error{nil},
 	},
 	{
-		flags:     []string{"-a", "5.6.0.0"},
-		arguments: []string{},
-		expectedErrors: []error{
-			errNotEnoughArguments,
-		},
-	},
-	{
 		flags:     []string{"-a", ""},
 		arguments: []string{"./bad_file.yaml", "too_many"},
 		expectedErrors: []error{

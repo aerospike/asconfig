@@ -733,8 +733,10 @@ func TestConfToYaml(t *testing.T) {
 	}
 }
 
-func diff(path1 string, path2 string) ([]byte, error) {
-	com := exec.Command(binPath+"/asconfig.test", "diff", path1, path2)
+func diff(args ...string) ([]byte, error) {
+	args = append([]string{"diff"}, args...)
+	com := exec.Command(binPath+"/asconfig.test", args...)
+	com.Env = []string{"GOCOVERDIR=" + coveragePath}
 	diff, err := com.Output()
 	if err != nil {
 		err = fmt.Errorf("diff failed err: %s, out: %s", err, string(diff))
@@ -808,6 +810,48 @@ func TestDiff(t *testing.T) {
 
 		if string(output) != tf.expectedResult {
 			t.Errorf("\nTESTCASE: %+v\nACTUAL: %s\nEXPECTED: %s", tf.path1, output, tf.expectedResult)
+		}
+
+	}
+}
+
+var testStdinConvert = []testutils.TestData{
+	{
+		Source:    filepath.Join(sourcePath, "all_flash_cluster_cr.yaml"),
+		Expected:  filepath.Join(expectedPath, "all_flash_cluster_cr.conf"),
+		Arguments: []string{"convert", "-a", "6.2.0.2"},
+	},
+	{
+		Source:    filepath.Join(expectedPath, "all_flash_cluster_cr.conf"),
+		Expected:  filepath.Join(sourcePath, "all_flash_cluster_cr.yaml"),
+		Arguments: []string{"convert", "-a", "6.2.0.2", "--format", "conf"},
+	},
+}
+
+func TestConvertStdin(t *testing.T) {
+	for _, tf := range testStdinConvert {
+		in, err := os.Open(tf.Source)
+		if err != nil {
+			t.Error(err)
+		}
+		defer in.Close()
+
+		tmpOutFileName := filepath.Join(destinationPath, "stdinConvertTmp")
+
+		tf.Arguments = append(tf.Arguments, tf.Source, "-o", tmpOutFileName)
+		com := exec.Command(binPath+"/asconfig.test", tf.Arguments...)
+		com.Env = []string{"GOCOVERDIR=" + coveragePath}
+		com.Stdin = in
+		output, err := com.Output()
+		if err != nil {
+			t.Errorf("convert failed err: %s, out: %s", err, string(output))
+		}
+
+		diffFormat := filepath.Ext(tf.Expected)
+		diffFormat = strings.TrimPrefix(diffFormat, ".")
+
+		if _, err := diff(tmpOutFileName, tf.Expected, "--format", diffFormat); err != nil {
+			t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf.Source, err)
 		}
 
 	}

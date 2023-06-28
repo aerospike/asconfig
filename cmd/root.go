@@ -67,7 +67,7 @@ func newRootCmd() *cobra.Command {
 	logLevelUsage := fmt.Sprintf("Set the logging detail level. Valid levels are: %v", log.GetLogLevels())
 	res.PersistentFlags().StringP("log-level", "l", "info", logLevelUsage)
 	res.PersistentFlags().BoolP("version", "V", false, "Version for asconfig.")
-	res.PersistentFlags().StringP("format", "F", "", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
+	res.PersistentFlags().StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
 
 	return res
 }
