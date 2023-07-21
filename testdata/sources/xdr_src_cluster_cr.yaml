@@ -2,9 +2,12 @@ logging:
     - any: info
       name: console
 namespaces:
-    - memory-size: 3000000000
+    - memory-size: 18446744073709551615
       name: test
       replication-factor: 2
+      sets:
+        - name: s1
+          stop-writes-count: 18446744073709551615
       storage-engine:
         data-in-memory: true
         files:
