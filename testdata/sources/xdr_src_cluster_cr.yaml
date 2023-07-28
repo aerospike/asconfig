@@ -8,6 +8,7 @@ namespaces:
       sets:
         - name: s1
           stop-writes-count: 18446744073709551615
+          stop-writes-size: 18446744073709551615
       storage-engine:
         data-in-memory: true
         files:

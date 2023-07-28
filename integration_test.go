@@ -204,13 +204,13 @@ var testFiles = []testutils.TestData{
 		Source:      filepath.Join(sourcePath, "xdr_dst_cluster_cr.yaml"),
 		Destination: filepath.Join(destinationPath, "xdr_dst_cluster_cr.conf"),
 		Expected:    filepath.Join(expectedPath, "xdr_dst_cluster_cr.conf"),
-		Arguments:   []string{"convert", "-a", "6.2.0.2", "-o", destinationPath},
+		Arguments:   []string{"convert", "-a", "5.3.0.16", "-o", destinationPath},
 	},
 	{
 		Source:      filepath.Join(sourcePath, "xdr_src_cluster_cr.yaml"),
 		Destination: filepath.Join(destinationPath, "xdr_src_cluster_cr.conf"),
 		Expected:    filepath.Join(expectedPath, "xdr_src_cluster_cr.conf"),
-		Arguments:   []string{"convert", "-a", "5.3.0.16", "-o", filepath.Join(destinationPath, "xdr_src_cluster_cr.conf")},
+		Arguments:   []string{"convert", "-a", "6.3.0.6", "-o", filepath.Join(destinationPath, "xdr_src_cluster_cr.conf")},
 	},
 	{
 		Source:      filepath.Join(sourcePath, "missing_heartbeat_mode.yaml"),
