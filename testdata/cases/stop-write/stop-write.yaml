@@ -1,0 +1,38 @@
+logging:
+    - any: info
+      name: console
+namespaces:
+    - memory-size: 1073741824
+      name: test
+      replication-factor: 2
+      sets:
+        - name: s1
+          stop-writes-count: 10737418240
+          stop-writes-size: 10485760
+      storage-engine:
+        data-in-memory: true
+        files:
+            - /opt/aerospike/data/test.dat
+        filesize: 2000000000
+        type: device
+network:
+    fabric:
+        port: 3001
+    heartbeat:
+        mode: multicast
+        port: 3002
+    service:
+        port: 3000
+security: {}
+service:
+    feature-key-file: /etc/aerospike/secret/features.conf
+xdr:
+    dcs:
+        - auth-mode: internal
+          auth-password-file: /etc/aerospike/secret/password_DC1.txt
+          auth-user: admin
+          name: dc1
+          namespaces:
+            - name: test
+          node-address-ports:
+            - aeroclusterdst-0-0:3000

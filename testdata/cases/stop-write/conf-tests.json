@@ -1,0 +1,1 @@
+[{"Source":"testdata/cases/stop-write/stop-write.conf","Destination":"testdata/cases/stop-write/stop-write-res-.yaml","Expected":"testdata/cases/stop-write/stop-write.yaml","Arguments":["convert","--aerospike-version","6.3.0.6","--format","asconfig","--output","testdata/cases/stop-write/stop-write-res-.yaml"],"SkipServerTest":false,"ServerErrorAllowList":null}]

@@ -19,13 +19,15 @@ jobs:
       - name: Install dependencies
         run: |
           make dependencies
-      - name: Write feature key
+      - name: Write feature keys
         run: |
-          echo "$FEATURES" > /tmp/features.conf
+          echo "$FEATURESV1" > /tmp/featuresv1.conf
+          echo "$FEATURESV2" > /tmp/featuresv2.conf
         env:
-          FEATURES : ${{secrets.SINGLE_NODE_EE_FEATURE_KEY}}
+          FEATURESV1 : ${{secrets.FEATURES_V1}}
+          FEATURESV2 : ${{secrets.FEATURES_V2}}
       - name: Run tests
         run: |
           make coverage
         env:
-          FEATKEY : /tmp/features.conf
+          FEATKEY : /tmp

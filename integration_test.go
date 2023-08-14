@@ -1,6 +1,3 @@
-//go:build integration
-// +build integration
-
 package main
 
 import (
@@ -38,7 +35,7 @@ const (
 	tmpServerLogPath = "testdata/tmp_server.log"
 )
 
-var featKeyPath string
+var featKeyDir string
 
 func TestMain(m *testing.M) {
 	if _, err := os.Stat(destinationPath); errors.Is(err, os.ErrNotExist) {
@@ -72,12 +69,12 @@ func TestMain(m *testing.M) {
 	for _, v := range envVars {
 		pair := strings.Split(v, "=")
 		if pair[0] == "FEATKEY" {
-			featKeyPath = pair[1]
+			featKeyDir = pair[1]
 		}
 	}
 
-	if featKeyPath == "" {
-		panic("FEATKEY environement variable must be full path to a valid aerospike feature key file")
+	if featKeyDir == "" {
+		panic("FEATKEY environement variable must be full path to a directory containing valid aerospike feature key files featuresv1.conf and featuresv2.conf of feature key format 1 and 2 respectively.")
 	}
 
 	code := m.Run()
@@ -204,7 +201,7 @@ var testFiles = []testutils.TestData{
 		Source:      filepath.Join(sourcePath, "xdr_dst_cluster_cr.yaml"),
 		Destination: filepath.Join(destinationPath, "xdr_dst_cluster_cr.conf"),
 		Expected:    filepath.Join(expectedPath, "xdr_dst_cluster_cr.conf"),
-		Arguments:   []string{"convert", "-a", "5.3.0.16", "-o", destinationPath},
+		Arguments:   []string{"convert", "-a", "5.6.0.13", "-o", destinationPath},
 	},
 	{
 		Source:      filepath.Join(sourcePath, "xdr_src_cluster_cr.yaml"),
@@ -230,6 +227,28 @@ var testFiles = []testutils.TestData{
 		Expected:    filepath.Join(expectedPath, "missing_heartbeat_mode.conf"),
 		Arguments:   []string{"convert", "-a", "6.2.0.2", "-f"},
 	},
+}
+
+func VersionLessThanEqual(l string, r string) bool {
+	var majorLess, minorLess, patchLess bool
+	ltok := strings.Split(l, ".")
+	rtok := strings.Split(r, ".")
+
+	lmaj, _ := strconv.Atoi(ltok[0])
+	lmin, _ := strconv.Atoi(ltok[1])
+	lpat, _ := strconv.Atoi(ltok[2])
+
+	rmaj, _ := strconv.Atoi(rtok[0])
+	rmin, _ := strconv.Atoi(rtok[1])
+	rpat, _ := strconv.Atoi(rtok[2])
+
+	majorLess = lmaj <= rmaj
+	minorLess = lmin <= rmin
+	patchLess = lpat <= rpat
+
+	return (majorLess && minorLess && patchLess) ||
+		(majorLess && minorLess) ||
+		majorLess
 }
 
 func getVersion(l []string) (v string) {
@@ -382,6 +401,13 @@ func runServer(version string, confPath string, dockerClient *client.Client, t *
 	}
 	tmpf.Close()
 
+	featureKeyPath := filepath.Join(featKeyDir, "featuresv2.conf")
+	lastServerWithFeatureKeyVersion1 := "5.3.0"
+	if VersionLessThanEqual(strings.TrimPrefix(version, "ee-"), lastServerWithFeatureKeyVersion1) {
+		featureKeyPath = filepath.Join(featKeyDir, "featuresv1.conf")
+	}
+	fmt.Println(featureKeyPath)
+
 	containerHostConf := &container.HostConfig{
 		Mounts: []mount.Mount{
 			{
@@ -391,12 +417,12 @@ func runServer(version string, confPath string, dockerClient *client.Client, t *
 			},
 			{
 				Type:   mount.TypeBind,
-				Source: featKeyPath,
+				Source: featureKeyPath,
 				Target: "/etc/aerospike/secret/features.conf",
 			},
 			{
 				Type:   mount.TypeBind,
-				Source: featKeyPath,
+				Source: featureKeyPath,
 				Target: "/etc/aerospike/features.conf",
 			},
 			{
@@ -633,7 +659,7 @@ var confToYamlTests = []testutils.TestData{
 		Source:      filepath.Join(expectedPath, "xdr_src_cluster_cr.conf"),
 		Destination: filepath.Join(destinationPath, "xdr_src_cluster_cr.yaml"),
 		Expected:    filepath.Join(sourcePath, "xdr_src_cluster_cr.yaml"),
-		Arguments:   []string{"convert", "-a", "5.3.0.16", "--format", "asconfig", "-o", filepath.Join(destinationPath, "xdr_src_cluster_cr.yaml")},
+		Arguments:   []string{"convert", "-a", "6.3.0.6", "--format", "asconfig", "-o", filepath.Join(destinationPath, "xdr_src_cluster_cr.yaml")},
 	},
 	{
 		Source:      filepath.Join(expectedPath, "missing_heartbeat_mode.conf"),
@@ -673,7 +699,7 @@ func TestConfToYaml(t *testing.T) {
 		test.Env = []string{"GOCOVERDIR=" + coveragePath}
 		out, err := test.Output()
 		if err != nil {
-			t.Error(string(err.(*exec.ExitError).Stderr))
+			t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf, string(err.(*exec.ExitError).Stderr))
 		}
 
 		var actual []byte
@@ -682,7 +708,7 @@ func TestConfToYaml(t *testing.T) {
 		} else {
 			actual, err = os.ReadFile(tf.Destination)
 			if err != nil {
-				t.Error(err)
+				t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf, err)
 			}
 		}
 
@@ -708,7 +734,7 @@ func TestConfToYaml(t *testing.T) {
 		test.Env = []string{"GOCOVERDIR=" + coveragePath}
 		_, err = test.Output()
 		if err != nil {
-			t.Error(string(err.(*exec.ExitError).Stderr))
+			t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf, string(err.(*exec.ExitError).Stderr))
 		}
 
 		// verify that the generated conf matches the source conf
@@ -724,11 +750,11 @@ func TestConfToYaml(t *testing.T) {
 
 		// cleanup the destination files
 		if err := os.Remove(finalConfPath); err != nil {
-			t.Error(err)
+			t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf, err)
 		}
 
 		if err := os.Remove(confPath); err != nil {
-			t.Error(err)
+			t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf, err)
 		}
 	}
 }
