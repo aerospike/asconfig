@@ -8,6 +8,10 @@ github.com/PuerkitoBio/purell v1.1.1/go.mod h1:c11w/QuzBsJSee3cPx9rAFu61PvFxuPbt
 github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578/go.mod h1:uGdkoq3SwY9Y+13GIhn11/XLaGBb4BfwItxLd5jeuXE=
 github.com/aerospike/aerospike-management-lib v0.0.0-20230628001501-9fe4e850c22f h1:poZZGgsM1Y8so7mISgtUPiWS33kr2bR/gsEjiGcyeuw=
 github.com/aerospike/aerospike-management-lib v0.0.0-20230628001501-9fe4e850c22f/go.mod h1:sTlH+QtluBfc1ZkUaB3sfpZxd4aIux13ENkztyh0lsY=
+github.com/aerospike/aerospike-management-lib v0.0.0-20230721173757-ee3d780a0142 h1:pv+YsMbXfDDlOJx74CYLEn8amHSOi4YrsaOr3OHde3M=
+github.com/aerospike/aerospike-management-lib v0.0.0-20230721173757-ee3d780a0142/go.mod h1:sTlH+QtluBfc1ZkUaB3sfpZxd4aIux13ENkztyh0lsY=
+github.com/aerospike/aerospike-management-lib v0.0.0-20230721181710-e0ad7587b911 h1:pZ7Z38Qvy8am2xNrerESD+RDUjR0t4uja5bc1bZGCpc=
+github.com/aerospike/aerospike-management-lib v0.0.0-20230721181710-e0ad7587b911/go.mod h1:sTlH+QtluBfc1ZkUaB3sfpZxd4aIux13ENkztyh0lsY=
 github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a/go.mod h1:lB+ZfQJz7igIIfQNfa7Ml4HSf2uFQQRzpGGRXenZAgY=
 github.com/bombsimon/logrusr/v4 v4.0.0 h1:Pm0InGphX0wMhPqC02t31onlq9OVyJ98eP/Vh63t1Oo=
 github.com/bombsimon/logrusr/v4 v4.0.0/go.mod h1:pjfHC5e59CvjTBIU3V3sGhFWFAnsnhOR03TRc6im0l8=
