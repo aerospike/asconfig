@@ -229,7 +229,7 @@ var testFiles = []testutils.TestData{
 	},
 }
 
-func VersionLessThanEqual(l string, r string) bool {
+func versionLessThanEqual(l string, r string) bool {
 	var majorLess, minorLess, patchLess bool
 	ltok := strings.Split(l, ".")
 	rtok := strings.Split(r, ".")
@@ -247,8 +247,8 @@ func VersionLessThanEqual(l string, r string) bool {
 	patchLess = lpat <= rpat
 
 	return (majorLess && minorLess && patchLess) ||
-		(majorLess && minorLess) ||
-		majorLess
+		(majorLess && minorLess && !patchLess) ||
+		(majorLess && !minorLess && !patchLess)
 }
 
 func getVersion(l []string) (v string) {
@@ -403,7 +403,7 @@ func runServer(version string, confPath string, dockerClient *client.Client, t *
 
 	featureKeyPath := filepath.Join(featKeyDir, "featuresv2.conf")
 	lastServerWithFeatureKeyVersion1 := "5.3.0"
-	if VersionLessThanEqual(strings.TrimPrefix(version, "ee-"), lastServerWithFeatureKeyVersion1) {
+	if versionLessThanEqual(strings.TrimPrefix(version, "ee-"), lastServerWithFeatureKeyVersion1) {
 		featureKeyPath = filepath.Join(featKeyDir, "featuresv1.conf")
 	}
 	fmt.Println(featureKeyPath)
