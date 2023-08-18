@@ -517,10 +517,6 @@ func runServer(version string, confPath string, dockerClient *client.Client, t *
 	// always ignore this failure
 	td.ServerErrorAllowList = append(td.ServerErrorAllowList, "' is enterprise-only")
 
-	// TODO support both feature key versions for testing
-	// servers older than 5.4 won't accept version 2 feature key files. Suppress this for now
-	td.ServerErrorAllowList = append(td.ServerErrorAllowList, " invalid value 2 for feature feature-key-version")
-
 	reg := regexp.MustCompile(`CRITICAL \(config\):.*`)
 	configErrors := reg.FindAllString(containerOut, -1)
 	for _, cfgErr := range configErrors {
