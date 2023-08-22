@@ -18,11 +18,7 @@ namespaces:
         mounts-size-limit: 20971520000
         type: flash
       storage-engine:
-        devices:
-            - /dummy/device1
-            - /dummy/device2
-        type: device
-        write-block-size: 131072
+        type: memory
 network:
     fabric:
         port: 3001

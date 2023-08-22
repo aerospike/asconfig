@@ -24,6 +24,8 @@ github.com/aerospike/aerospike-management-lib v0.0.0-20230822172728-20e37b8709f3
 github.com/aerospike/aerospike-management-lib v0.0.0-20230822172728-20e37b8709f3/go.mod h1:sTlH+QtluBfc1ZkUaB3sfpZxd4aIux13ENkztyh0lsY=
 github.com/aerospike/aerospike-management-lib v0.0.0-20230822173759-ad428008d0ba h1:REidvX6m57gfvvfjDwwfPEUyRhugmsTEC7JXHUwZOvA=
 github.com/aerospike/aerospike-management-lib v0.0.0-20230822173759-ad428008d0ba/go.mod h1:sTlH+QtluBfc1ZkUaB3sfpZxd4aIux13ENkztyh0lsY=
+github.com/aerospike/aerospike-management-lib v0.0.0-20230822184602-2c376f926901 h1:53/1ZRPs4mdIeKip+L+tm33lSWHz7XNAwGdpJWFIWnY=
+github.com/aerospike/aerospike-management-lib v0.0.0-20230822184602-2c376f926901/go.mod h1:sTlH+QtluBfc1ZkUaB3sfpZxd4aIux13ENkztyh0lsY=
 github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a/go.mod h1:lB+ZfQJz7igIIfQNfa7Ml4HSf2uFQQRzpGGRXenZAgY=
 github.com/bombsimon/logrusr/v4 v4.0.0 h1:Pm0InGphX0wMhPqC02t31onlq9OVyJ98eP/Vh63t1Oo=
 github.com/bombsimon/logrusr/v4 v4.0.0/go.mod h1:pjfHC5e59CvjTBIU3V3sGhFWFAnsnhOR03TRc6im0l8=
