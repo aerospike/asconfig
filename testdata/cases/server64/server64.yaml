@@ -39,7 +39,7 @@ service:
     group: root
     pidfile: /dummy/file/path1
     proto-fd-max: 15000
-    secrets-address-port: test_dns_name 4000 127.0.0.1
+    secrets-address-port: test_dns_name:4000:127.0.0.1
     secrets-tls-context: tlscontext
     secrets-uds-path: /test/path/socket
     user: root
