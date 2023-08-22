@@ -11,6 +11,12 @@ namespaces:
       memory-size: 4294967296
       name: ns1
       replication-factor: 2
+      sindex-type:
+        mounts:
+            - /dummy/mount/point3
+        mounts-high-water-pct: 60
+        mounts-size-limit: 20971520000
+        type: flash
       storage-engine:
         devices:
             - /dummy/device1
