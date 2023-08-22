@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -21,7 +20,6 @@ import (
 
 	"aerospike/asconfig/testutils"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
@@ -465,13 +463,6 @@ func runServer(version string, confPath string, dockerClient *client.Client, t *
 		t.Error(err)
 	}
 
-	logReader, err := dockerClient.ContainerLogs(context.Background(), id, types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true, Follow: true})
-	if err != nil {
-		t.Error(err)
-	}
-
-	defer logReader.Close()
-
 	// need this to allow logs to accumulate
 	time.Sleep(time.Second * 3)
 
@@ -494,7 +485,7 @@ func runServer(version string, confPath string, dockerClient *client.Client, t *
 	case <-statusCh:
 	}
 
-	data, err := io.ReadAll(logReader)
+	data, err := docker("logs", id)
 	if err != nil {
 		t.Error(err)
 	}
@@ -525,10 +516,6 @@ func runServer(version string, confPath string, dockerClient *client.Client, t *
 	// these will fail with "'x feature' is enterprise-only"
 	// always ignore this failure
 	td.ServerErrorAllowList = append(td.ServerErrorAllowList, "' is enterprise-only")
-
-	// TODO support both feature key versions for testing
-	// servers older than 5.4 won't accept version 2 feature key files. Suppress this for now
-	td.ServerErrorAllowList = append(td.ServerErrorAllowList, " invalid value 2 for feature feature-key-version")
 
 	reg := regexp.MustCompile(`CRITICAL \(config\):.*`)
 	configErrors := reg.FindAllString(containerOut, -1)
@@ -760,6 +747,15 @@ func TestConfToYaml(t *testing.T) {
 			t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf, err)
 		}
 	}
+}
+
+func docker(args ...string) ([]byte, error) {
+	com := exec.Command("docker", args...)
+	out, err := com.Output()
+	if err != nil {
+		err = fmt.Errorf("docker failed err: %s, out: %s", err, string(out))
+	}
+	return out, err
 }
 
 func diff(args ...string) ([]byte, error) {
