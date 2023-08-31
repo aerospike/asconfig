@@ -1,4 +1,4 @@
-module aerospike/asconfig
+module github.com/aerospike/asconfig
 
 go 1.19
 
