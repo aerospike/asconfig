@@ -249,7 +249,7 @@ func isListOrString(name string) bool {
 func isTypedContext(in string) bool {
 
 	switch in {
-	case "storage-engine", "index-type":
+	case "storage-engine", "index-type", "sindex-type":
 		return true
 	default:
 		return false
