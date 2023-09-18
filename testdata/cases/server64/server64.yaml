@@ -3,6 +3,15 @@ logging:
       name: /dummy/file/path2
 namespaces:
     - index-type:
+        type: shmem
+      memory-size: 8589934592
+      name: ns2
+      replication-factor: 2
+      sindex-type:
+        type: shmem
+      storage-engine:
+        type: memory
+    - index-type:
         mounts:
             - /dummy/mount/point1 /test/mount2
         mounts-high-water-pct: 30
