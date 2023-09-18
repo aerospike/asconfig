@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"aerospike/asconfig/asconf"
 	"fmt"
+	"github.com/aerospike/asconfig/asconf"
 	"os"
 	"reflect"
 	"sort"

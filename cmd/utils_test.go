@@ -4,7 +4,7 @@
 package cmd
 
 import (
-	"aerospike/asconfig/asconf"
+	"github.com/aerospike/asconfig/asconf"
 	"reflect"
 	"testing"
 

@@ -1,6 +1,6 @@
 package main
 
-import "aerospike/asconfig/cmd"
+import "github.com/aerospike/asconfig/cmd"
 
 func main() {
 	cmd.Execute()

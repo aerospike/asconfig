@@ -15,7 +15,7 @@ endif
 # Builds asconfig binary
 .PHONY: asconfig
 asconfig: dependencies
-	$(GO_ENV_VARS) go build -ldflags="-X 'aerospike/asconfig/cmd.VERSION=$(VERSION)'" -o bin/asconfig .
+	$(GO_ENV_VARS) go build -ldflags="-X 'github.com/aerospike/asconfig/cmd.VERSION=$(VERSION)'" -o bin/asconfig .
 
 # Clean up
 .PHONY: clean

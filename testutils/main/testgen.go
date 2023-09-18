@@ -1,13 +1,13 @@
 package main
 
 import (
-	"aerospike/asconfig/testutils"
 	"bufio"
 	"bytes"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/aerospike/asconfig/testutils"
 	"io"
 	"log"
 	"os"
