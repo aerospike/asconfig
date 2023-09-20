@@ -8,7 +8,7 @@ on:
 jobs:
   # workflows to pull release artifacts from
   snyk-test:
-    uses: github.com/aerospike/asconfig/.github/workflows/snyk-test.yml@main
+    uses: aerospike/asconfig/.github/workflows/snyk-test.yml@main
     secrets: inherit
   draft-release-notes:
     needs: snyk-test
