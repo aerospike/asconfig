@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"aerospike/asconfig/asconf"
 	"errors"
 	"fmt"
+	"github.com/aerospike/asconfig/asconf"
 	"os"
 	"path/filepath"
 	"strings"

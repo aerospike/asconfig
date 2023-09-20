@@ -1,11 +1,14 @@
 package cmd
 
 import (
-	"aerospike/asconfig/asconf"
-	"aerospike/asconfig/log"
-	"aerospike/asconfig/schema"
 	"fmt"
 	"os"
+
+	"github.com/aerospike/asconfig/log"
+
+	"github.com/aerospike/asconfig/schema"
+
+	"github.com/aerospike/asconfig/asconf"
 
 	"github.com/aerospike/aerospike-management-lib/asconfig"
 	"github.com/bombsimon/logrusr/v4"

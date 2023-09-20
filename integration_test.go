@@ -18,7 +18,7 @@ import (
 	"testing"
 	"time"
 
-	"aerospike/asconfig/testutils"
+	"github.com/aerospike/asconfig/testutils"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
