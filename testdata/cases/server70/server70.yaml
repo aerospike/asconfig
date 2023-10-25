@@ -1,0 +1,86 @@
+logging:
+    - any: info
+      name: /dummy/file/path2
+namespaces:
+    - index-type:
+        evict-mounts-pct: 80
+        mounts:
+            - /dummy/mount/point5 /test/mount6
+        mounts-budget: 10737418240
+        type: flash
+      name: ns3
+      replication-factor: 2
+      sindex-type:
+        evict-mounts-pct: 80
+        mounts:
+            - /dummy/mount/point7
+        mounts-budget: 20971520000
+        type: flash
+      storage-engine:
+        evict-used-pct: 75
+        files:
+            - /dummy/file/path3
+        stop-writes-avail-pct: 20
+        stop-writes-used-pct: 65
+        type: pmem
+    - index-type:
+        type: shmem
+      name: ns2
+      replication-factor: 2
+      sindex-type:
+        type: shmem
+      storage-engine:
+        devices:
+            - /dummy/mount/point4
+        evict-used-pct: 70
+        stop-writes-avail-pct: 20
+        stop-writes-used-pct: 70
+        type: device
+    - evict-sys-memory-pct: 80
+      index-type:
+        evict-mounts-pct: 80
+        mounts:
+            - /dummy/mount/point1 /test/mount2
+        mounts-budget: 10737418240
+        type: pmem
+      name: ns1
+      replication-factor: 2
+      sindex-type:
+        evict-mounts-pct: 80
+        mounts:
+            - /dummy/mount/point3
+        mounts-budget: 20971520000
+        type: pmem
+      storage-engine:
+        data-size: 34359738368
+        evict-used-pct: 65
+        stop-writes-avail-pct: 20
+        stop-writes-used-pct: 75
+        type: memory
+network:
+    fabric:
+        port: 3001
+    heartbeat:
+        interval: 150
+        mode: multicast
+        multicast-groups:
+            - 127.0.0.1
+        port: 9918
+        timeout: 10
+    info:
+        port: 3003
+    service:
+        addresses:
+            - any
+        port: 3000
+service:
+    cluster-name: cl1
+    debug-allocations: false
+    group: root
+    pidfile: /dummy/file/path1
+    poison-allocations: false
+    proto-fd-max: 15000
+    secrets-address-port: test_dns_name:4000:127.0.0.1
+    secrets-tls-context: tlscontext
+    secrets-uds-path: /test/path/socket
+    user: root
