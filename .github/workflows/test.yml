@@ -31,3 +31,5 @@ jobs:
           make coverage
         env:
           FEATKEY : /tmp
+          ASC_DOCKER_USER : ${{secrets.DOCKER_USER}}
+          ASC_DOCKER_PASSWORD : ${{secrets.DOCKER_PASS}}

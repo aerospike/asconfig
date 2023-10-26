@@ -1,11 +1,9 @@
-//go:build integration
-// +build integration
-
 package main
 
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -20,10 +18,10 @@ import (
 
 	"github.com/aerospike/asconfig/testutils"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
-	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
 const (
@@ -66,14 +64,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	envVars := os.Environ()
-	for _, v := range envVars {
-		pair := strings.Split(v, "=")
-		if pair[0] == "FEATKEY" {
-			featKeyDir = pair[1]
-		}
-	}
-
+	featKeyDir := os.Getenv("FEATKEY")
 	if featKeyDir == "" {
 		panic("FEATKEY environement variable must be full path to a directory containing valid aerospike feature key files featuresv1.conf and featuresv2.conf of feature key format 1 and 2 respectively.")
 	}
@@ -371,9 +362,44 @@ func getExtraTests(path string, testType string) (tf []testutils.TestData, err e
 	return
 }
 
+func getDockerAuthFromEnv(auth testutils.DockerAuth) (string, error) {
+
+	if auth.Password == "" || auth.Username == "" {
+		return "", nil
+	}
+
+	username := os.Getenv(auth.Username)
+	if username == "" {
+		return "", fmt.Errorf("docker username environment variable: %s is not set", auth.Username)
+	}
+
+	password := os.Getenv(auth.Password)
+	if password == "" {
+		return "", fmt.Errorf("docker password environment variable: %s is not set", auth.Password)
+	}
+
+	parsedAuth := testutils.DockerAuth{
+		Username: os.Getenv(auth.Username),
+		Password: os.Getenv(auth.Password),
+	}
+
+	authConfigJSON, err := json.Marshal(parsedAuth)
+	if err != nil {
+		return "", err
+	}
+
+	authStr := base64.URLEncoding.EncodeToString(authConfigJSON)
+
+	return authStr, nil
+}
+
 func runServer(version string, confPath string, dockerClient *client.Client, t *testing.T, td testutils.TestData) {
-	var err error
 	containerName := "aerospike:" + version
+	if td.ServerImage != "" {
+		containerName = td.ServerImage
+	}
+
+	var err error
 	serverConfPath := "/opt/aerospike/work/" + filepath.Base(confPath)
 	cmd := fmt.Sprintf("/usr/bin/asd --foreground --config-file %s", serverConfPath)
 	// cmd = fmt.Sprintf("/bin/bash")
@@ -439,12 +465,18 @@ func runServer(version string, confPath string, dockerClient *client.Client, t *
 		},
 	}
 
-	platform := &v1.Platform{
-		Architecture: "amd64",
+	dockerAuth, err := getDockerAuthFromEnv(td.DockerAuth)
+	if err != nil {
+		t.Error(err)
+	}
+
+	imagePullOptions := types.ImagePullOptions{
+		Platform:     "amd64",
+		RegistryAuth: dockerAuth,
 	}
 
 	// TODO if possible, don't create new containers each time
-	id, err := testutils.CreateAerospikeContainer(containerName, containerConf, containerHostConf, platform, dockerClient)
+	id, err := testutils.CreateAerospikeContainer(containerName, containerConf, containerHostConf, imagePullOptions, dockerClient)
 	if err != nil {
 		t.Error(err)
 	}

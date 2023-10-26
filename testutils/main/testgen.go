@@ -7,7 +7,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/aerospike/asconfig/testutils"
 	"io"
 	"log"
 	"os"
@@ -16,6 +15,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/aerospike/asconfig/testutils"
 )
 
 // global flags
@@ -330,11 +331,19 @@ func main() {
 	obfuscate = flag.Bool("obfuscate", false, "obfuscate sensitive fields in the copied source config file")
 	aerospikeVersion := flag.String("aerospike-version", "6.2.0.2", "the aerospike version to pass to asconfig e.g: 6.2.0.2")
 	originalVersion := flag.String("original-version", "6.2.0.2", "the aerospike version that was originally used with this config e.g: 6.2.0.2")
+	serverImage := flag.String("server-image", "", "url to an Aerospike image to use. Overrides aerospike-version")
+	dockerUser := flag.String("docker-user", "", "Environment variable that holds a username used to authenticate with docker repositories during image pulls")
+	dockerPass := flag.String("docker-pass", "", "Environment variable that holds a base64 password or ID token used to authenticate with docker repositories during image pulls")
 
 	flag.Parse()
 
 	if len(flag.Args()) < 1 {
 		log.Fatal("no arguments found, must specify path to source conf or yaml file")
+	}
+
+	dockerAuth := testutils.DockerAuth{
+		Username: *dockerUser,
+		Password: *dockerPass,
 	}
 
 	inputPath := flag.Args()[0]
@@ -432,6 +441,8 @@ func main() {
 			Expected:    confPath,
 			Destination: outYamlPath,
 			Arguments:   args,
+			ServerImage: *serverImage,
+			DockerAuth:  dockerAuth,
 		},
 	}
 
@@ -463,6 +474,8 @@ func main() {
 			Expected:    yamlPath,
 			Destination: outConfPath,
 			Arguments:   args,
+			ServerImage: *serverImage,
+			DockerAuth:  dockerAuth,
 		},
 	}
 
