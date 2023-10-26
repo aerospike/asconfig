@@ -379,8 +379,8 @@ func getDockerAuthFromEnv(auth testutils.DockerAuth) (string, error) {
 	}
 
 	parsedAuth := testutils.DockerAuth{
-		Username: os.Getenv(auth.Username),
-		Password: os.Getenv(auth.Password),
+		Username: username,
+		Password: password,
 	}
 
 	authConfigJSON, err := json.Marshal(parsedAuth)
