@@ -32,4 +32,4 @@ jobs:
         env:
           FEATKEY : /tmp
           ASC_DOCKER_USER : ${{secrets.DOCKER_USER}}
-          ASC_DOCKER_PASSWORD : ${{secrets.DOCKER_PASS}}
+          ASC_DOCKER_PASS : ${{secrets.DOCKER_PASS}}
