@@ -3,12 +3,12 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"github.com/aerospike/asconfig/asconf"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/aerospike/aerospike-management-lib/asconfig"
+	"github.com/aerospike/asconfig/asconf"
 	"github.com/spf13/cobra"
 )
 
@@ -114,6 +114,8 @@ func newConvertCmd() *cobra.Command {
 			if !force {
 				err = conf.Validate()
 				if err != nil {
+					// validation errors are not user errors, so don't print usage
+					cmd.SilenceUsage = true
 					return err
 				}
 			}
