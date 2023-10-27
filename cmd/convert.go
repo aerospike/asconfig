@@ -171,30 +171,26 @@ func newConvertCmd() *cobra.Command {
 
 			if len(args) > convertArgMax {
 				logger.Errorf("Expected no more than %d argument(s)", convertArgMax)
-				// multiErr = errors.Join(multiErr, errTooManyArguments) TODO use this in go 1.20
-				multiErr = fmt.Errorf("%w, %w", multiErr, errTooManyArguments)
+				multiErr = errors.Join(multiErr, errTooManyArguments)
 			}
 
 			if len(args) > 0 {
 				source := args[0]
 				if _, err := os.Stat(source); errors.Is(err, os.ErrNotExist) {
 					logger.Errorf("Source file does not exist %s", source)
-					// multiErr = errors.Join(multiErr, errFileNotExist, err) TODO use this in go 1.20
-					multiErr = fmt.Errorf("%w, %w %w", multiErr, errFileNotExist, err)
+					multiErr = errors.Join(multiErr, errFileNotExist, err)
 				}
 			}
 
 			// validate flags
 			_, err := cmd.Flags().GetString("output")
 			if err != nil {
-				// multiErr = errors.Join(multiErr, err) TODO use this in go 1.20
-				multiErr = fmt.Errorf("%w, %w", multiErr, err)
+				multiErr = errors.Join(multiErr, err)
 			}
 
 			force, err := cmd.Flags().GetBool("force")
 			if err != nil {
-				// multiErr = errors.Join(multiErr, err) TODO use this in go 1.20
-				multiErr = fmt.Errorf("%w, %w", multiErr, err)
+				multiErr = errors.Join(multiErr, err)
 			}
 
 			if !force {
@@ -203,30 +199,26 @@ func newConvertCmd() *cobra.Command {
 
 			av, err := cmd.Flags().GetString("aerospike-version")
 			if err != nil {
-				// multiErr = errors.Join(multiErr, errInvalidAerospikeVersion, err) TODO use this in go 1.20
-				multiErr = fmt.Errorf("%w, %w", multiErr, err)
+				multiErr = errors.Join(multiErr, errInvalidAerospikeVersion, err)
 			}
 
 			if !force {
 				if av == "" {
 					logger.Error("missing required flag '--aerospike-version'")
-					// multiErr = errors.Join(multiErr, errInvalidAerospikeVersion, err) TODO use this in go 1.20
-					multiErr = fmt.Errorf("%w, missing required flag '--aerospike-version' %w", multiErr, errInvalidAerospikeVersion)
+					multiErr = errors.Join(multiErr, errInvalidAerospikeVersion, err)
 				}
 
 				supported, err := asconfig.IsSupportedVersion(av)
 				if err != nil {
 					logger.Errorf("Failed to check aerospike version %s for compatibility", av)
-					// multiErr = errors.Join(multiErr, errInvalidAerospikeVersion, err) TODO use this in go 1.20
-					multiErr = fmt.Errorf("%w, %w %w", multiErr, errInvalidAerospikeVersion, err)
+					multiErr = errors.Join(multiErr, errInvalidAerospikeVersion, err)
 				}
 
 				// TODO include valid versions in the error message
 				// asconfig lib needs a getSupportedVersions func
 				if !supported {
 					logger.Errorf("Unsupported aerospike server version: %s", av)
-					// multiErr = errors.Join(multiErr, errUnsupportedAerospikeVersion) TODO use this in go 1.20
-					multiErr = fmt.Errorf("%w, %s %w", multiErr, av, errUnsupportedAerospikeVersion)
+					multiErr = errors.Join(multiErr, errUnsupportedAerospikeVersion)
 				}
 			}
 
