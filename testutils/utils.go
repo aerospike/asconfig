@@ -15,6 +15,11 @@ import (
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
+type DockerAuth struct {
+	Username string
+	Password string
+}
+
 type TestData struct {
 	Source               string
 	Destination          string
@@ -22,6 +27,8 @@ type TestData struct {
 	Arguments            []string
 	SkipServerTest       bool
 	ServerErrorAllowList []string
+	ServerImage          string
+	DockerAuth           DockerAuth
 }
 
 func GetAerospikeContainerID(name string) ([]byte, error) {
@@ -61,9 +68,9 @@ func RemoveAerospikeContainer(id string, cli *client.Client) error {
 	return nil
 }
 
-func CreateAerospikeContainer(name string, c *container.Config, ch *container.HostConfig, p *v1.Platform, cli *client.Client) (string, error) {
+func CreateAerospikeContainer(name string, c *container.Config, ch *container.HostConfig, imagePullOpts types.ImagePullOptions, cli *client.Client) (string, error) {
 	ctx := context.Background()
-	reader, err := cli.ImagePull(ctx, name, types.ImagePullOptions{Platform: p.Architecture})
+	reader, err := cli.ImagePull(ctx, name, imagePullOpts)
 	if err != nil {
 		log.Printf("Unable to pull image %s: %s", name, err)
 		return "", err
@@ -72,7 +79,11 @@ func CreateAerospikeContainer(name string, c *container.Config, ch *container.Ho
 	defer reader.Close()
 	io.Copy(os.Stdout, reader)
 
-	resp, err := cli.ContainerCreate(ctx, c, ch, nil, p, "")
+	platform := &v1.Platform{
+		Architecture: imagePullOpts.Platform,
+	}
+
+	resp, err := cli.ContainerCreate(ctx, c, ch, nil, platform, "")
 	if err != nil {
 		log.Printf("Unable to create container %s: %s", name, err)
 		return "", err

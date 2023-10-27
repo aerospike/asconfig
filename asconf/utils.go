@@ -155,6 +155,9 @@ func sortLists(k string, v any, m configMap) {
 /*
 typedContextsToObject converts config entries that the management lib
 parses as literal strings into the objects that the yaml schemas expect.
+NOTE: As of server 7.0 a context is required for storage-engine memory
+so it will no longer be a string. This is still needed for compatibility
+with older servers.
 Ex configMap
 
 	configMap{

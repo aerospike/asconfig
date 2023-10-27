@@ -3,7 +3,7 @@ module github.com/aerospike/asconfig
 go 1.20
 
 require (
-	github.com/aerospike/aerospike-management-lib v0.0.0-20230829224038-2327527ea1f0
+	github.com/aerospike/aerospike-management-lib v0.0.0-20231025224657-765f71b4994d
 	github.com/bombsimon/logrusr/v4 v4.0.0
 	github.com/docker/docker v24.0.6+incompatible
 	github.com/go-logr/logr v1.2.4
@@ -29,11 +29,11 @@ require (
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
-	golang.org/x/mod v0.8.0 // indirect
-	golang.org/x/net v0.7.0 // indirect
-	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/mod v0.9.0 // indirect
+	golang.org/x/net v0.9.0 // indirect
+	golang.org/x/sys v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	golang.org/x/tools v0.6.0 // indirect
+	golang.org/x/tools v0.7.0 // indirect
 	gotest.tools/v3 v3.5.1 // indirect
-	k8s.io/apimachinery v0.26.2 // indirect
+	k8s.io/apimachinery v0.27.2 // indirect
 )
