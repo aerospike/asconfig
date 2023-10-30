@@ -20,6 +20,7 @@ const (
 var (
 	errTooManyArguments            = fmt.Errorf("expected a maximum of %d arguments", convertArgMax)
 	errFileNotExist                = fmt.Errorf("file does not exist")
+	errMissingAerospikeVersion     = fmt.Errorf("missing required flag '--aerospike-version'")
 	errInvalidAerospikeVersion     = fmt.Errorf("aerospike version must be in the form <a>.<b>.<c>")
 	errUnsupportedAerospikeVersion = fmt.Errorf("aerospike version unsupported")
 	errInvalidOutput               = fmt.Errorf("invalid output flag")
@@ -114,8 +115,6 @@ func newConvertCmd() *cobra.Command {
 			if !force {
 				err = conf.Validate()
 				if err != nil {
-					// validation errors are not user errors, so don't print usage
-					cmd.SilenceUsage = true
 					return err
 				}
 			}
@@ -167,30 +166,26 @@ func newConvertCmd() *cobra.Command {
 
 		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			var multiErr error
-
 			if len(args) > convertArgMax {
-				logger.Errorf("Expected no more than %d argument(s)", convertArgMax)
-				multiErr = errors.Join(multiErr, errTooManyArguments)
+				return errTooManyArguments
 			}
 
 			if len(args) > 0 {
 				source := args[0]
 				if _, err := os.Stat(source); errors.Is(err, os.ErrNotExist) {
-					logger.Errorf("Source file does not exist %s", source)
-					multiErr = errors.Join(multiErr, errFileNotExist, err)
+					return errors.Join(errFileNotExist, err)
 				}
 			}
 
 			// validate flags
 			_, err := cmd.Flags().GetString("output")
 			if err != nil {
-				multiErr = errors.Join(multiErr, err)
+				return err
 			}
 
 			force, err := cmd.Flags().GetBool("force")
 			if err != nil {
-				multiErr = errors.Join(multiErr, err)
+				return err
 			}
 
 			if !force {
@@ -199,30 +194,27 @@ func newConvertCmd() *cobra.Command {
 
 			av, err := cmd.Flags().GetString("aerospike-version")
 			if err != nil {
-				multiErr = errors.Join(multiErr, errInvalidAerospikeVersion, err)
+				return err
 			}
 
 			if !force {
 				if av == "" {
-					logger.Error("missing required flag '--aerospike-version'")
-					multiErr = errors.Join(multiErr, errInvalidAerospikeVersion, err)
+					return errors.Join(errMissingAerospikeVersion, err)
 				}
 
 				supported, err := asconfig.IsSupportedVersion(av)
 				if err != nil {
-					logger.Errorf("Failed to check aerospike version %s for compatibility", av)
-					multiErr = errors.Join(multiErr, errInvalidAerospikeVersion, err)
+					return errors.Join(errInvalidAerospikeVersion, err)
 				}
 
 				// TODO include valid versions in the error message
 				// asconfig lib needs a getSupportedVersions func
 				if !supported {
-					logger.Errorf("Unsupported aerospike server version: %s", av)
-					multiErr = errors.Join(multiErr, errUnsupportedAerospikeVersion)
+					return errUnsupportedAerospikeVersion
 				}
 			}
 
-			return multiErr
+			return nil
 		},
 	}
 

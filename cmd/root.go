@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/aerospike/asconfig/log"
 
@@ -72,6 +74,15 @@ func newRootCmd() *cobra.Command {
 	res.PersistentFlags().BoolP("version", "V", false, "Version for asconfig.")
 	res.PersistentFlags().StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
 
+	res.SilenceErrors = true
+	res.SilenceUsage = true
+
+	res.SetFlagErrorFunc(func(cmd *cobra.Command, err error) error {
+		logger.Error(err)
+		cmd.Println(cmd.UsageString())
+		return errors.Join(err, SilentError)
+	})
+
 	return res
 }
 
@@ -80,6 +91,14 @@ func newRootCmd() *cobra.Command {
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
+		if !errors.Is(err, SilentError) {
+			// handle wrapped errors
+			errs := strings.Split(err.Error(), "\n")
+
+			for _, err := range errs {
+				logger.Error(err)
+			}
+		}
 		os.Exit(1)
 	}
 }

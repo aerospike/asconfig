@@ -1,9 +1,11 @@
 package cmd
 
 import (
-	"github.com/aerospike/asconfig/asconf"
+	"errors"
 	"path/filepath"
 	"strings"
+
+	"github.com/aerospike/asconfig/asconf"
 
 	"github.com/spf13/cobra"
 )
@@ -35,3 +37,5 @@ func getConfFileFormat(path string, cmd *cobra.Command) (asconf.Format, error) {
 
 	return fmt, nil
 }
+
+var SilentError = errors.New("SILENT")
