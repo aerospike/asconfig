@@ -25,27 +25,20 @@ var preTestsConvert = []preTestConvert{
 		arguments: []string{"./bad_file.yaml", "too_many"},
 		expectedErrors: []error{
 			errTooManyArguments,
-			errFileNotExist,
-			errInvalidAerospikeVersion,
-			errUnsupportedAerospikeVersion,
 		},
 	},
 	{
 		flags:     []string{},
-		arguments: []string{"./bad_file.yaml", "too_many"},
+		arguments: []string{"./bad_file.yaml"},
 		expectedErrors: []error{
-			errTooManyArguments,
 			errFileNotExist,
-			errInvalidAerospikeVersion,
-			errUnsupportedAerospikeVersion,
 		},
 	},
 	{
 		flags:     []string{},
 		arguments: []string{"./convert_test.go"},
 		expectedErrors: []error{
-			errInvalidAerospikeVersion,
-			errUnsupportedAerospikeVersion,
+			errMissingAerospikeVersion,
 		},
 	},
 	{

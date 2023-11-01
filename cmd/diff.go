@@ -1,12 +1,14 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
-	"github.com/aerospike/asconfig/asconf"
 	"os"
 	"reflect"
 	"sort"
 	"strings"
+
+	"github.com/aerospike/asconfig/asconf"
 
 	"github.com/spf13/cobra"
 )
@@ -17,7 +19,7 @@ const (
 )
 
 var (
-	errDiffConfigsDiffer = fmt.Errorf("configuration files are not equal")
+	errDiffConfigsDiffer = errors.Join(fmt.Errorf("configuration files are not equal"), SilentError)
 	errDiffTooFewArgs    = fmt.Errorf("diff requires atleast %d file paths as arguments", diffArgMin)
 	errDiffTooManyArgs   = fmt.Errorf("diff requires no more than %d file paths as arguments", diffArgMax)
 )
@@ -120,8 +122,6 @@ func newDiffCmd() *cobra.Command {
 			if len(diffs) > 0 {
 				fmt.Printf("Differences shown from %s to %s, '<' are from file1, '>' are from file2.\n", path1, path2)
 				fmt.Println(strings.Join(diffs, ""))
-				cmd.SilenceUsage = true
-				cmd.SilenceErrors = true
 				return errDiffConfigsDiffer
 			}
 

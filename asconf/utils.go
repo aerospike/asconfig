@@ -268,7 +268,7 @@ func ParseFmtString(in string) (f Format, err error) {
 		f = AsConfig
 	default:
 		f = Invalid
-		err = fmt.Errorf("%w: %s", ErrInvalidFormat, f)
+		err = fmt.Errorf("%w: %s", ErrInvalidFormat, in)
 	}
 
 	return
