@@ -1,6 +1,3 @@
-//go:build integration
-// +build integration
-
 package main
 
 import (
@@ -67,11 +64,11 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	featKeyDir = os.Getenv("FEATKEY")
-	fmt.Println(featKeyDir)
-	if featKeyDir == "" {
-		panic("FEATKEY environement variable must be full path to a directory containing valid aerospike feature key files featuresv1.conf and featuresv2.conf of feature key format 1 and 2 respectively.")
-	}
+	// featKeyDir = os.Getenv("FEATKEY")
+	// fmt.Println(featKeyDir)
+	// if featKeyDir == "" {
+	// 	panic("FEATKEY environement variable must be full path to a directory containing valid aerospike feature key files featuresv1.conf and featuresv2.conf of feature key format 1 and 2 respectively.")
+	// }
 
 	code := m.Run()
 
@@ -912,6 +909,60 @@ func TestConvertStdin(t *testing.T) {
 
 		if _, err := diff(tmpOutFileName, tf.Expected, "--format", diffFormat); err != nil {
 			t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf.Source, err)
+		}
+
+	}
+}
+
+type validateTest struct {
+	arguments      []string
+	expectError    bool
+	expectedResult string
+}
+
+var validateTests = []validateTest{
+	{
+		arguments:      []string{"validate", "-a", "6.2.0", filepath.Join(sourcePath, "pmem_cluster_cr.yaml")},
+		expectError:    false,
+		expectedResult: "",
+	},
+	{
+		arguments:   []string{"validate", "-a", "7.0.0", filepath.Join(extraTestPath, "server64/server64.yaml")},
+		expectError: true,
+		expectedResult: `ERRO[2023-11-02T15:33:48-07:00] Aerospike config validation error: &{Value:map[group:root pidfile:/dummy/file/path1 proto-fd-max:15000 secrets-address-port:test_dns_name:4000:127.0.0.1 secrets-tls-context:tlscontext secrets-uds-path:/test/path/socket user:root] ErrType:required Context:(root).service Description:cluster-name is required Field:service} 
+ERRO[2023-11-02T15:33:48-07:00] Aerospike config validation error: &{Value:8589934592 ErrType:additional_property_not_allowed Context:(root).namespaces.0 Description:Additional property memory-size is not allowed Field:namespaces.0} 
+ERRO[2023-11-02T15:33:48-07:00] Aerospike config validation error: &{Value:map[type:memory] ErrType:number_one_of Context:(root).namespaces.0.storage-engine Description:Must validate one and only one schema (oneOf) Field:namespaces.0.storage-engine} 
+ERRO[2023-11-02T15:33:48-07:00] Aerospike config validation error: &{Value:map[type:memory] ErrType:number_one_of Context:(root).namespaces.0.storage-engine Description:Must validate one and only one schema (oneOf) Field:namespaces.0.storage-engine} 
+ERRO[2023-11-02T15:33:48-07:00] Aerospike config validation error: &{Value:map[type:memory] ErrType:required Context:(root).namespaces.0.storage-engine Description:data-size is required Field:namespaces.0.storage-engine} 
+ERRO[2023-11-02T15:33:48-07:00] Aerospike config validation error: &{Value:4294967296 ErrType:additional_property_not_allowed Context:(root).namespaces.1 Description:Additional property memory-size is not allowed Field:namespaces.1} 
+ERRO[2023-11-02T15:33:48-07:00] Aerospike config validation error: &{Value:map[mounts:[/dummy/mount/point3] mounts-high-water-pct:60 mounts-size-limit:20971520000 type:flash] ErrType:number_one_of Context:(root).namespaces.1.sindex-type Description:Must validate one and only one schema (oneOf) Field:namespaces.1.sindex-type} 
+ERRO[2023-11-02T15:33:48-07:00] Aerospike config validation error: &{Value:map[mounts:[/dummy/mount/point3] mounts-high-water-pct:60 mounts-size-limit:20971520000 type:flash] ErrType:required Context:(root).namespaces.1.sindex-type Description:mounts-budget is required Field:namespaces.1.sindex-type} 
+ERRO[2023-11-02T15:33:48-07:00] Aerospike config validation error: &{Value:60 ErrType:additional_property_not_allowed Context:(root).namespaces.1.sindex-type Description:Additional property mounts-high-water-pct is not allowed Field:namespaces.1.sindex-type} 
+ERRO[2023-11-02T15:33:48-07:00] Aerospike config validation error: &{Value:20971520000 ErrType:additional_property_not_allowed Context:(root).namespaces.1.sindex-type Description:Additional property mounts-size-limit is not allowed Field:namespaces.1.sindex-type} 
+ERRO[2023-11-02T15:33:48-07:00] Aerospike config validation error: &{Value:map[type:memory] ErrType:number_one_of Context:(root).namespaces.1.storage-engine Description:Must validate one and only one schema (oneOf) Field:namespaces.1.storage-engine} 
+ERRO[2023-11-02T15:33:48-07:00] Aerospike config validation error: &{Value:map[type:memory] ErrType:number_one_of Context:(root).namespaces.1.storage-engine Description:Must validate one and only one schema (oneOf) Field:namespaces.1.storage-engine} 
+ERRO[2023-11-02T15:33:48-07:00] Aerospike config validation error: &{Value:map[type:memory] ErrType:required Context:(root).namespaces.1.storage-engine Description:data-size is required Field:namespaces.1.storage-engine} 
+ERRO[2023-11-02T15:33:48-07:00] Aerospike config validation error: &{Value:map[mounts:[/dummy/mount/point1 /test/mount2] mounts-high-water-pct:30 mounts-size-limit:10737418240 type:flash] ErrType:number_one_of Context:(root).namespaces.1.index-type Description:Must validate one and only one schema (oneOf) Field:namespaces.1.index-type} 
+ERRO[2023-11-02T15:33:48-07:00] Aerospike config validation error: &{Value:map[mounts:[/dummy/mount/point1 /test/mount2] mounts-high-water-pct:30 mounts-size-limit:10737418240 type:flash] ErrType:required Context:(root).namespaces.1.index-type Description:mounts-budget is required Field:namespaces.1.index-type} 
+ERRO[2023-11-02T15:33:48-07:00] Aerospike config validation error: &{Value:10737418240 ErrType:additional_property_not_allowed Context:(root).namespaces.1.index-type Description:Additional property mounts-size-limit is not allowed Field:namespaces.1.index-type} 
+ERRO[2023-11-02T15:33:48-07:00] Aerospike config validation error: &{Value:30 ErrType:additional_property_not_allowed Context:(root).namespaces.1.index-type Description:Additional property mounts-high-water-pct is not allowed Field:namespaces.1.index-type} 
+ERRO[2023-11-02T15:33:48-07:00] error while validating config, config schema error
+
+`,
+	},
+}
+
+func TestValidate(t *testing.T) {
+	for _, tf := range validateTests {
+		com := exec.Command(binPath+"/asconfig.test", tf.arguments...)
+		com.Env = []string{"GOCOVERDIR=" + coveragePath}
+		out, err := com.CombinedOutput()
+		if tf.expectError == (err == nil) {
+			t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf.arguments, err)
+		}
+
+		if string(out) != tf.expectedResult {
+			t.Errorf("\nTESTCASE: %+v\nACTUAL: %s\nEXPECTED: %s", tf.arguments, string(out), tf.expectedResult)
 		}
 
 	}

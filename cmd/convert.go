@@ -35,7 +35,7 @@ var convertCmd = newConvertCmd()
 
 func newConvertCmd() *cobra.Command {
 	res := &cobra.Command{
-		Use:   "convert [flags] <path/to/config.yaml>",
+		Use:   "convert [flags] <path/to/config_file>",
 		Short: "Convert between yaml and Aerospike config format.",
 		Long: `Convert is used to convert between yaml and aerospike configuration
 				files. Input files are converted to their opposite format, yaml -> conf, conf -> yaml.
