@@ -113,9 +113,9 @@ func newConvertCmd() *cobra.Command {
 			}
 
 			if !force {
-				err = conf.Validate()
-				if err != nil {
-					return err
+				verrs, err := conf.Validate()
+				if err != nil || verrs != nil {
+					return errors.Join(err, verrs)
 				}
 			}
 

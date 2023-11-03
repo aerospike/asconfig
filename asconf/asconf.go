@@ -2,7 +2,9 @@ package asconf
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"sort"
 
 	"github.com/aerospike/aerospike-management-lib/asconfig"
 	"github.com/go-logr/logr"
@@ -59,21 +61,72 @@ func NewAsconf(source []byte, srcFmt, outFmt Format, aerospikeVersion string, lo
 	return ac, err
 }
 
-func (ac *asconf) Validate() error {
+type ValidationErr struct {
+	asconfig.ValidationErr
+}
 
-	valid, validationErrors, err := ac.cfg.IsValid(ac.managementLibLogger, ac.aerospikeVersion)
+func (o ValidationErr) Error() string {
+	verrTemplate := "\x1B[1mdescription:\x1B[22m %s, \x1B[1merror-type:\x1B[22m %s"
+	return fmt.Sprintf(verrTemplate, o.Description, o.ErrType)
+}
 
-	if len(validationErrors) > 0 {
-		for _, e := range validationErrors {
-			ac.logger.Errorf("Aerospike config validation error: %+v", e)
+type ValidationErrors struct {
+	Errors []ValidationErr
+}
+
+func (o ValidationErrors) Error() string {
+	errorsByContext := map[string][]ValidationErr{}
+
+	for _, err := range o.Errors {
+		errorsByContext[err.Context] = append(errorsByContext[err.Context], err)
+	}
+
+	contexts := []string{}
+	for ctx := range errorsByContext {
+		contexts = append(contexts, ctx)
+	}
+
+	sort.Strings(contexts)
+
+	errString := ""
+
+	for _, ctx := range contexts {
+		errString += fmt.Sprintf("\x1B[4mcontext: %s\x1B[24m\n", ctx)
+
+		errList := errorsByContext[ctx]
+		for _, err := range errList {
+
+			// filter "Must validate one and only one schema " errors
+			// I have never seen a useful one and they seem to always be
+			// accompanied by another more useful error that will be displayed
+			if err.ErrType == "number_one_of" {
+				continue
+			}
+
+			errString += fmt.Sprintf("\t%s\n", err.Error())
 		}
 	}
 
-	if !valid || err != nil || len(validationErrors) > 0 {
-		return fmt.Errorf("%w, %w", ErrConfigValidation, err)
+	return errString
+}
+
+func (ac *asconf) Validate() (*ValidationErrors, error) {
+
+	valid, tempVerrs, err := ac.cfg.IsValid(ac.managementLibLogger, ac.aerospikeVersion)
+
+	verrs := ValidationErrors{}
+	for _, v := range tempVerrs {
+		verr := ValidationErr{
+			ValidationErr: *v,
+		}
+		verrs.Errors = append(verrs.Errors, verr)
 	}
 
-	return err
+	if !valid || err != nil || len(verrs.Errors) > 0 {
+		return &verrs, errors.Join(ErrConfigValidation, err)
+	}
+
+	return nil, nil
 }
 
 func (ac *asconf) MarshalText() (text []byte, err error) {

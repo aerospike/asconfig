@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -81,9 +82,13 @@ func newValidateCmd() *cobra.Command {
 				return err
 			}
 
-			// TODO should the validation errors be printed to stdout or stderr?
-			// should they come with the standard error log line?
-			err = conf.Validate()
+			verrs, err := conf.Validate()
+			if verrs != nil {
+				// force validation errors to be written to stdout
+				// so they can more easily be grepd etc.
+				cmd.Print(verrs.Error())
+				return errors.Join(asconf.ErrConfigValidation, SilentError)
+			}
 			if err != nil {
 				return err
 			}

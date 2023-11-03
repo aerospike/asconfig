@@ -1,16 +1,19 @@
+//go:build unit
+// +build unit
+
 package cmd
 
 import (
 	"testing"
 )
 
-type runTestDiff struct {
+type runTestValidate struct {
 	flags       []string
 	arguments   []string
 	expectError bool
 }
 
-var testArgs = []runTestDiff{
+var testValidateArgs = []runTestValidate{
 	{
 		flags:       []string{},
 		arguments:   []string{"too", "many", "args"},
@@ -52,7 +55,7 @@ var testArgs = []runTestDiff{
 func TestRunEValidate(t *testing.T) {
 	cmd := validateCmd
 
-	for i, test := range testArgs {
+	for i, test := range testValidateArgs {
 		cmd.Parent().ParseFlags(test.flags)
 		cmd.ParseFlags(test.flags)
 		err := cmd.RunE(cmd, test.arguments)
