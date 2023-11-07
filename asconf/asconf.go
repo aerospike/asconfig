@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/aerospike/aerospike-management-lib/asconfig"
 	"github.com/go-logr/logr"
@@ -65,17 +66,25 @@ type ValidationErr struct {
 	asconfig.ValidationErr
 }
 
+type VErrSlice []ValidationErr
+
+func (a VErrSlice) Len() int           { return len(a) }
+func (a VErrSlice) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a VErrSlice) Less(i, j int) bool { return strings.Compare(a[i].Error(), a[j].Error()) == -1 }
+
 func (o ValidationErr) Error() string {
-	verrTemplate := "\x1B[1mdescription:\x1B[22m %s, \x1B[1merror-type:\x1B[22m %s"
+	verrTemplate := "description: %s, error-type: %s"
 	return fmt.Sprintf(verrTemplate, o.Description, o.ErrType)
 }
 
 type ValidationErrors struct {
-	Errors []ValidationErr
+	Errors VErrSlice
 }
 
 func (o ValidationErrors) Error() string {
-	errorsByContext := map[string][]ValidationErr{}
+	errorsByContext := map[string]VErrSlice{}
+
+	sort.Sort(o.Errors)
 
 	for _, err := range o.Errors {
 		errorsByContext[err.Context] = append(errorsByContext[err.Context], err)
@@ -91,7 +100,7 @@ func (o ValidationErrors) Error() string {
 	errString := ""
 
 	for _, ctx := range contexts {
-		errString += fmt.Sprintf("\x1B[4mcontext: %s\x1B[24m\n", ctx)
+		errString += fmt.Sprintf("context: %s\n", ctx)
 
 		errList := errorsByContext[ctx]
 		for _, err := range errList {
@@ -103,7 +112,7 @@ func (o ValidationErrors) Error() string {
 				continue
 			}
 
-			errString += fmt.Sprintf("\t%s\n", err.Error())
+			errString += fmt.Sprintf("\t- %s\n", err.Error())
 		}
 	}
 

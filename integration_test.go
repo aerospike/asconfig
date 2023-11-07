@@ -933,24 +933,23 @@ var validateTests = []validateTest{
 		expectError: true,
 		source:      filepath.Join(extraTestPath, "server64/server64.yaml"),
 		expectedResult: `context: (root).namespaces.0
-        description: Additional property memory-size is not allowed, error-type: additional_property_not_allowed
+	- description: Additional property memory-size is not allowed, error-type: additional_property_not_allowed
 context: (root).namespaces.0.storage-engine
-        description: data-size is required, error-type: required
+	- description: data-size is required, error-type: required
 context: (root).namespaces.1
-        description: Additional property memory-size is not allowed, error-type: additional_property_not_allowed
+	- description: Additional property memory-size is not allowed, error-type: additional_property_not_allowed
 context: (root).namespaces.1.index-type
-        description: mounts-budget is required, error-type: required
-        description: Additional property mounts-high-water-pct is not allowed, error-type: additional_property_not_allowed
-        description: Additional property mounts-size-limit is not allowed, error-type: additional_property_not_allowed
+	- description: Additional property mounts-high-water-pct is not allowed, error-type: additional_property_not_allowed
+	- description: Additional property mounts-size-limit is not allowed, error-type: additional_property_not_allowed
+	- description: mounts-budget is required, error-type: required
 context: (root).namespaces.1.sindex-type
-        description: mounts-budget is required, error-type: required
-        description: Additional property mounts-high-water-pct is not allowed, error-type: additional_property_not_allowed
-        description: Additional property mounts-size-limit is not allowed, error-type: additional_property_not_allowed
+	- description: Additional property mounts-high-water-pct is not allowed, error-type: additional_property_not_allowed
+	- description: Additional property mounts-size-limit is not allowed, error-type: additional_property_not_allowed
+	- description: mounts-budget is required, error-type: required
 context: (root).namespaces.1.storage-engine
-        description: data-size is required, error-type: required
+	- description: data-size is required, error-type: required
 context: (root).service
-        description: cluster-name is required, error-type: required
-
+	- description: cluster-name is required, error-type: required
 `,
 	},
 }
