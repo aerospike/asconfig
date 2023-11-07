@@ -36,7 +36,7 @@ func newValidateCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger.Debug("Running validate command")
 
-			if len(args) > convertArgMax {
+			if len(args) > validateArgMax {
 				return errValidateTooManyArguments
 			}
 
@@ -98,8 +98,7 @@ func newValidateCmd() *cobra.Command {
 	}
 
 	// flags and configuration settings
-	// aerospike-version is marked required in this cmd's PreRun if the --force flag is not provided
-	res.Flags().StringP("aerospike-version", "a", "", "Aerospike server version for the configuration file. Ex: 6.2.0.\nThe first 3 digits of the Aerospike version number are required.\nThis option is required unless --force is used")
+	res.Flags().StringP("aerospike-version", "a", "", "Aerospike server version for the configuration file. Ex: 6.2.0.\nThe first 3 digits of the Aerospike version number are required.")
 	res.MarkFlagRequired("aerospike-version")
 
 	res.Version = VERSION
