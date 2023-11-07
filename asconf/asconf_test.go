@@ -155,7 +155,7 @@ func Test_asconf_Validate(t *testing.T) {
 				src:                 tt.fields.src,
 				aerospikeVersion:    tt.fields.aerospikeVersion,
 			}
-			if err := ac.Validate(); (err != nil) != tt.wantErr {
+			if _, err := ac.Validate(); (err != nil) != tt.wantErr {
 				t.Errorf("asconf.Validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
