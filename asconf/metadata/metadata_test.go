@@ -118,11 +118,11 @@ func TestUnmarshal(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := metadata.UnmarshalText(tt.args.src, tt.args.dst); (err != nil) != tt.wantErr {
+			if err := metadata.Unmarshal(tt.args.src, tt.args.dst); (err != nil) != tt.wantErr {
 				t.Errorf("Unmarshal() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if !reflect.DeepEqual(tt.args.dst, tt.want) {
-				t.Errorf("MarshalText() = %v, want %v", tt.args.dst, tt.want)
+				t.Errorf("Unmarshal() = %v, want %v", tt.args.dst, tt.want)
 			}
 		})
 	}
@@ -180,13 +180,13 @@ func TestMarshalText(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := metadata.MarshalText(tt.args.src)
+			got, err := metadata.Marshal(tt.args.src)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("MarshalText() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Marshal() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("MarshalText() = %v, want %v", got, tt.want)
+				t.Errorf("Marshal() = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -13,13 +13,7 @@ func init() {
 	findComments = regexp.MustCompile(commentChar + `(?m)\s*(.+):\s*(.+)\s*$`)
 }
 
-// type Data struct {
-// 	AerospikeVersion string `aero-meta:"aerospike-server-version"`
-// 	AsadmVersion     string `aero-meta:"asadm-version"`
-// 	AsconfigVersion  string `aero-meta:"asconfig-version"`
-// }
-
-func UnmarshalText(src []byte, dst map[string]string) error {
+func Unmarshal(src []byte, dst map[string]string) error {
 	matches := findComments.FindAllSubmatch(src, -1)
 
 	for _, match := range matches {
@@ -40,7 +34,7 @@ func formatLine(k string, v any) string {
 	return fmt.Sprintf(fmtStr, commentChar, k, v)
 }
 
-func MarshalText(src map[string]string) ([]byte, error) {
+func Marshal(src map[string]string) ([]byte, error) {
 	res := []byte{}
 
 	for k, v := range src {

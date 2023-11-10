@@ -39,7 +39,7 @@ func genMetaDataText(args metaDataArgs) ([]byte, error) {
 	asv := args.asconfigVersion
 
 	mdata := map[string]string{}
-	err := metadata.UnmarshalText(src, mdata)
+	err := metadata.Unmarshal(src, mdata)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func genMetaDataText(args metaDataArgs) ([]byte, error) {
 		}
 	}
 
-	mtext, err := metadata.MarshalText(filteredMdata)
+	mtext, err := metadata.Marshal(filteredMdata)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func genMetaDataText(args metaDataArgs) ([]byte, error) {
 
 func getMetaDataItem(src []byte, key string) (string, error) {
 	mdata := map[string]string{}
-	err := metadata.UnmarshalText(src, mdata)
+	err := metadata.Unmarshal(src, mdata)
 	if err != nil {
 		return "", err
 	}

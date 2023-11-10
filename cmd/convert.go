@@ -110,7 +110,7 @@ func newConvertCmd() *cobra.Command {
 			if version == "" {
 				version, err = getMetaDataItem(fdata, metaKeyAerospikeVersion)
 				if err != nil {
-					return err
+					return errors.Join(errMissingAerospikeVersion, err)
 				}
 			}
 
@@ -220,7 +220,7 @@ func newConvertCmd() *cobra.Command {
 			}
 
 			metaData := map[string]string{}
-			metadata.UnmarshalText(cfgData, metaData)
+			metadata.Unmarshal(cfgData, metaData)
 
 			// if the aerospike server version is in the cfg file's
 			// metadata, don't mark --aerospike-version as required
