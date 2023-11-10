@@ -13,12 +13,15 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/aerospike/asconfig/asconf/metadata"
+	"github.com/aerospike/asconfig/cmd"
 	"github.com/aerospike/asconfig/testutils"
 
 	"github.com/docker/docker/api/types"
@@ -797,7 +800,7 @@ func diff(args ...string) ([]byte, error) {
 	args = append([]string{"diff"}, args...)
 	com := exec.Command(binPath+"/asconfig.test", args...)
 	com.Env = []string{"GOCOVERDIR=" + coveragePath}
-	diff, err := com.Output()
+	diff, err := com.CombinedOutput()
 	if err != nil {
 		err = fmt.Errorf("diff failed err: %s, out: %s", err, string(diff))
 	}
@@ -914,5 +917,67 @@ func TestConvertStdin(t *testing.T) {
 			t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf.Source, err)
 		}
 
+	}
+}
+
+type convertMetaDataTest struct {
+	expectedMetaData map[string]string
+	expectedFile     string
+	arguments        []string
+}
+
+var convertMetaDataTests = []convertMetaDataTest{
+	{
+		expectedMetaData: map[string]string{
+			"aerospike-server-version": "6.2.0.2",
+			"asconfig-version":         cmd.VERSION,
+		},
+		expectedFile: filepath.Join(expectedPath, "all_flash_cluster_cr.conf"),
+		arguments:    []string{"convert", "-a", "6.2.0.2", filepath.Join(sourcePath, "all_flash_cluster_cr.yaml")},
+	},
+	{
+		expectedMetaData: map[string]string{
+			"aerospike-server-version": "6.4.0",
+			"asconfig-version":         cmd.VERSION,
+			"asadm-version":            "2.12.0",
+		},
+		expectedFile: filepath.Join(extraTestPath, "metadata", "metadata.yaml"),
+		arguments:    []string{"convert", filepath.Join(extraTestPath, "metadata", "metadata.conf")},
+	},
+}
+
+func TestConvertMetaData(t *testing.T) {
+	for _, tf := range convertMetaDataTests {
+		tmpOutFileName := filepath.Join(destinationPath, "stdinConvertTmp")
+
+		tf.arguments = append(tf.arguments, "-o", tmpOutFileName)
+		com := exec.Command(binPath+"/asconfig.test", tf.arguments...)
+		com.Env = []string{"GOCOVERDIR=" + coveragePath}
+		output, err := com.CombinedOutput()
+		if err != nil {
+			t.Errorf("convert failed err: %s, out: %s", err, string(output))
+		}
+
+		fileOut, err := os.ReadFile(tmpOutFileName)
+		if err != nil {
+			t.Error(err)
+		}
+
+		metaData := map[string]string{}
+		err = metadata.UnmarshalText(fileOut, metaData)
+		if err != nil {
+			t.Errorf("metadata unmarshal err: %s, out: %s", err, string(fileOut))
+		}
+
+		if !reflect.DeepEqual(metaData, tf.expectedMetaData) {
+			t.Errorf("METADATA NOT EQUAL\nCASE: %+v\nACTUAL: %+v\nEXPECTED: %+v\n", tf, metaData, tf.expectedMetaData)
+		}
+
+		diffFormat := filepath.Ext(tf.expectedFile)
+		diffFormat = strings.TrimPrefix(diffFormat, ".")
+
+		if _, err := diff(tmpOutFileName, tf.expectedFile, "--format", diffFormat); err != nil {
+			t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf, err)
+		}
 	}
 }
