@@ -937,7 +937,7 @@ var convertMetaDataTests = []convertMetaDataTest{
 	},
 	{
 		expectedMetaData: map[string]string{
-			"aerospike-server-version": "6.4.0",
+			"aerospike-server-version": "6.4.0.1",
 			"asconfig-version":         cmd.VERSION,
 			"asadm-version":            "2.12.0",
 		},
@@ -964,7 +964,7 @@ func TestConvertMetaData(t *testing.T) {
 		}
 
 		metaData := map[string]string{}
-		err = metadata.UnmarshalText(fileOut, metaData)
+		err = metadata.Unmarshal(fileOut, metaData)
 		if err != nil {
 			t.Errorf("metadata unmarshal err: %s, out: %s", err, string(fileOut))
 		}
