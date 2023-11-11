@@ -3,6 +3,7 @@ package metadata
 import (
 	"fmt"
 	"regexp"
+	"sort"
 )
 
 var commentChar string
@@ -36,9 +37,16 @@ func formatLine(k string, v any) string {
 
 func Marshal(src map[string]string) ([]byte, error) {
 	res := []byte{}
+	lines := make([]string, len(src))
 
 	for k, v := range src {
-		res = append(res, []byte(formatLine(k, v)+"\n")...)
+		lines = append(lines, formatLine(k, v)+"\n")
+	}
+
+	sort.Strings(lines)
+
+	for _, v := range lines {
+		res = append(res, []byte(v)...)
 	}
 
 	return res, nil
