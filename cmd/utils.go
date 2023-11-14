@@ -18,12 +18,6 @@ const (
 	metaKeyAsadmVersion     = "asadm-version"
 )
 
-var metaDataKeys = map[string]struct{}{
-	metaKeyAerospikeVersion: struct{}{},
-	metaKeyAsconfigVersion:  struct{}{},
-	metaKeyAsadmVersion:     struct{}{},
-}
-
 type metaDataArgs struct {
 	src              []byte
 	aerospikeVersion string
@@ -47,14 +41,7 @@ func genMetaDataText(args metaDataArgs) ([]byte, error) {
 	mdata[metaKeyAerospikeVersion] = aev
 	mdata[metaKeyAsconfigVersion] = asv
 
-	filteredMdata := map[string]string{}
-	for k, v := range mdata {
-		if _, ok := metaDataKeys[k]; ok {
-			filteredMdata[k] = v
-		}
-	}
-
-	mtext, err := metadata.Marshal(filteredMdata)
+	mtext, err := metadata.Marshal(mdata)
 	if err != nil {
 		return nil, err
 	}

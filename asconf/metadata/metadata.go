@@ -11,6 +11,13 @@ var findComments *regexp.Regexp
 
 func init() {
 	commentChar = "#"
+	// findComments matches text of the form `<commentChar> <key>: <val>`
+	// for example, parsing...
+	// # comment about metadata
+	// # a: b
+	// other data
+	// matches
+	// # a: b
 	findComments = regexp.MustCompile(commentChar + `(?m)\s*(.+):\s*(.+)\s*$`)
 }
 
