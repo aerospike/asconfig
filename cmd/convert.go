@@ -39,6 +39,8 @@ func newConvertCmd() *cobra.Command {
 		Short: "Convert between yaml and Aerospike config format.",
 		Long: `Convert is used to convert between yaml and aerospike configuration
 				files. Input files are converted to their opposite format, yaml -> conf, conf -> yaml.
+				The convert command validates the configuration file for compatibility with the Aerospike
+				version passed to the --aerospike-version option, unless the --force option is used.
 				Specifying the server version that will use the aerospike.conf is required.
 				Usage examples...
 				convert local file "aerospike.yaml" to aerospike config format for version 6.2.0 and

@@ -14,7 +14,7 @@ import (
 // common flags
 func getCommonFlags() *pflag.FlagSet {
 	res := &pflag.FlagSet{}
-	res.StringP("aerospike-version", "a", "", "Aerospike server version for the configuration file. Ex: 6.2.0.\nThe first 3 digits of the Aerospike version number are required.")
+	res.StringP("aerospike-version", "a", "", "Aerospike server version to validate the configuration file for. Ex: 6.2.0.\nThe first 3 digits of the Aerospike version number are required.\nThis option is required unless --force is used.")
 
 	return res
 }
