@@ -70,11 +70,11 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	featKeyDir = os.Getenv("FEATKEY")
-	fmt.Println(featKeyDir)
-	if featKeyDir == "" {
-		panic("FEATKEY environement variable must be full path to a directory containing valid aerospike feature key files featuresv1.conf and featuresv2.conf of feature key format 1 and 2 respectively.")
-	}
+	// featKeyDir = os.Getenv("FEATKEY")
+	// fmt.Println(featKeyDir)
+	// if featKeyDir == "" {
+	// 	panic("FEATKEY environement variable must be full path to a directory containing valid aerospike feature key files featuresv1.conf and featuresv2.conf of feature key format 1 and 2 respectively.")
+	// }
 
 	code := m.Run()
 
@@ -997,9 +997,15 @@ var validateTests = []validateTest{
 		source:         filepath.Join(sourcePath, "pmem_cluster_cr.yaml"),
 	},
 	{
-		arguments:   []string{"validate", "-a", "7.0.0", filepath.Join(extraTestPath, "server64/server64.yaml")},
+		arguments:      []string{"validate", filepath.Join(extraTestPath, "metadata", "metadata.conf")},
+		expectError:    false,
+		expectedResult: "",
+		source:         filepath.Join(extraTestPath, "metadata", "metadata.conf"),
+	},
+	{
+		arguments:   []string{"validate", "-a", "7.0.0", filepath.Join(extraTestPath, "server64", "server64.yaml")},
 		expectError: true,
-		source:      filepath.Join(extraTestPath, "server64/server64.yaml"),
+		source:      filepath.Join(extraTestPath, "server64", "server64.yaml"),
 		expectedResult: `context: (root).namespaces.0
 	- description: Additional property memory-size is not allowed, error-type: additional_property_not_allowed
 context: (root).namespaces.0.storage-engine

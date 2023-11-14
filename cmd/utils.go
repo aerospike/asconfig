@@ -54,15 +54,25 @@ func genMetaDataText(args metaDataArgs) ([]byte, error) {
 	return mtext, nil
 }
 
-func getMetaDataItem(src []byte, key string) (string, error) {
+func getMetaDataItemOptional(src []byte, key string) (string, error) {
 	mdata := map[string]string{}
 	err := metadata.Unmarshal(src, mdata)
 	if err != nil {
 		return "", err
 	}
 
-	val, ok := mdata[key]
-	if !ok {
+	val := mdata[key]
+
+	return val, nil
+}
+
+func getMetaDataItem(src []byte, key string) (string, error) {
+	val, err := getMetaDataItemOptional(src, key)
+	if err != nil {
+		return "", err
+	}
+
+	if val == "" {
 		return "", fmt.Errorf("metadata does not contain %s", key)
 	}
 
