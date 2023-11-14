@@ -10,6 +10,7 @@ import (
 	"github.com/aerospike/asconfig/asconf/metadata"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 const (
@@ -66,6 +67,14 @@ func getMetaDataItem(src []byte, key string) (string, error) {
 	}
 
 	return val, nil
+}
+
+// common flags
+func getCommonFlags() *pflag.FlagSet {
+	res := &pflag.FlagSet{}
+	res.StringP("aerospike-version", "a", "", "Aerospike server version to validate the configuration file for. Ex: 6.2.0.\nThe first 3 digits of the Aerospike version number are required.\nThis option is required unless --force is used.")
+
+	return res
 }
 
 // getConfFileFormat guesses the format of an input config file

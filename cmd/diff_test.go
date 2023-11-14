@@ -13,7 +13,7 @@ type runTestDiff struct {
 	expectError bool
 }
 
-var testArgs = []runTestDiff{
+var testDiffArgs = []runTestDiff{
 	{
 		flags:       []string{},
 		arguments:   []string{"not_enough_args"},
@@ -64,7 +64,7 @@ var testArgs = []runTestDiff{
 func TestRunEDiff(t *testing.T) {
 	cmd := diffCmd
 
-	for i, test := range testArgs {
+	for i, test := range testDiffArgs {
 		cmd.ParseFlags(test.flags)
 		err := cmd.RunE(cmd, test.arguments)
 		if test.expectError == (err == nil) {

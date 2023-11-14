@@ -1,10 +1,6 @@
 github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 h1:UQHMgLO+TxOElx5B5HZ4hJQsoJ/PvUvKRhJHDQXO8P8=
 github.com/Microsoft/go-winio v0.6.1 h1:9/kr64B9VUZrLm5YYwbGtUJnMgqWVOdUAXu6Migciow=
 github.com/Microsoft/go-winio v0.6.1/go.mod h1:LRdKpFKfdobln8UmuiYcKPot9D2v6svN5+sAH+4kjUM=
-github.com/aerospike/aerospike-management-lib v0.0.0-20231025222637-439d643badb8 h1:DhmnlRVu4CURbZhA6oTSyTUSKaG3XWYOviEnyxOzy0g=
-github.com/aerospike/aerospike-management-lib v0.0.0-20231025222637-439d643badb8/go.mod h1:O4v2oGl4VjG9KwYJoSVEwZXv1PUB4ioKAsrm2tczJPQ=
-github.com/aerospike/aerospike-management-lib v0.0.0-20231025224657-765f71b4994d h1:WqKtqOqdZ41/WvbPV/3tGa4KNXZOOTdhwz/K1+P2CuI=
-github.com/aerospike/aerospike-management-lib v0.0.0-20231025224657-765f71b4994d/go.mod h1:O4v2oGl4VjG9KwYJoSVEwZXv1PUB4ioKAsrm2tczJPQ=
 github.com/aerospike/aerospike-management-lib v0.0.0-20231106202816-b2438dbb7e03 h1:Od7oCSBCTfpRmk73fbNGXA53U1in38iNSklCEwMMZFc=
 github.com/aerospike/aerospike-management-lib v0.0.0-20231106202816-b2438dbb7e03/go.mod h1:O4v2oGl4VjG9KwYJoSVEwZXv1PUB4ioKAsrm2tczJPQ=
 github.com/bombsimon/logrusr/v4 v4.0.0 h1:Pm0InGphX0wMhPqC02t31onlq9OVyJ98eP/Vh63t1Oo=
