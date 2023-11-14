@@ -119,6 +119,11 @@ func (o ValidationErrors) Error() string {
 	return errString
 }
 
+// Validate validates the parsed configuration in ac against
+// the Aerospike schema matching ac.aerospikeVersion.
+// ValidationErrors is not nil if any errors during validation occur.
+// ValidationErrors Error() method outputs a human readable string of validation error details.
+// error is not nil if validation, or any other type of error occurs.
 func (ac *asconf) Validate() (*ValidationErrors, error) {
 
 	valid, tempVerrs, err := ac.cfg.IsValid(ac.managementLibLogger, ac.aerospikeVersion)

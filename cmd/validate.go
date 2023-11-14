@@ -28,7 +28,7 @@ func newValidateCmd() *cobra.Command {
 		Use:   "validate [flags] <path/to/config_file>",
 		Short: "Validate an Aerospike configuration file.",
 		Long: `Validate an Aerospike configuration file in any supported format
-				against a versioned Aerospike configuration JSON schema.
+				against a versioned Aerospike configuration schema.
 				If a file passes validation nothing is output, otherwise errors
 				indicating problems with the configuration file are shown.
 				If a file path is not provided, validate reads from stdin.
@@ -98,7 +98,8 @@ func newValidateCmd() *cobra.Command {
 	}
 
 	// flags and configuration settings
-	res.Flags().StringP("aerospike-version", "a", "", "Aerospike server version for the configuration file. Ex: 6.2.0.\nThe first 3 digits of the Aerospike version number are required.")
+	commonFlags := getCommonFlags()
+	res.Flags().AddFlagSet(commonFlags)
 	res.MarkFlagRequired("aerospike-version")
 
 	res.Version = VERSION

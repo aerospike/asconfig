@@ -8,7 +8,16 @@ import (
 	"github.com/aerospike/asconfig/asconf"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
+
+// common flags
+func getCommonFlags() *pflag.FlagSet {
+	res := &pflag.FlagSet{}
+	res.StringP("aerospike-version", "a", "", "Aerospike server version for the configuration file. Ex: 6.2.0.\nThe first 3 digits of the Aerospike version number are required.")
+
+	return res
+}
 
 // getConfFileFormat guesses the format of an input config file
 // based on file extension and the --format flag of the cobra command
