@@ -35,7 +35,7 @@ var convertCmd = newConvertCmd()
 
 func newConvertCmd() *cobra.Command {
 	res := &cobra.Command{
-		Use:   "convert [flags] <path/to/config.yaml>",
+		Use:   "convert [flags] <path/to/config_file>",
 		Short: "Convert between yaml and Aerospike config format.",
 		Long: `Convert is used to convert between yaml and aerospike configuration
 				files. Input files are converted to their opposite format, yaml -> conf, conf -> yaml.
@@ -115,9 +115,9 @@ func newConvertCmd() *cobra.Command {
 			}
 
 			if !force {
-				err = conf.Validate()
-				if err != nil {
-					return err
+				verrs, err := conf.Validate()
+				if err != nil || verrs != nil {
+					return errors.Join(err, verrs)
 				}
 			}
 
@@ -222,7 +222,8 @@ func newConvertCmd() *cobra.Command {
 
 	// flags and configuration settings
 	// aerospike-version is marked required in this cmd's PreRun if the --force flag is not provided
-	res.Flags().StringP("aerospike-version", "a", "", "Aerospike server version to validate the configuration file for. Ex: 6.2.0.\nThe first 3 digits of the Aerospike version number are required.\nThis option is required unless --force is used")
+	commonFlags := getCommonFlags()
+	res.Flags().AddFlagSet(commonFlags)
 	res.Flags().BoolP("force", "f", false, "Override checks for supported server version and config validation")
 	res.Flags().StringP("output", "o", os.Stdout.Name(), "File path to write output to")
 

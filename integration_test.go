@@ -916,3 +916,81 @@ func TestConvertStdin(t *testing.T) {
 
 	}
 }
+
+type validateTest struct {
+	arguments      []string
+	source         string
+	expectError    bool
+	expectedResult string
+}
+
+var validateTests = []validateTest{
+	{
+		arguments:      []string{"validate", "-a", "6.2.0", filepath.Join(sourcePath, "pmem_cluster_cr.yaml")},
+		expectError:    false,
+		expectedResult: "",
+		source:         filepath.Join(sourcePath, "pmem_cluster_cr.yaml"),
+	},
+	{
+		arguments:   []string{"validate", "-a", "7.0.0", filepath.Join(extraTestPath, "server64/server64.yaml")},
+		expectError: true,
+		source:      filepath.Join(extraTestPath, "server64/server64.yaml"),
+		expectedResult: `context: (root).namespaces.0
+	- description: Additional property memory-size is not allowed, error-type: additional_property_not_allowed
+context: (root).namespaces.0.storage-engine
+	- description: data-size is required, error-type: required
+context: (root).namespaces.1
+	- description: Additional property memory-size is not allowed, error-type: additional_property_not_allowed
+context: (root).namespaces.1.index-type
+	- description: Additional property mounts-high-water-pct is not allowed, error-type: additional_property_not_allowed
+	- description: Additional property mounts-size-limit is not allowed, error-type: additional_property_not_allowed
+	- description: mounts-budget is required, error-type: required
+context: (root).namespaces.1.sindex-type
+	- description: Additional property mounts-high-water-pct is not allowed, error-type: additional_property_not_allowed
+	- description: Additional property mounts-size-limit is not allowed, error-type: additional_property_not_allowed
+	- description: mounts-budget is required, error-type: required
+context: (root).namespaces.1.storage-engine
+	- description: data-size is required, error-type: required
+context: (root).service
+	- description: cluster-name is required, error-type: required
+`,
+	},
+}
+
+func TestValidate(t *testing.T) {
+	for _, tf := range validateTests {
+		com := exec.Command(binPath+"/asconfig.test", tf.arguments...)
+		com.Env = []string{"GOCOVERDIR=" + coveragePath}
+		out, err := com.CombinedOutput()
+		if tf.expectError == (err == nil) {
+			t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf.arguments, err)
+		}
+
+		if string(out) != tf.expectedResult {
+			t.Errorf("\nTESTCASE: %+v\nACTUAL: %s\nEXPECTED: %s", tf.arguments, string(out), tf.expectedResult)
+		}
+
+	}
+}
+
+func TestStdinValidate(t *testing.T) {
+	for _, tf := range validateTests {
+		in, err := os.Open(tf.source)
+		if err != nil {
+			t.Error(err)
+		}
+		defer in.Close()
+
+		com := exec.Command(binPath+"/asconfig.test", tf.arguments...)
+		com.Env = []string{"GOCOVERDIR=" + coveragePath}
+		com.Stdin = in
+		out, err := com.CombinedOutput()
+		if tf.expectError == (err == nil) {
+			t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf.arguments, err)
+		}
+
+		if string(out) != tf.expectedResult {
+			t.Errorf("\nTESTCASE: %+v\nACTUAL: %s\nEXPECTED: %s", tf.arguments, string(out), tf.expectedResult)
+		}
+	}
+}
