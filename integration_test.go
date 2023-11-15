@@ -70,11 +70,11 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	// featKeyDir = os.Getenv("FEATKEY")
-	// fmt.Println(featKeyDir)
-	// if featKeyDir == "" {
-	// 	panic("FEATKEY environement variable must be full path to a directory containing valid aerospike feature key files featuresv1.conf and featuresv2.conf of feature key format 1 and 2 respectively.")
-	// }
+	featKeyDir = os.Getenv("FEATKEY")
+	fmt.Println(featKeyDir)
+	if featKeyDir == "" {
+		panic("FEATKEY environement variable must be full path to a directory containing valid aerospike feature key files featuresv1.conf and featuresv2.conf of feature key format 1 and 2 respectively.")
+	}
 
 	code := m.Run()
 
