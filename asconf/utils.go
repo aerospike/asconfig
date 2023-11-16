@@ -266,6 +266,8 @@ func ParseFmtString(in string) (f Format, err error) {
 		f = YAML
 	case "asconfig", "conf", "asconf":
 		f = AsConfig
+	case "json":
+		f = JSON
 	default:
 		f = Invalid
 		err = fmt.Errorf("%w: %s", ErrInvalidFormat, in)

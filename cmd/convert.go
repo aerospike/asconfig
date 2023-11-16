@@ -94,8 +94,10 @@ func newConvertCmd() *cobra.Command {
 			var outFmt asconf.Format
 			switch srcFormat {
 			case asconf.AsConfig:
-				outFmt = asconf.YAML
+				outFmt = asconf.JSON
 			case asconf.YAML:
+				outFmt = asconf.AsConfig
+			case asconf.JSON:
 				outFmt = asconf.AsConfig
 			default:
 				return fmt.Errorf("%w: %s", errInvalidFormat, srcFormat)

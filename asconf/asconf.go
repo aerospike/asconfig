@@ -2,6 +2,7 @@ package asconf
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
@@ -19,6 +20,7 @@ const (
 	Invalid  Format = ""
 	YAML     Format = "yaml"
 	AsConfig Format = "asconfig"
+	JSON     Format = "json"
 )
 
 var (
@@ -148,6 +150,9 @@ func (ac *asconf) MarshalText() (text []byte, err error) {
 	switch ac.outFmt {
 	case AsConfig:
 		text = []byte(ac.cfg.ToConfFile())
+	case JSON:
+		m := ac.cfg.ToMap()
+		text, err = json.Marshal(m)
 	case YAML:
 		m := ac.cfg.ToMap()
 		text, err = yaml.Marshal(m)
@@ -167,6 +172,8 @@ func (ac *asconf) load() (err error) {
 	switch ac.srcFmt {
 	case YAML:
 		err = ac.loadYAML()
+	case JSON:
+		err = ac.loadJSON()
 	case AsConfig:
 		err = ac.loadAsConf()
 	default:
@@ -200,6 +207,29 @@ func (ac *asconf) loadYAML() error {
 	var data map[string]any
 
 	err := yaml.Unmarshal(ac.src, &data)
+	if err != nil {
+		return err
+	}
+
+	c, err := asconfig.NewMapAsConfig(
+		ac.managementLibLogger,
+		ac.aerospikeVersion,
+		data,
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to initialize asconfig from yaml: %w", err)
+	}
+
+	ac.cfg = c
+
+	return nil
+}
+
+func (ac *asconf) loadJSON() error {
+	var data map[string]any
+
+	err := json.Unmarshal(ac.src, &data)
 	if err != nil {
 		return err
 	}
