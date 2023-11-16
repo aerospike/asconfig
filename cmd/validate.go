@@ -48,13 +48,6 @@ func newValidateCmd() *cobra.Command {
 				srcPath = args[0]
 			}
 
-			version, err := cmd.Flags().GetString("aerospike-version")
-			if err != nil {
-				return err
-			}
-
-			logger.Debugf("Processing flag aerospike-version value=%s", version)
-
 			srcFormat, err := getConfFileFormat(srcPath, cmd)
 			if err != nil {
 				return err
@@ -66,6 +59,30 @@ func newValidateCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			version, err := getMetaDataItemOptional(fdata, metaKeyAerospikeVersion)
+			if err != nil {
+				return errors.Join(errMissingAerospikeVersion, err)
+			}
+
+			// if the Aerospike server version was not in the file
+			// metadata, require that it is passed as an argument
+			if version == "" {
+				cmd.MarkFlagRequired("aerospike-version")
+			}
+
+			versionArg, err := cmd.Flags().GetString("aerospike-version")
+			if err != nil {
+				return err
+			}
+
+			// the command line --aerospike-version option overrides
+			// the metadata server version
+			if versionArg != "" {
+				version = versionArg
+			}
+
+			logger.Debugf("Processing flag aerospike-version value=%s", version)
 
 			conf, err := asconf.NewAsconf(
 				fdata,
@@ -98,9 +115,10 @@ func newValidateCmd() *cobra.Command {
 	}
 
 	// flags and configuration settings
+	// --aerospike-version is required unless the server version
+	// is in the input config file's metadata
 	commonFlags := getCommonFlags()
 	res.Flags().AddFlagSet(commonFlags)
-	res.MarkFlagRequired("aerospike-version")
 
 	res.Version = VERSION
 
