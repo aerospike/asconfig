@@ -8,12 +8,13 @@ CONFIG_DIR = /etc/aerospike
 
 # Package variables
 NAME = "asconfig"
-VERSION = $(shell git describe --tags --always | cut -c 2-)
+VERSION = $(shell git describe --tags --always)
 MAINTAINER = "Aerospike"
 DESCRIPTION = "Asconfig, a tool for managing Aerospike database configuration files."
 LICENSE = "Apache License 2.0"
 URL = "https://github.com/aerospike/asconfig"
 VENDOR = "Aerospike, Inc."
+ARCH = $(shell uname -m)
 
 
 .PHONY: all
@@ -33,7 +34,7 @@ deb: prep
 		--license $(LICENSE) \
 		--url $(URL) \
 		--vendor $(VENDOR) \
-		--package $(TARGET_DIR)/asconfig-$(VERSION)-amd64.deb
+		--package $(TARGET_DIR)/asconfig-$(VERSION)-$(ARCH).deb
 
 .PHONY: rpm
 rpm: prep
@@ -49,7 +50,7 @@ rpm: prep
 		--license $(LICENSE) \
 		--url $(URL) \
 		--vendor $(VENDOR) \
-		--package $(TARGET_DIR)/asconfig-$(VERSION)-x86_64.rpm
+		--package $(TARGET_DIR)/asconfig-$(VERSION)-$(ARCH).rpm
 
 .PHONY: tar
 tar: prep
@@ -65,13 +66,16 @@ tar: prep
 		--license $(LICENSE) \
 		--url $(URL) \
 		--vendor $(VENDOR) \
-		--package $(TARGET_DIR)/asconfig-$(VERSION).tar
+		--package $(TARGET_DIR)/asconfig-$(VERSION)-$(ARCH).tar
 
 .PHONY: prep
 prep:
 	install -d $(TARGET_DIR)
+	install -d $(BUILD_DIR)/$(CONFIG_DIR)
 	install -d $(BUILD_DIR)/opt/aerospike/bin
 	install -pm 755 $(TOP_DIR)/asconfig $(BUILD_DIR)/opt/aerospike/bin
+	install -d $(BUILD_DIR)/usr/bin
+	ln -sf /opt/aerospike/bin/asconfig $(BUILD_DIR)/usr/bin/asconfig
 
 .PHONY: clean
 clean:
