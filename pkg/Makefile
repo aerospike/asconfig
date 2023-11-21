@@ -71,6 +71,7 @@ tar: prep
 .PHONY: prep
 prep:
 	install -d $(TARGET_DIR)
+	install -d $(BUILD_DIR)/$(CONFIG_DIR)
 	install -d $(BUILD_DIR)/opt/aerospike/bin
 	install -pm 755 $(TOP_DIR)/asconfig $(BUILD_DIR)/opt/aerospike/bin
 	install -d $(BUILD_DIR)/usr/bin
