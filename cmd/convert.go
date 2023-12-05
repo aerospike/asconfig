@@ -110,7 +110,7 @@ func newConvertCmd() *cobra.Command {
 			// try populating from the metadata
 			if version == "" {
 				version, err = getMetaDataItem(fdata, metaKeyAerospikeVersion)
-				if err != nil {
+				if err != nil && !force {
 					return errors.Join(errMissingAerospikeVersion, err)
 				}
 			}
