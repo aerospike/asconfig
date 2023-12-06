@@ -1009,7 +1009,7 @@ var validateTests = []validateTest{
 		expectedResult: `context: (root).namespaces.0
 	- description: Additional property memory-size is not allowed, error-type: additional_property_not_allowed
 context: (root).namespaces.0.storage-engine
-	- description: data-size is required, error-type: required
+	- description: devices is required, error-type: required
 context: (root).namespaces.1
 	- description: Additional property memory-size is not allowed, error-type: additional_property_not_allowed
 context: (root).namespaces.1.index-type
@@ -1021,7 +1021,7 @@ context: (root).namespaces.1.sindex-type
 	- description: Additional property mounts-size-limit is not allowed, error-type: additional_property_not_allowed
 	- description: mounts-budget is required, error-type: required
 context: (root).namespaces.1.storage-engine
-	- description: data-size is required, error-type: required
+	- description: devices is required, error-type: required
 context: (root).service
 	- description: cluster-name is required, error-type: required
 `,

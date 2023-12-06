@@ -1,4 +1,6 @@
 logging:
+    - drv-mem: debug
+      name: console
     - any: info
       name: /dummy/file/path2
 namespaces:
