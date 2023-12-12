@@ -35,6 +35,7 @@ func init() {
 var convertCmd = newConvertCmd()
 
 func newConvertCmd() *cobra.Command {
+	var cfgData []byte
 	res := &cobra.Command{
 		Use:   "convert [flags] <path/to/config_file>",
 		Short: "Convert between yaml and Aerospike config format.",
@@ -91,11 +92,6 @@ func newConvertCmd() *cobra.Command {
 
 			logger.Debugf("Processing flag format value=%v", srcFormat)
 
-			fdata, err := os.ReadFile(srcPath)
-			if err != nil {
-				return err
-			}
-
 			var outFmt asconf.Format
 			switch srcFormat {
 			case asconf.AsConfig:
@@ -109,14 +105,14 @@ func newConvertCmd() *cobra.Command {
 			// if the version option is empty,
 			// try populating from the metadata
 			if version == "" {
-				version, err = getMetaDataItem(fdata, metaKeyAerospikeVersion)
+				version, err = getMetaDataItem(cfgData, metaKeyAerospikeVersion)
 				if err != nil && !force {
 					return errors.Join(errMissingAerospikeVersion, err)
 				}
 			}
 
 			conf, err := asconf.NewAsconf(
-				fdata,
+				cfgData,
 				srcFormat,
 				outFmt,
 				version,
@@ -142,7 +138,7 @@ func newConvertCmd() *cobra.Command {
 
 			// prepend metadata to the config output
 			mtext, err := genMetaDataText(metaDataArgs{
-				src:              fdata,
+				src:              cfgData,
 				aerospikeVersion: version,
 				asconfigVersion:  VERSION,
 			})
@@ -215,7 +211,15 @@ func newConvertCmd() *cobra.Command {
 				return err
 			}
 
-			cfgData, err := os.ReadFile(args[0])
+			// read stdin by default
+			var srcPath string
+			if len(args) == 0 {
+				srcPath = os.Stdin.Name()
+			} else {
+				srcPath = args[0]
+			}
+
+			cfgData, err = os.ReadFile(srcPath)
 			if err != nil {
 				return err
 			}
