@@ -10,8 +10,6 @@ import (
 
 	"github.com/aerospike/asconfig/schema"
 
-	"github.com/aerospike/asconfig/asconf"
-
 	"github.com/aerospike/aerospike-management-lib/asconfig"
 	"github.com/bombsimon/logrusr/v4"
 	"github.com/go-logr/logr"
@@ -53,16 +51,6 @@ func newRootCmd() *cobra.Command {
 
 			logger.SetLevel(lvlCode)
 
-			formatString, err := cmd.Flags().GetString("format")
-			if err != nil {
-				multiErr = fmt.Errorf("%w, %w", multiErr, err)
-			}
-
-			_, err = asconf.ParseFmtString(formatString)
-			if err != nil && formatString != "" {
-				multiErr = fmt.Errorf("%w, %w", multiErr, err)
-			}
-
 			return multiErr
 		},
 	}
@@ -73,7 +61,7 @@ func newRootCmd() *cobra.Command {
 	logLevelUsage := fmt.Sprintf("Set the logging detail level. Valid levels are: %v", log.GetLogLevels())
 	res.PersistentFlags().StringP("log-level", "l", "info", logLevelUsage)
 	res.PersistentFlags().BoolP("version", "V", false, "Version for asconfig.")
-	res.PersistentFlags().StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
+	res.PersistentFlags().BoolP("help", "u", false, "Display help information")
 
 	res.SilenceErrors = true
 	res.SilenceUsage = true
@@ -81,7 +69,7 @@ func newRootCmd() *cobra.Command {
 	res.SetFlagErrorFunc(func(cmd *cobra.Command, err error) error {
 		logger.Error(err)
 		cmd.Println(cmd.UsageString())
-		return errors.Join(err, SilentError)
+		return errors.Join(err, ErrSilent)
 	})
 
 	return res
@@ -92,7 +80,7 @@ func newRootCmd() *cobra.Command {
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
-		if !errors.Is(err, SilentError) {
+		if !errors.Is(err, ErrSilent) {
 			// handle wrapped errors
 			errs := strings.Split(err.Error(), "\n")
 
@@ -105,7 +93,7 @@ func Execute() {
 }
 
 var logger *logrus.Logger
-var managementLibLogger logr.Logger
+var mgmtLibLogger logr.Logger
 
 func init() {
 	logger = logrus.New()
@@ -120,6 +108,6 @@ func init() {
 		panic(err)
 	}
 
-	managementLibLogger = logrusr.New(logger)
-	asconfig.InitFromMap(managementLibLogger, schemaMap)
+	mgmtLibLogger = logrusr.New(logger)
+	asconfig.InitFromMap(mgmtLibLogger, schemaMap)
 }

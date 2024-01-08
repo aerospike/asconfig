@@ -4,12 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/aerospike/aerospike-management-lib/asconfig"
-	"github.com/aerospike/asconfig/asconf"
-	"github.com/aerospike/asconfig/asconf/metadata"
+	"github.com/aerospike/asconfig/conf"
+	"github.com/aerospike/asconfig/conf/metadata"
 	"github.com/spf13/cobra"
 )
 
@@ -70,12 +68,12 @@ func newConvertCmd() *cobra.Command {
 				srcPath = args[0]
 			}
 
-			version, err := cmd.Flags().GetString("aerospike-version")
+			asVersion, err := cmd.Flags().GetString("aerospike-version")
 			if err != nil {
 				return err
 			}
 
-			logger.Debugf("Processing flag aerospike-version value=%s", version)
+			logger.Debugf("Processing flag aerospike-version value=%s", asVersion)
 
 			force, err := cmd.Flags().GetBool("force")
 			if err != nil {
@@ -89,63 +87,60 @@ func newConvertCmd() *cobra.Command {
 				return err
 			}
 
-			logger.Debugf("Processing flag format value=%v", srcFormat)
-
 			fdata, err := os.ReadFile(srcPath)
 			if err != nil {
 				return err
 			}
 
-			var outFmt asconf.Format
+			var outFmt conf.Format
 			switch srcFormat {
-			case asconf.AsConfig:
-				outFmt = asconf.YAML
-			case asconf.YAML:
-				outFmt = asconf.AsConfig
+			case conf.AsConfig:
+				outFmt = conf.YAML
+			case conf.YAML:
+				outFmt = conf.AsConfig
 			default:
 				return fmt.Errorf("%w: %s", errInvalidFormat, srcFormat)
 			}
 
 			// if the version option is empty,
 			// try populating from the metadata
-			if version == "" {
-				version, err = getMetaDataItem(fdata, metaKeyAerospikeVersion)
+			if asVersion == "" {
+				asVersion, err = getMetaDataItem(fdata, metaKeyAerospikeVersion)
 				if err != nil && !force {
 					return errors.Join(errMissingAerospikeVersion, err)
 				}
 			}
 
-			conf, err := asconf.NewAsconf(
-				fdata,
-				srcFormat,
-				outFmt,
-				version,
-				logger,
-				managementLibLogger,
-			)
+			// load
+			asconfig, err := conf.NewASConfigFromBytes(mgmtLibLogger, fdata, srcFormat)
 
 			if err != nil {
 				return err
 			}
 
+			// validate
 			if !force {
-				verrs, err := conf.Validate()
+				verrs, err := conf.NewConfigValidator(asconfig, mgmtLibLogger, asVersion).Validate()
 				if err != nil || verrs != nil {
 					return errors.Join(err, verrs)
 				}
 			}
 
-			out, err := conf.MarshalText()
+			// convert
+			out, err := conf.NewConfigMarshaller(asconfig, outFmt).MarshalText()
 			if err != nil {
 				return err
 			}
 
 			// prepend metadata to the config output
-			mtext, err := genMetaDataText(metaDataArgs{
-				src:              fdata,
-				aerospikeVersion: version,
-				asconfigVersion:  VERSION,
-			})
+			mtext, err := genMetaDataText(
+				fdata,
+				nil,
+				map[string]string{
+					metaKeyAerospikeVersion: asVersion,
+					metaKeyAsconfigVersion:  VERSION,
+				},
+			)
 			if err != nil {
 				return err
 			}
@@ -156,23 +151,9 @@ func newConvertCmd() *cobra.Command {
 				return err
 			}
 
-			if stat, err := os.Stat(outputPath); !errors.Is(err, os.ErrNotExist) && stat.IsDir() {
-				// output path is a directory so write a new file to it
-				outFileName := filepath.Base(srcPath)
-				if srcPath == os.Stdin.Name() {
-					outFileName = defaultOutputFileName
-				}
-
-				outFileName = strings.TrimSuffix(outFileName, filepath.Ext(outFileName))
-
-				outputPath = filepath.Join(outputPath, outFileName)
-				if outFmt == asconf.YAML {
-					outputPath += ".yaml"
-				} else if outFmt == asconf.AsConfig {
-					outputPath += ".conf"
-				} else {
-					return fmt.Errorf("output format unrecognized %w", errInvalidFormat)
-				}
+			err = CheckIsDir(&outputPath, outFmt)
+			if err != nil {
+				return err
 			}
 
 			var outFile *os.File
@@ -261,10 +242,11 @@ func newConvertCmd() *cobra.Command {
 
 	// flags and configuration settings
 	// aerospike-version is marked required in this cmd's PreRun if the --force flag is not provided
-	commonFlags := getCommonFlags()
-	res.Flags().AddFlagSet(commonFlags)
+	asCommonFlags := getCommonFlags()
+	res.Flags().AddFlagSet(asCommonFlags)
 	res.Flags().BoolP("force", "f", false, "Override checks for supported server version and config validation")
 	res.Flags().StringP("output", "o", os.Stdout.Name(), "File path to write output to")
+	res.Flags().StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
 
 	res.Version = VERSION
 

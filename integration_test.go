@@ -1,6 +1,3 @@
-//go:build integration
-// +build integration
-
 package main
 
 import (
@@ -20,8 +17,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aerospike/asconfig/asconf/metadata"
+	mgmtLib "github.com/aerospike/aerospike-management-lib"
 	"github.com/aerospike/asconfig/cmd"
+	"github.com/aerospike/asconfig/conf/metadata"
 	"github.com/aerospike/asconfig/testutils"
 
 	"github.com/docker/docker/api/types"
@@ -228,28 +226,6 @@ var testFiles = []testutils.TestData{
 	},
 }
 
-func versionLessThanEqual(l string, r string) bool {
-	var majorLess, minorLess, patchLess bool
-	ltok := strings.Split(l, ".")
-	rtok := strings.Split(r, ".")
-
-	lmaj, _ := strconv.Atoi(ltok[0])
-	lmin, _ := strconv.Atoi(ltok[1])
-	lpat, _ := strconv.Atoi(ltok[2])
-
-	rmaj, _ := strconv.Atoi(rtok[0])
-	rmin, _ := strconv.Atoi(rtok[1])
-	rpat, _ := strconv.Atoi(rtok[2])
-
-	majorLess = lmaj <= rmaj
-	minorLess = lmin <= rmin
-	patchLess = lpat <= rpat
-
-	return (majorLess && minorLess && patchLess) ||
-		(majorLess && minorLess && !patchLess) ||
-		(majorLess && !minorLess && !patchLess)
-}
-
 func getVersion(l []string) (v string) {
 	i := testutils.IndexOf(l, "-a")
 	if i >= 0 {
@@ -334,7 +310,12 @@ func TestYamlToConf(t *testing.T) {
 		// test that the converted config works with an Aerospike server
 		if !tf.SkipServerTest {
 			version := getVersion(tf.Arguments)
-			runServer(version, confPath, dockerClient, t, tf)
+			id := runServer(version, confPath, dockerClient, t, tf)
+
+			time.Sleep(time.Second * 3) // need this to allow logs to accumulate
+
+			stopServer(id, dockerClient)
+			checkContainerLogs(id, t, tf, tmpServerLogPath)
 		}
 
 		// cleanup the destination file
@@ -400,7 +381,7 @@ func getDockerAuthFromEnv(auth testutils.DockerAuth) (string, error) {
 	return authStr, nil
 }
 
-func runServer(version string, confPath string, dockerClient *client.Client, t *testing.T, td testutils.TestData) {
+func runServer(version string, confPath string, dockerClient *client.Client, t *testing.T, td testutils.TestData) string {
 	containerName := "aerospike:" + version
 	if td.ServerImage != "" {
 		containerName = td.ServerImage
@@ -437,7 +418,10 @@ func runServer(version string, confPath string, dockerClient *client.Client, t *
 
 	featureKeyPath := filepath.Join(featKeyDir, "featuresv2.conf")
 	lastServerWithFeatureKeyVersion1 := "5.3.0"
-	if versionLessThanEqual(strings.TrimPrefix(version, "ee-"), lastServerWithFeatureKeyVersion1) {
+
+	if val, err := mgmtLib.CompareVersions(strings.TrimPrefix(version, "ee-"), lastServerWithFeatureKeyVersion1); err != nil {
+		t.Error(err)
+	} else if val <= 0 {
 		featureKeyPath = filepath.Join(featKeyDir, "featuresv1.conf")
 	}
 
@@ -487,26 +471,23 @@ func runServer(version string, confPath string, dockerClient *client.Client, t *
 		t.Error(err)
 	}
 
-	// cleanup container
-	defer func() {
-		err = testutils.RemoveAerospikeContainer(id, dockerClient)
-		if err != nil {
-			t.Error(err)
-		}
-	}()
-
 	err = testutils.StartAerospikeContainer(id, dockerClient)
 
 	if err != nil {
 		t.Error(err)
 	}
 
+	return id
+
 	// need this to allow logs to accumulate
 	time.Sleep(time.Second * 3)
 
-	err = testutils.StopAerospikeContainer(id, dockerClient)
+}
+
+func stopServer(id string, dockerClient *client.Client) error {
+	err := testutils.StopAerospikeContainer(id, dockerClient)
 	if err != nil {
-		t.Error(err)
+		return err
 	}
 
 	// time for Aerospike to close
@@ -518,57 +499,17 @@ func runServer(version string, confPath string, dockerClient *client.Client, t *
 	select {
 	case err := <-errCh:
 		if err != nil {
-			t.Error(err)
+			return err // TODO: Check if I need to do something to shutdown the channels.
 		}
 	case <-statusCh:
 	}
 
-	data, err := docker("logs", id)
+	err = testutils.RemoveAerospikeContainer(id, dockerClient)
 	if err != nil {
-		t.Error(err)
+		return err
 	}
 
-	var containerOut string
-	containerOut = string(data)
-
-	// containerOut := string(logs)
-	// if the server container logs are empty
-	// the server may have been configured to log to
-	// /var/log/aerospike/aerospike.log which is mapped
-	// to absTmpLog
-	if len(containerOut) == 0 {
-		data, err := os.ReadFile(absTmpLog)
-		if err != nil {
-			t.Error(err)
-		}
-		containerOut = string(data)
-	}
-
-	// if the logs are still empty, the server logged somewhere else
-	// or there is a problem, fail in this case
-	if len(containerOut) == 0 {
-		t.Errorf("suite: %+v\nAerospike container logs are empty", td)
-	}
-
-	// some tests use aerospike versions from when no enterprise container was published
-	// these will fail with "'x feature' is enterprise-only"
-	// always ignore this failure
-	td.ServerErrorAllowList = append(td.ServerErrorAllowList, "' is enterprise-only")
-
-	reg := regexp.MustCompile(`CRITICAL \(config\):.*`)
-	configErrors := reg.FindAllString(containerOut, -1)
-	for _, cfgErr := range configErrors {
-		exempted := false
-		for _, exemption := range td.ServerErrorAllowList {
-			if strings.Contains(cfgErr, exemption) {
-				exempted = true
-			}
-		}
-
-		if !exempted {
-			t.Errorf("suite: %+v\nAerospike encountered a configuration error...\n%s", td, containerOut)
-		}
-	}
+	return nil
 }
 
 var confToYamlTests = []testutils.TestData{
@@ -773,7 +714,12 @@ func TestConfToYaml(t *testing.T) {
 		// test that the converted config works with an Aerospike server
 		if !tf.SkipServerTest {
 			version := getVersion(tf.Arguments)
-			runServer(version, finalConfPath, dockerClient, t, tf)
+			id := runServer(version, finalConfPath, dockerClient, t, tf)
+
+			time.Sleep(3) // need this to allow logs to accumulate
+
+			stopServer(id, dockerClient)
+			checkContainerLogs(id, t, tf, tmpServerLogPath)
 		}
 
 		// cleanup the destination files
@@ -794,6 +740,59 @@ func docker(args ...string) ([]byte, error) {
 		err = fmt.Errorf("docker failed err: %s, out: %s", err, string(out))
 	}
 	return out, err
+}
+
+func getContainerLogs(id string) ([]byte, error) {
+	return docker("logs", id)
+}
+
+func checkContainerLogs(id string, t *testing.T, td testutils.TestData, absTmpLog string) {
+	data, err := getContainerLogs(id)
+	if err != nil {
+		t.Error(err)
+	}
+
+	var containerOut string
+	containerOut = string(data)
+
+	// containerOut := string(logs)
+	// if the server container logs are empty
+	// the server may have been configured to log to
+	// /var/log/aerospike/aerospike.log which is mapped
+	// to absTmpLog
+	if len(containerOut) == 0 {
+		data, err := os.ReadFile(absTmpLog)
+		if err != nil {
+			t.Error(err)
+		}
+		containerOut = string(data)
+	}
+
+	// if the logs are still empty, the server logged somewhere else
+	// or there is a problem, fail in this case
+	if len(containerOut) == 0 {
+		t.Errorf("suite: %+v\nAerospike container logs are empty", td)
+	}
+
+	// some tests use aerospike versions from when no enterprise container was published
+	// these will fail with "'x feature' is enterprise-only"
+	// always ignore this failure
+	td.ServerErrorAllowList = append(td.ServerErrorAllowList, "' is enterprise-only")
+
+	reg := regexp.MustCompile(`CRITICAL \(config\):.*`)
+	configErrors := reg.FindAllString(containerOut, -1)
+	for _, cfgErr := range configErrors {
+		exempted := false
+		for _, exemption := range td.ServerErrorAllowList {
+			if strings.Contains(cfgErr, exemption) {
+				exempted = true
+			}
+		}
+
+		if !exempted {
+			t.Errorf("suite: %+v\nAerospike encountered a configuration error...\n%s", td, containerOut)
+		}
+	}
 }
 
 func diff(args ...string) ([]byte, error) {

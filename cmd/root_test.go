@@ -1,12 +1,12 @@
 //go:build unit
-// +build unit
 
 package cmd
 
 import (
 	"errors"
-	"github.com/aerospike/asconfig/asconf"
 	"testing"
+
+	"github.com/aerospike/asconfig/conf"
 )
 
 type preTestRoot struct {
@@ -37,14 +37,14 @@ var preTestsRoot = []preTestRoot{
 		flags:     []string{"--format", "bad_fmt"},
 		arguments: []string{},
 		expectedErrors: []error{
-			asconf.ErrInvalidFormat,
+			conf.ErrInvalidFormat,
 		},
 	},
 	{
 		flags:     []string{"-F", "bad_fmt"},
 		arguments: []string{},
 		expectedErrors: []error{
-			asconf.ErrInvalidFormat,
+			conf.ErrInvalidFormat,
 		},
 	},
 }
