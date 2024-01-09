@@ -29,13 +29,13 @@ import (
 )
 
 const (
-	sourcePath       = "testdata/sources"
-	expectedPath     = "testdata/expected"
-	destinationPath  = "testdata/destinations"
-	coveragePath     = "testdata/coverage/integration"
-	binPath          = "testdata/bin"
-	extraTestPath    = "testdata/cases"
-	tmpServerLogPath = "testdata/tmp_server.log"
+	sourcePath       = "/Users/jesseschmidt/Developer/asconfig/testdata/sources"
+	expectedPath     = "/Users/jesseschmidt/Developer/asconfig/testdata/expected"
+	destinationPath  = "/Users/jesseschmidt/Developer/asconfig/testdata/destinations"
+	coveragePath     = "/Users/jesseschmidt/Developer/asconfig/testdata/coverage/integration"
+	binPath          = "/Users/jesseschmidt/Developer/asconfig/testdata/bin"
+	extraTestPath    = "/Users/jesseschmidt/Developer/asconfig/testdata/cases"
+	tmpServerLogPath = "/Users/jesseschmidt/Developer/asconfig/testdata/tmp_server.log"
 )
 
 var featKeyDir string
@@ -68,10 +68,10 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	featKeyDir = os.Getenv("FEATKEY")
+	featKeyDir = os.Getenv("FEATKEY_DIR")
 	fmt.Println(featKeyDir)
 	if featKeyDir == "" {
-		panic("FEATKEY environement variable must be full path to a directory containing valid aerospike feature key files featuresv1.conf and featuresv2.conf of feature key format 1 and 2 respectively.")
+		panic("FEATKEY_DIR environement variable must an absolute path to a directory containing valid aerospike feature key files featuresv1.conf and featuresv2.conf of feature key format 1 and 2 respectively.")
 	}
 
 	code := m.Run()
@@ -311,6 +311,7 @@ func TestYamlToConf(t *testing.T) {
 		if !tf.SkipServerTest {
 			version := getVersion(tf.Arguments)
 			id := runServer(version, confPath, dockerClient, t, tf)
+			time.Sleep(time.Second * 1000)
 
 			time.Sleep(time.Second * 3) // need this to allow logs to accumulate
 
@@ -478,10 +479,6 @@ func runServer(version string, confPath string, dockerClient *client.Client, t *
 	}
 
 	return id
-
-	// need this to allow logs to accumulate
-	time.Sleep(time.Second * 3)
-
 }
 
 func stopServer(id string, dockerClient *client.Client) error {
@@ -716,7 +713,7 @@ func TestConfToYaml(t *testing.T) {
 			version := getVersion(tf.Arguments)
 			id := runServer(version, finalConfPath, dockerClient, t, tf)
 
-			time.Sleep(3) // need this to allow logs to accumulate
+			time.Sleep(time.Second * 3) // need this to allow logs to accumulate
 
 			stopServer(id, dockerClient)
 			checkContainerLogs(id, t, tf, tmpServerLogPath)

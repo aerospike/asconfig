@@ -70,21 +70,21 @@ make unit
 ### Integration Tests
 
 Integration tests require that docker is installed and running.
-A path to an Aerospike feature key file should be defined at the `FEATKEY` environment variable.
+A path to an Aerospike feature key file should be defined at the `FEATKEY_DIR` environment variable.
 For more information about the feature key file see the [feature-key docs](https://docs.aerospike.com/server/operations/configure/feature-key).
 
 ```shell
-FEATKEY=/path/to/aerospike/features.conf make integration
+FEATKEY_DIR=/path/to/aerospike/features/dir make integration
 ```
 
 ### All Tests
 
 ```shell
-FEATKEY=/path/to/aerospike/features.conf make test
+FEATKEY_DIR=/path/to/aerospike/features/dir make test
 ```
 
 ### Test Coverage
 
 ```shell
-FEATKEY=/path/to/aerospike/features.conf make view-coverage
+FEATKEY_DIR=/path/to/aerospike/features/dir make view-coverage
 ```

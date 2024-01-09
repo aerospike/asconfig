@@ -81,12 +81,6 @@ func newGenerateCmd() *cobra.Command {
 				return errors.Join(fmt.Errorf("unable to marshal the generated conf file"), err)
 			}
 
-			err = CheckIsDir(&outputPath, outFormat)
-
-			if err != nil {
-				return err
-			}
-
 			mdata := map[string]string{
 				metaKeyAerospikeVersion: generatedConf.Version,
 				metaKeyAsconfigVersion:  VERSION,
@@ -130,7 +124,7 @@ func newGenerateCmd() *cobra.Command {
 		flags.SetAerospikeFlags(asCommonFlags, flags.DefaultWrapHelpString),
 	)
 	res.Flags().StringP("output", "o", os.Stdout.Name(), flags.DefaultWrapHelpString("File path to write output to"))
-	res.Flags().StringP("format", "F", "conf", "The format of the destination file(s). Valid options are: yaml, yml, and conf.")
+	res.Flags().StringP("format", "F", "conf", flags.DefaultWrapHelpString("The format of the destination file(s). Valid options are: yaml, yml, and conf."))
 
 	return res
 }

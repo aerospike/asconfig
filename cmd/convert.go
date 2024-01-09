@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/aerospike/aerospike-management-lib/asconfig"
 	"github.com/aerospike/asconfig/conf"
@@ -151,9 +153,23 @@ func newConvertCmd() *cobra.Command {
 				return err
 			}
 
-			err = CheckIsDir(&outputPath, outFmt)
-			if err != nil {
-				return err
+			if stat, err := os.Stat(outputPath); !errors.Is(err, os.ErrNotExist) && stat.IsDir() {
+				// output path is a directory so write a new file to it
+				outFileName := filepath.Base(srcPath)
+				if srcPath == os.Stdin.Name() {
+					outFileName = defaultOutputFileName
+				}
+
+				outFileName = strings.TrimSuffix(outFileName, filepath.Ext(outFileName))
+
+				outputPath = filepath.Join(outputPath, outFileName)
+				if outFmt == conf.YAML {
+					outputPath += ".yaml"
+				} else if outFmt == conf.AsConfig {
+					outputPath += ".conf"
+				} else {
+					return fmt.Errorf("output format unrecognized %w", errInvalidFormat)
+				}
 			}
 
 			var outFile *os.File

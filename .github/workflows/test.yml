@@ -30,6 +30,6 @@ jobs:
         run: |
           make coverage
         env:
-          FEATKEY : /tmp
+          FEATKEY_DIR : /tmp
           ASC_DOCKER_USER : ${{secrets.DOCKER_USER}}
           ASC_DOCKER_PASS : ${{secrets.DOCKER_PASS}}

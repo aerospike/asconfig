@@ -3,7 +3,6 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -130,27 +129,4 @@ func ParseFmtString(in string) (f conf.Format, err error) {
 	}
 
 	return
-}
-
-func CheckIsDir(outputPath *string, outFormat conf.Format) error {
-	if stat, err := os.Stat(*outputPath); !errors.Is(err, os.ErrNotExist) && stat.IsDir() {
-		// output path is a directory so write a new file to it
-		outFileName := filepath.Base(*outputPath)
-		if *outputPath == os.Stdin.Name() {
-			outFileName = defaultOutputFileName
-		}
-
-		outFileName = strings.TrimSuffix(outFileName, filepath.Ext(outFileName))
-
-		*outputPath = filepath.Join(*outputPath, outFileName)
-		if outFormat == conf.YAML {
-			*outputPath += ".yaml"
-		} else if outFormat == conf.AsConfig {
-			*outputPath += ".conf"
-		} else {
-			return fmt.Errorf("output format unrecognized %w", errInvalidFormat)
-		}
-	}
-
-	return nil
 }
