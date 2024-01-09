@@ -29,13 +29,13 @@ import (
 )
 
 const (
-	sourcePath       = "/Users/jesseschmidt/Developer/asconfig/testdata/sources"
-	expectedPath     = "/Users/jesseschmidt/Developer/asconfig/testdata/expected"
-	destinationPath  = "/Users/jesseschmidt/Developer/asconfig/testdata/destinations"
-	coveragePath     = "/Users/jesseschmidt/Developer/asconfig/testdata/coverage/integration"
-	binPath          = "/Users/jesseschmidt/Developer/asconfig/testdata/bin"
-	extraTestPath    = "/Users/jesseschmidt/Developer/asconfig/testdata/cases"
-	tmpServerLogPath = "/Users/jesseschmidt/Developer/asconfig/testdata/tmp_server.log"
+	sourcePath       = "testdata/sources"
+	expectedPath     = "testdata/expected"
+	destinationPath  = "testdata/destinations"
+	coveragePath     = "testdata/coverage/integration"
+	binPath          = "testdata/bin"
+	extraTestPath    = "testdata/cases"
+	tmpServerLogPath = "testdata/tmp_server.log"
 )
 
 var featKeyDir string
