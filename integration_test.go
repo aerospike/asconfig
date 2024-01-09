@@ -90,18 +90,18 @@ func TestMain(m *testing.M) {
 }
 
 var testFiles = []testutils.TestData{
-	// {
-	// 	Source:      filepath.Join(sourcePath, "all_flash_cluster_cr.yaml"),
-	// 	Destination: filepath.Join(destinationPath, "all_flash_cluster_cr.conf"),
-	// 	Expected:    filepath.Join(expectedPath, "all_flash_cluster_cr.conf"),
-	// 	Arguments:   []string{"convert", "-a", "6.2.0.2", "-o", destinationPath},
-	// },
-	// {
-	// 	Source:      filepath.Join(sourcePath, "multiple_feature_key_paths.yaml"),
-	// 	Destination: filepath.Join(destinationPath, "multiple_feature_key_paths.conf"),
-	// 	Expected:    filepath.Join(expectedPath, "multiple_feature_key_paths.conf"),
-	// 	Arguments:   []string{"convert", "-a", "6.2.0.2", "-o", destinationPath},
-	// },
+	{
+		Source:      filepath.Join(sourcePath, "all_flash_cluster_cr.yaml"),
+		Destination: filepath.Join(destinationPath, "all_flash_cluster_cr.conf"),
+		Expected:    filepath.Join(expectedPath, "all_flash_cluster_cr.conf"),
+		Arguments:   []string{"convert", "-a", "6.2.0.2", "-o", destinationPath},
+	},
+	{
+		Source:      filepath.Join(sourcePath, "multiple_feature_key_paths.yaml"),
+		Destination: filepath.Join(destinationPath, "multiple_feature_key_paths.conf"),
+		Expected:    filepath.Join(expectedPath, "multiple_feature_key_paths.conf"),
+		Arguments:   []string{"convert", "-a", "6.2.0.2", "-o", destinationPath},
+	},
 	{
 		Source:      filepath.Join(sourcePath, "dim_nostorage_cluster_cr.yaml"),
 		Destination: filepath.Join(destinationPath, "dim_nostorage_cluster_cr.conf"),
@@ -311,7 +311,6 @@ func TestYamlToConf(t *testing.T) {
 		if !tf.SkipServerTest {
 			version := getVersion(tf.Arguments)
 			id := runServer(version, confPath, dockerClient, t, tf)
-			time.Sleep(time.Second * 1000)
 
 			time.Sleep(time.Second * 3) // need this to allow logs to accumulate
 
