@@ -311,7 +311,6 @@ func TestYamlToConf(t *testing.T) {
 		if !tf.SkipServerTest {
 			version := getVersion(tf.Arguments)
 			id := runServer(version, confPath, dockerClient, t, tf)
-			time.Sleep(time.Second * 1000)
 
 			time.Sleep(time.Second * 3) // need this to allow logs to accumulate
 
