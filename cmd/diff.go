@@ -146,7 +146,7 @@ func diffFlatMaps(m1 map[string]any, m2 map[string]any) []string {
 		// "index" is a metadata key added by
 		// the management lib to these flat maps
 		// ignore it
-		if strings.HasSuffix(k, ".index") {
+		if strings.HasSuffix(k, ".<index>") {
 			continue
 		}
 
