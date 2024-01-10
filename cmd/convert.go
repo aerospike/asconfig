@@ -26,6 +26,7 @@ var (
 	errUnsupportedAerospikeVersion = fmt.Errorf("aerospike version unsupported")
 	errInvalidOutput               = fmt.Errorf("invalid output flag")
 	errInvalidFormat               = fmt.Errorf("invalid format flag")
+	errMissingFormat               = fmt.Errorf("missing format flag")
 )
 
 func init() {
@@ -250,6 +251,16 @@ func newConvertCmd() *cobra.Command {
 				if !supported {
 					return errUnsupportedAerospikeVersion
 				}
+			}
+
+			formatString, err := cmd.Flags().GetString("format")
+			if err != nil {
+				return errors.Join(errMissingFormat, err)
+			}
+
+			_, err = ParseFmtString(formatString)
+			if err != nil && formatString != "" {
+				return errors.Join(errInvalidFormat, err)
 			}
 
 			return nil

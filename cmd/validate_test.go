@@ -49,6 +49,16 @@ var testValidateArgs = []runTestValidate{
 		arguments:   []string{"../testdata/cases/server70/server70.conf"},
 		expectError: false,
 	},
+	{
+		flags:       []string{"--format", "bad_fmt"},
+		arguments:   []string{},
+		expectError: true,
+	},
+	{
+		flags:       []string{"-F", "bad_fmt"},
+		arguments:   []string{},
+		expectError: true,
+	},
 }
 
 func TestRunEValidate(t *testing.T) {

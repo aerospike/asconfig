@@ -58,6 +58,16 @@ var testDiffArgs = []runTestDiff{
 		arguments:   []string{"../testdata/expected/all_flash_cluster_cr.conf", "../testdata/expected/all_flash_cluster_cr.conf"},
 		expectError: false,
 	},
+	{
+		flags:       []string{"--format", "bad_fmt"},
+		arguments:   []string{},
+		expectError: true,
+	},
+	{
+		flags:       []string{"-F", "bad_fmt"},
+		arguments:   []string{},
+		expectError: true,
+	},
 }
 
 func TestRunEDiff(t *testing.T) {
