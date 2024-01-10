@@ -312,10 +312,10 @@ func TestYamlToConf(t *testing.T) {
 			version := getVersion(tf.Arguments)
 			id := runServer(version, confPath, dockerClient, t, tf)
 
-			time.Sleep(time.Second * 10) // need this to allow logs to accumulate
+			time.Sleep(time.Second * 3) // need this to allow logs to accumulate
+			checkContainerLogs(id, t, tf, tmpServerLogPath)
 
 			stopServer(id, dockerClient)
-			checkContainerLogs(id, t, tf, tmpServerLogPath)
 		}
 
 		// cleanup the destination file
@@ -712,10 +712,10 @@ func TestConfToYaml(t *testing.T) {
 			version := getVersion(tf.Arguments)
 			id := runServer(version, finalConfPath, dockerClient, t, tf)
 
-			time.Sleep(time.Second * 10) // need this to allow logs to accumulate
+			time.Sleep(time.Second * 3) // need this to allow logs to accumulate
+			checkContainerLogs(id, t, tf, tmpServerLogPath)
 
 			stopServer(id, dockerClient)
-			checkContainerLogs(id, t, tf, tmpServerLogPath)
 		}
 
 		// cleanup the destination files
