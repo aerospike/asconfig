@@ -64,8 +64,6 @@ test: integration unit
 integration: dependencies
 	mkdir -p $(COV_INTEGRATION_DIR) || true
 	go test -tags=integration -timeout 30m
-	# go tool covdata merge -i=$(COV_INTEGRATION_DIR) -o=$(COVERAGE_DIR)
-
 
 .PHONY: unit
 unit: dependencies
