@@ -33,3 +33,9 @@ jobs:
           FEATKEY : /tmp
           ASC_DOCKER_USER : ${{secrets.DOCKER_USER}}
           ASC_DOCKER_PASS : ${{secrets.DOCKER_PASS}}
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{secrets.CODECOV_TOKEN}}
+          files: testdata/coverage/total.cov
+          verbose: false
