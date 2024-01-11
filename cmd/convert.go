@@ -24,7 +24,6 @@ var (
 	errMissingAerospikeVersion     = fmt.Errorf("missing required flag '--aerospike-version'")
 	errInvalidAerospikeVersion     = fmt.Errorf("aerospike version must be in the form <a>.<b>.<c>")
 	errUnsupportedAerospikeVersion = fmt.Errorf("aerospike version unsupported")
-	errInvalidOutput               = fmt.Errorf("invalid output flag")
 	errInvalidFormat               = fmt.Errorf("invalid format flag")
 	errMissingFormat               = fmt.Errorf("missing format flag")
 )
@@ -36,6 +35,7 @@ func init() {
 var convertCmd = newConvertCmd()
 
 func newConvertCmd() *cobra.Command {
+	var cfgData []byte
 	res := &cobra.Command{
 		Use:   "convert [flags] <path/to/config_file>",
 		Short: "Convert between yaml and Aerospike config format.",
@@ -90,10 +90,7 @@ func newConvertCmd() *cobra.Command {
 				return err
 			}
 
-			fdata, err := os.ReadFile(srcPath)
-			if err != nil {
-				return err
-			}
+			logger.Debugf("Processing flag format value=%v", srcFormat)
 
 			var outFmt conf.Format
 			switch srcFormat {
@@ -108,14 +105,14 @@ func newConvertCmd() *cobra.Command {
 			// if the version option is empty,
 			// try populating from the metadata
 			if asVersion == "" {
-				asVersion, err = getMetaDataItem(fdata, metaKeyAerospikeVersion)
+				asVersion, err = getMetaDataItem(cfgData, metaKeyAerospikeVersion)
 				if err != nil && !force {
 					return errors.Join(errMissingAerospikeVersion, err)
 				}
 			}
 
 			// load
-			asconfig, err := conf.NewASConfigFromBytes(mgmtLibLogger, fdata, srcFormat)
+			asconfig, err := conf.NewASConfigFromBytes(mgmtLibLogger, cfgData, srcFormat)
 
 			if err != nil {
 				return err
@@ -137,7 +134,7 @@ func newConvertCmd() *cobra.Command {
 
 			// prepend metadata to the config output
 			mtext, err := genMetaDataText(
-				fdata,
+				cfgData,
 				nil,
 				map[string]string{
 					metaKeyAerospikeVersion: asVersion,
@@ -213,7 +210,15 @@ func newConvertCmd() *cobra.Command {
 				return err
 			}
 
-			cfgData, err := os.ReadFile(args[0])
+			// read stdin by default
+			var srcPath string
+			if len(args) == 0 {
+				srcPath = os.Stdin.Name()
+			} else {
+				srcPath = args[0]
+			}
+
+			cfgData, err = os.ReadFile(srcPath)
 			if err != nil {
 				return err
 			}
