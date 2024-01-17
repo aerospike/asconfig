@@ -13,6 +13,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var generateArgMax = 1
+
 func init() {
 	rootCmd.AddCommand(generateCmd)
 }
@@ -116,6 +118,29 @@ func newGenerateCmd() *cobra.Command {
 			)
 
 			return err
+		},
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) > generateArgMax {
+				return errTooManyArguments
+			}
+
+			// validate flags
+			_, err := cmd.Flags().GetString("output")
+			if err != nil {
+				return err
+			}
+
+			formatString, err := cmd.Flags().GetString("format")
+			if err != nil {
+				return errors.Join(errMissingFormat, err)
+			}
+
+			_, err = ParseFmtString(formatString)
+			if err != nil && formatString != "" {
+				return errors.Join(errInvalidFormat, err)
+			}
+
+			return nil
 		},
 	}
 
