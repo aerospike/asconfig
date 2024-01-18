@@ -3,6 +3,10 @@ ROOT_DIR = $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 VERSION = $(shell git describe --tags --always)
 GO_ENV_VARS =
 INSTALL_DIR = /usr/local/bin
+TESTDATA_DIR = $(ROOT_DIR)/testdata
+COVERAGE_DIR = $(TESTDATA_DIR)/coverage
+COV_UNIT_DIR = $(COVERAGE_DIR)/unit
+COV_INTEGRATION_DIR = $(COVERAGE_DIR)/integration
 
 ifdef GOOS
 GO_ENV_VARS = GOOS=$(GOOS)
@@ -21,19 +25,13 @@ asconfig: dependencies
 .PHONY: clean
 clean:
 	$(RM) bin/*
-	$(RM) -r testdata/coverage/*
-	$(RM) -r testdata/bin/*
+	$(RM) -r $(COVERAGE_DIR)/*
+	$(RM) -r $(TESTDATA_DIR)/bin/*
 	$(MAKE) -C $(ROOT_DIR)/pkg/ $@
 
 PHONY: dependencies
 dependencies:
 	git submodule update --init
-
-PHONY: coverage-dependencies
-coverage-dependencies:
-	git submodule update --init
-	go get github.com/wadey/gocovmerge
-	go install github.com/wadey/gocovmerge
 
 PHONY: install
 install: asconfig
@@ -62,27 +60,20 @@ tar: asconfig
 .PHONY: test
 test: integration unit
 
-PHONY: integration
+.PHONY: integration
 integration: dependencies
-	mkdir testdata/coverage/integration || true
+	mkdir -p $(COV_INTEGRATION_DIR) || true
 	go test -tags=integration -timeout 30m
 
-	mkdir testdata/coverage/tmp_merged
-	go tool covdata merge -i=testdata/coverage/integration -o=testdata/coverage/tmp_merged
-	
-	go tool covdata textfmt -i=testdata/coverage/tmp_merged -o=testdata/coverage/integration.cov
-	rm -r testdata/coverage/tmp_merged
-	rm -r testdata/coverage/integration
-
-PHONY: unit
+.PHONY: unit
 unit: dependencies
-	mkdir testdata/coverage || true
-	go test ./... -coverprofile testdata/coverage/unit.cov -coverpkg ./... -tags=unit
+	mkdir -p $(COV_UNIT_DIR) || true
+	go test -tags=unit -cover ./... -args -test.gocoverdir=$(COV_UNIT_DIR)
 
-PHONY: coverage
-coverage: coverage-dependencies integration unit
-	gocovmerge testdata/coverage/*.cov > testdata/coverage/total.cov
+.PHONY: coverage
+coverage: test
+	go tool covdata textfmt -i="$(COV_INTEGRATION_DIR),$(COV_UNIT_DIR)" -o=$(COVERAGE_DIR)/total.cov
 
 PHONY: view-coverage
 view-coverage: coverage
-	go tool cover -html=testdata/coverage/total.cov
+	go tool cover -html=$(COVERAGE_DIR)/total.cov
