@@ -55,7 +55,6 @@ func newGenerateCmd() *cobra.Command {
 			flags.SetAerospikeConf(asCommonConfig, asCommonFlags)
 
 			asPolicy, err := asCommonConfig.NewClientPolicy()
-
 			if err != nil {
 				return errors.Join(fmt.Errorf("unable to create client policy"), err)
 			}
@@ -64,14 +63,13 @@ func newGenerateCmd() *cobra.Command {
 
 			asHosts := asCommonConfig.NewHosts()
 			asinfo := info.NewAsInfo(mgmtLibLogger, asHosts[0], asPolicy)
-			generatedConf, err := asconfig.GenerateConf(mgmtLibLogger, asinfo, true)
 
+			generatedConf, err := asconfig.GenerateConf(mgmtLibLogger, asinfo, true)
 			if err != nil {
 				return errors.Join(fmt.Errorf("unable to generate config file"), err)
 			}
 
 			asconfig, err := asconfig.NewMapAsConfig(mgmtLibLogger, generatedConf.Version, generatedConf.Conf)
-
 			if err != nil {
 				return errors.Join(fmt.Errorf("unable to parse the generated conf file"), err)
 			}

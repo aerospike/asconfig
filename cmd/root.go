@@ -45,7 +45,6 @@ func newRootCmd() *cobra.Command {
 
 			lvlCode, err := logrus.ParseLevel(lvl)
 			if err != nil {
-				// logger.Errorf("Invalid log-level %s", lvl)
 				multiErr = errors.Join(multiErr, errInvalidLogLevel, err)
 			}
 
