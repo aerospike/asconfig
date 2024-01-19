@@ -1,12 +1,12 @@
 //go:build unit
-// +build unit
 
 package cmd
 
 import (
-	"github.com/aerospike/asconfig/asconf"
 	"reflect"
 	"testing"
+
+	"github.com/aerospike/asconfig/conf"
 
 	"github.com/spf13/cobra"
 )
@@ -28,7 +28,7 @@ func Test_getConfFileFormat(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    asconf.Format
+		want    conf.Format
 		wantErr bool
 	}{
 		{
@@ -37,7 +37,7 @@ func Test_getConfFileFormat(t *testing.T) {
 				path: "conf.yaml",
 				cmd:  &mockCmdNoFmt,
 			},
-			want:    asconf.YAML,
+			want:    conf.YAML,
 			wantErr: false,
 		},
 		{
@@ -46,7 +46,7 @@ func Test_getConfFileFormat(t *testing.T) {
 				path: "conf.conf",
 				cmd:  &mockCmdNoFmt,
 			},
-			want:    asconf.AsConfig,
+			want:    conf.AsConfig,
 			wantErr: false,
 		},
 		{
@@ -55,7 +55,7 @@ func Test_getConfFileFormat(t *testing.T) {
 				path: "conf.yaml",
 				cmd:  &mockCmd,
 			},
-			want:    asconf.AsConfig,
+			want:    conf.AsConfig,
 			wantErr: false,
 		},
 		{
@@ -64,7 +64,7 @@ func Test_getConfFileFormat(t *testing.T) {
 				path: "../testdata/sources/all_flash_cluster_cr.bad",
 				cmd:  &mockCmdNoFmt,
 			},
-			want:    asconf.Invalid,
+			want:    conf.Invalid,
 			wantErr: true,
 		},
 	}

@@ -10,7 +10,7 @@ namespaces:
       storage-engine:
         data-in-memory: true
         files:
-            - /opt/aerospike/data/test/test.dat
+            - /opt/aerospike/data/test.dat
         filesize: 2000000000
         type: device
     - data-in-index: true
@@ -21,7 +21,7 @@ namespaces:
       storage-engine:
         data-in-memory: true
         files:
-            - /opt/aerospike/data/bar/bar.dat
+            - /opt/aerospike/data/bar.dat
         filesize: 2000000000
         type: device
 network:
@@ -29,6 +29,7 @@ network:
         port: 3001
     heartbeat:
         mode: multicast
+        multicast-groups: 239.1.99.222
         port: 3002
     service:
         port: 3000

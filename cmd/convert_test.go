@@ -1,11 +1,12 @@
 //go:build unit
-// +build unit
 
 package cmd
 
 import (
 	"errors"
 	"testing"
+
+	"github.com/aerospike/asconfig/conf"
 )
 
 type preTestConvert struct {
@@ -45,6 +46,20 @@ var preTestsConvert = []preTestConvert{
 		flags:          []string{"--force"},
 		arguments:      []string{"./convert_test.go"},
 		expectedErrors: []error{nil},
+	},
+	{
+		flags:     []string{"--format", "bad_fmt"},
+		arguments: []string{"./convert_test.go"},
+		expectedErrors: []error{
+			conf.ErrInvalidFormat,
+		},
+	},
+	{
+		flags:     []string{"-F", "bad_fmt"},
+		arguments: []string{"./convert_test.go"},
+		expectedErrors: []error{
+			conf.ErrInvalidFormat,
+		},
 	},
 }
 

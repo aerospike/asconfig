@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/aerospike/asconfig/asconf"
+	"github.com/aerospike/asconfig/conf"
 
 	"github.com/spf13/cobra"
 )
@@ -19,7 +19,7 @@ const (
 )
 
 var (
-	errDiffConfigsDiffer = errors.Join(fmt.Errorf("configuration files are not equal"), SilentError)
+	errDiffConfigsDiffer = errors.Join(fmt.Errorf("configuration files are not equal"), ErrSilent)
 	errDiffTooFewArgs    = fmt.Errorf("diff requires atleast %d file paths as arguments", diffArgMin)
 	errDiffTooManyArgs   = fmt.Errorf("diff requires no more than %d file paths as arguments", diffArgMax)
 )
@@ -85,38 +85,25 @@ func newDiffCmd() *cobra.Command {
 
 			// not performing any validation so server version is "" (not needed)
 			// won't be marshaling these configs to text so use Invalid output format
-			// TODO decouple output format from asconf, probably pass it as an arg to marshal text
-			conf1, err := asconf.NewAsconf(
-				f1,
-				fmt1,
-				asconf.Invalid,
-				"",
-				logger,
-				managementLibLogger,
-			)
+			// TODO decouple output format from asconf, probably pass it as an
+			// arg to marshal text
+			conf1, err := conf.NewASConfigFromBytes(mgmtLibLogger, f1, fmt1)
 			if err != nil {
 				return err
 			}
 
-			conf2, err := asconf.NewAsconf(
-				f2,
-				fmt2,
-				asconf.Invalid,
-				"",
-				logger,
-				managementLibLogger,
-			)
+			conf2, err := conf.NewASConfigFromBytes(mgmtLibLogger, f2, fmt2)
 			if err != nil {
 				return err
 			}
 
 			// get flattened config maps
-			map1 := conf1.GetIntermediateConfig()
-			map2 := conf2.GetIntermediateConfig()
+			map1 := conf1.GetFlatMap()
+			map2 := conf2.GetFlatMap()
 
 			diffs := diffFlatMaps(
-				map1,
-				map2,
+				*map1,
+				*map2,
 			)
 
 			if len(diffs) > 0 {
@@ -128,6 +115,8 @@ func newDiffCmd() *cobra.Command {
 			return nil
 		},
 	}
+
+	res.Flags().StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
 
 	return res
 }
@@ -157,7 +146,7 @@ func diffFlatMaps(m1 map[string]any, m2 map[string]any) []string {
 		// "index" is a metadata key added by
 		// the management lib to these flat maps
 		// ignore it
-		if strings.HasSuffix(k, ".index") {
+		if strings.HasSuffix(k, ".<index>") {
 			continue
 		}
 

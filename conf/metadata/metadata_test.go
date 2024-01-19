@@ -1,13 +1,10 @@
-//go:build unit
-// +build unit
-
 package metadata_test
 
 import (
 	"reflect"
 	"testing"
 
-	"github.com/aerospike/asconfig/asconf/metadata"
+	"github.com/aerospike/asconfig/conf/metadata"
 )
 
 var testBasic = `

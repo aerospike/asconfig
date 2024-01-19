@@ -7,7 +7,7 @@ namespaces:
       replication-factor: 2
       storage-engine:
         files:
-            - /local/test.dat /remote/test.dat
+            - /opt/aerospike/data/test.dat /opt/aerospike/data/shadow-test.dat
         filesize: 2000000000
         type: device
 network:
@@ -15,6 +15,7 @@ network:
         port: 3001
     heartbeat:
         mode: multicast
+        multicast-groups: 239.1.99.222
         port: 3002
     service:
         port: 3000

@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/aerospike/aerospike-management-lib/asconfig"
-	"github.com/aerospike/asconfig/asconf"
-	"github.com/aerospike/asconfig/asconf/metadata"
+	"github.com/aerospike/asconfig/conf"
+	"github.com/aerospike/asconfig/conf/metadata"
 	"github.com/spf13/cobra"
 )
 
@@ -24,8 +24,8 @@ var (
 	errMissingAerospikeVersion     = fmt.Errorf("missing required flag '--aerospike-version'")
 	errInvalidAerospikeVersion     = fmt.Errorf("aerospike version must be in the form <a>.<b>.<c>")
 	errUnsupportedAerospikeVersion = fmt.Errorf("aerospike version unsupported")
-	errInvalidOutput               = fmt.Errorf("invalid output flag")
 	errInvalidFormat               = fmt.Errorf("invalid format flag")
+	errMissingFormat               = fmt.Errorf("missing format flag")
 )
 
 func init() {
@@ -71,12 +71,12 @@ func newConvertCmd() *cobra.Command {
 				srcPath = args[0]
 			}
 
-			version, err := cmd.Flags().GetString("aerospike-version")
+			asVersion, err := cmd.Flags().GetString("aerospike-version")
 			if err != nil {
 				return err
 			}
 
-			logger.Debugf("Processing flag aerospike-version value=%s", version)
+			logger.Debugf("Processing flag aerospike-version value=%s", asVersion)
 
 			force, err := cmd.Flags().GetBool("force")
 			if err != nil {
@@ -92,56 +92,55 @@ func newConvertCmd() *cobra.Command {
 
 			logger.Debugf("Processing flag format value=%v", srcFormat)
 
-			var outFmt asconf.Format
+			var outFmt conf.Format
 			switch srcFormat {
-			case asconf.AsConfig:
-				outFmt = asconf.YAML
-			case asconf.YAML:
-				outFmt = asconf.AsConfig
+			case conf.AsConfig:
+				outFmt = conf.YAML
+			case conf.YAML:
+				outFmt = conf.AsConfig
 			default:
 				return fmt.Errorf("%w: %s", errInvalidFormat, srcFormat)
 			}
 
 			// if the version option is empty,
 			// try populating from the metadata
-			if version == "" {
-				version, err = getMetaDataItem(cfgData, metaKeyAerospikeVersion)
+			if asVersion == "" {
+				asVersion, err = getMetaDataItem(cfgData, metaKeyAerospikeVersion)
 				if err != nil && !force {
 					return errors.Join(errMissingAerospikeVersion, err)
 				}
 			}
 
-			conf, err := asconf.NewAsconf(
-				cfgData,
-				srcFormat,
-				outFmt,
-				version,
-				logger,
-				managementLibLogger,
-			)
+			// load
+			asconfig, err := conf.NewASConfigFromBytes(mgmtLibLogger, cfgData, srcFormat)
 
 			if err != nil {
 				return err
 			}
 
+			// validate
 			if !force {
-				verrs, err := conf.Validate()
+				verrs, err := conf.NewConfigValidator(asconfig, mgmtLibLogger, asVersion).Validate()
 				if err != nil || verrs != nil {
 					return errors.Join(err, verrs)
 				}
 			}
 
-			out, err := conf.MarshalText()
+			// convert
+			out, err := conf.NewConfigMarshaller(asconfig, outFmt).MarshalText()
 			if err != nil {
 				return err
 			}
 
 			// prepend metadata to the config output
-			mtext, err := genMetaDataText(metaDataArgs{
-				src:              cfgData,
-				aerospikeVersion: version,
-				asconfigVersion:  VERSION,
-			})
+			mtext, err := genMetaDataText(
+				cfgData,
+				nil,
+				map[string]string{
+					metaKeyAerospikeVersion: asVersion,
+					metaKeyAsconfigVersion:  VERSION,
+				},
+			)
 			if err != nil {
 				return err
 			}
@@ -162,9 +161,9 @@ func newConvertCmd() *cobra.Command {
 				outFileName = strings.TrimSuffix(outFileName, filepath.Ext(outFileName))
 
 				outputPath = filepath.Join(outputPath, outFileName)
-				if outFmt == asconf.YAML {
+				if outFmt == conf.YAML {
 					outputPath += ".yaml"
-				} else if outFmt == asconf.AsConfig {
+				} else if outFmt == conf.AsConfig {
 					outputPath += ".conf"
 				} else {
 					return fmt.Errorf("output format unrecognized %w", errInvalidFormat)
@@ -259,16 +258,27 @@ func newConvertCmd() *cobra.Command {
 				}
 			}
 
+			formatString, err := cmd.Flags().GetString("format")
+			if err != nil {
+				return errors.Join(errMissingFormat, err)
+			}
+
+			_, err = ParseFmtString(formatString)
+			if err != nil && formatString != "" {
+				return errors.Join(errInvalidFormat, err)
+			}
+
 			return nil
 		},
 	}
 
 	// flags and configuration settings
 	// aerospike-version is marked required in this cmd's PreRun if the --force flag is not provided
-	commonFlags := getCommonFlags()
-	res.Flags().AddFlagSet(commonFlags)
+	asCommonFlags := getCommonFlags()
+	res.Flags().AddFlagSet(asCommonFlags)
 	res.Flags().BoolP("force", "f", false, "Override checks for supported server version and config validation")
 	res.Flags().StringP("output", "o", os.Stdout.Name(), "File path to write output to")
+	res.Flags().StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
 
 	res.Version = VERSION
 

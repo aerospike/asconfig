@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/aerospike/asconfig/asconf"
+	"github.com/aerospike/asconfig/conf"
 	"github.com/spf13/cobra"
 )
 
@@ -84,27 +84,18 @@ func newValidateCmd() *cobra.Command {
 
 			logger.Debugf("Processing flag aerospike-version value=%s", version)
 
-			conf, err := asconf.NewAsconf(
-				fdata,
-				srcFormat,
-				// we aren't converting to anything so set
-				// output format to Invalid as a place holder
-				asconf.Invalid,
-				version,
-				logger,
-				managementLibLogger,
-			)
+			asconfig, err := conf.NewASConfigFromBytes(mgmtLibLogger, fdata, srcFormat)
 
 			if err != nil {
 				return err
 			}
 
-			verrs, err := conf.Validate()
+			verrs, err := conf.NewConfigValidator(asconfig, mgmtLibLogger, version).Validate()
 			if verrs != nil {
 				// force validation errors to be written to stdout
 				// so they can more easily be grepd etc.
 				cmd.Print(verrs.Error())
-				return errors.Join(asconf.ErrConfigValidation, SilentError)
+				return errors.Join(conf.ErrConfigValidation, ErrSilent)
 			}
 			if err != nil {
 				return err
@@ -119,6 +110,7 @@ func newValidateCmd() *cobra.Command {
 	// is in the input config file's metadata
 	commonFlags := getCommonFlags()
 	res.Flags().AddFlagSet(commonFlags)
+	res.Flags().StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
 
 	res.Version = VERSION
 

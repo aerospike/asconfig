@@ -1,1 +1,10 @@
-[{"Source":"testdata/cases/server70/server70.yaml","Destination":"testdata/cases/server70/server70-res-.conf","Expected":"testdata/cases/server70/server70.conf","Arguments":["convert","--aerospike-version","7.0.0","--format","yaml","--output","testdata/cases/server70/server70-res-.conf"],"SkipServerTest":false,"ServerErrorAllowList":null,"ServerImage":"aerospike.jfrog.io/docker-remote/aerospike/aerospike-server-enterprise-rc:7.0.0.0-rc3","DockerAuth":{"Username":"ASC_DOCKER_USER","Password":"ASC_DOCKER_PASS"}}]
+[
+    {
+        "Source":"testdata/cases/server70/server70.yaml",
+        "Destination":"testdata/cases/server70/server70-res-.conf",
+        "Expected":"testdata/cases/server70/server70.conf",
+        "Arguments":["convert","--aerospike-version","7.0.0.2","--format","yaml","--output","testdata/cases/server70/server70-res-.conf"],
+        "SkipServerTest":false,
+        "ServerErrorAllowList":null
+    }
+]

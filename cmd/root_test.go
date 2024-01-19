@@ -1,11 +1,7 @@
-//go:build unit
-// +build unit
-
 package cmd
 
 import (
 	"errors"
-	"github.com/aerospike/asconfig/asconf"
 	"testing"
 )
 
@@ -33,20 +29,6 @@ var preTestsRoot = []preTestRoot{
 			errInvalidLogLevel,
 		},
 	},
-	{
-		flags:     []string{"--format", "bad_fmt"},
-		arguments: []string{},
-		expectedErrors: []error{
-			asconf.ErrInvalidFormat,
-		},
-	},
-	{
-		flags:     []string{"-F", "bad_fmt"},
-		arguments: []string{},
-		expectedErrors: []error{
-			asconf.ErrInvalidFormat,
-		},
-	},
 }
 
 func TestPersistentPreRunRoot(t *testing.T) {
@@ -57,7 +39,7 @@ func TestPersistentPreRunRoot(t *testing.T) {
 		err := cmd.PersistentPreRunE(cmd, test.arguments)
 		for _, expectedErr := range test.expectedErrors {
 			if !errors.Is(err, expectedErr) {
-				t.Errorf("actual err: %v\n is not expected err: %v", err, expectedErr)
+				t.Errorf("%v\n actual err: %v\n is not expected err: %v", test.flags, err, expectedErr)
 			}
 		}
 	}

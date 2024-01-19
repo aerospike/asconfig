@@ -1,5 +1,4 @@
 //go:build unit
-// +build unit
 
 package cmd
 
@@ -49,6 +48,16 @@ var testValidateArgs = []runTestValidate{
 		flags:       []string{"--log-level", "debug", "--aerospike-version", "7.0.0"},
 		arguments:   []string{"../testdata/cases/server70/server70.conf"},
 		expectError: false,
+	},
+	{
+		flags:       []string{"--format", "bad_fmt"},
+		arguments:   []string{},
+		expectError: true,
+	},
+	{
+		flags:       []string{"-F", "bad_fmt"},
+		arguments:   []string{},
+		expectError: true,
 	},
 }
 

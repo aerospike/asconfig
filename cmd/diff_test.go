@@ -1,5 +1,4 @@
 //go:build unit
-// +build unit
 
 package cmd
 
@@ -58,6 +57,16 @@ var testDiffArgs = []runTestDiff{
 		flags:       []string{"--log-level", "debug"},
 		arguments:   []string{"../testdata/expected/all_flash_cluster_cr.conf", "../testdata/expected/all_flash_cluster_cr.conf"},
 		expectError: false,
+	},
+	{
+		flags:       []string{"--format", "bad_fmt"},
+		arguments:   []string{},
+		expectError: true,
+	},
+	{
+		flags:       []string{"-F", "bad_fmt"},
+		arguments:   []string{},
+		expectError: true,
 	},
 }
 
