@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/aerospike/aerospike-client-go/v6 v6.14.1
 	github.com/aerospike/aerospike-management-lib v1.1.0
-	github.com/aerospike/tools-common-go v0.0.0-20240104200544-8ced38228ab3
+	github.com/aerospike/tools-common-go v0.0.0-20240119223231-5879272be88e
 	github.com/bombsimon/logrusr/v4 v4.1.0
 	github.com/docker/docker v24.0.7+incompatible
 	github.com/go-logr/logr v1.4.1
@@ -17,6 +17,7 @@ require (
 )
 
 require (
+	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/deckarep/golang-set/v2 v2.6.0 // indirect
 	github.com/distribution/reference v0.5.0 // indirect
@@ -27,8 +28,6 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
-	github.com/moby/term v0.5.0 // indirect
-	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/qdm12/reprint v0.0.0-20200326205758-722754a53494 // indirect
@@ -41,11 +40,8 @@ require (
 	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.16.1 // indirect
-	google.golang.org/genproto v0.0.0-20240102182953-50ed04b92917 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240108191215-35c7eff3a6b1 // indirect
 	google.golang.org/grpc v1.60.1 // indirect
 	google.golang.org/protobuf v1.32.0 // indirect
-	gotest.tools/v3 v3.5.1 // indirect
 )
