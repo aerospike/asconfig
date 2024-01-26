@@ -69,7 +69,7 @@ func newGenerateCmd() *cobra.Command {
 				return errors.Join(fmt.Errorf("unable to generate config file"), err)
 			}
 
-			asconfig, err := asconfig.NewMapAsConfig(mgmtLibLogger, generatedConf.Version, generatedConf.Conf)
+			asconfig, err := asconfig.NewMapAsConfig(mgmtLibLogger, generatedConf.Conf)
 			if err != nil {
 				return errors.Join(fmt.Errorf("unable to parse the generated conf file"), err)
 			}
