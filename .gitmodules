@@ -1,3 +1,4 @@
 [submodule "schemas"]
 	path = schema/schemas
-	url = https://github.com/aerospike/schemas
+	url = git@github.com:aerospike/schemas
+	ignore = dirty
