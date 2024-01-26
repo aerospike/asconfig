@@ -8,7 +8,7 @@ import (
 	"github.com/aerospike/aerospike-management-lib/asconfig"
 	"github.com/aerospike/aerospike-management-lib/info"
 	"github.com/aerospike/asconfig/conf"
-	"github.com/aerospike/tools-common-go/client"
+	"github.com/aerospike/tools-common-go/config"
 	"github.com/aerospike/tools-common-go/flags"
 	"github.com/spf13/cobra"
 )
@@ -50,9 +50,7 @@ func newGenerateCmd() *cobra.Command {
 
 			logger.Debugf("Generating config from Aerospike node")
 
-			asCommonConfig := client.NewDefaultAerospikeHostConfig()
-
-			flags.SetAerospikeConf(asCommonConfig, asCommonFlags)
+			asCommonConfig := aerospikeFlags.NewAerospikeConfig()
 
 			asPolicy, err := asCommonConfig.NewClientPolicy()
 			if err != nil {
@@ -143,9 +141,10 @@ func newGenerateCmd() *cobra.Command {
 	}
 
 	res.Version = VERSION
-	res.Flags().AddFlagSet(
-		flags.SetAerospikeFlags(asCommonFlags, flags.DefaultWrapHelpString),
-	)
+	asFlagSet := aerospikeFlags.NewFlagSet(flags.DefaultWrapHelpString)
+	res.Flags().AddFlagSet(asFlagSet)
+	config.BindPFlags(asFlagSet, "cluster")
+
 	res.Flags().StringP("output", "o", os.Stdout.Name(), flags.DefaultWrapHelpString("File path to write output to"))
 	res.Flags().StringP("format", "F", "conf", flags.DefaultWrapHelpString("The format of the destination file(s). Valid options are: yaml, yml, and conf."))
 

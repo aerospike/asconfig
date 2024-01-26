@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/aerospike/asconfig/log"
+	"github.com/aerospike/tools-common-go/config"
+	"github.com/aerospike/tools-common-go/flags"
 
 	"github.com/aerospike/asconfig/schema"
 
@@ -17,21 +19,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Replaced at compile time
-var (
-	VERSION = "development"
-)
-
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = newRootCmd()
 
 var (
+	VERSION            = "development" // Replaced at compile time
 	errInvalidLogLevel = fmt.Errorf("Invalid log-level flag")
+	aerospikeFlags     = flags.NewDefaultAerospikeFlags()
+	cfFileFlags        = flags.NewConfFileFlags()
 )
 
 // newRootCmd is the root command constructor. It is useful for producing copies of rootCmd for testing.
 func newRootCmd() *cobra.Command {
-	res := &cobra.Command{
+	rootCmd := &cobra.Command{
 		Use:   "asconfig",
 		Short: "Manage Aerospike configuration",
 		Long:  "Asconfig is used to manage Aerospike configuration.",
@@ -50,28 +50,34 @@ func newRootCmd() *cobra.Command {
 
 			logger.SetLevel(lvlCode)
 
+			cfgFile, err := config.InitConfig(cfFileFlags.File, cfFileFlags.Instance, cmd.Flags())
+			if err != nil {
+				multiErr = errors.Join(multiErr, err)
+			}
+
+			logger.Infof("Using config file: %s", cfgFile)
+
 			return multiErr
 		},
 	}
 
-	res.Version = VERSION
-	res.SetVersionTemplate("asconfig\n{{printf \"Version %s\" .Version}}\n")
+	rootCmd.Version = VERSION
 
 	logLevelUsage := fmt.Sprintf("Set the logging detail level. Valid levels are: %v", log.GetLogLevels())
-	res.PersistentFlags().StringP("log-level", "l", "info", logLevelUsage)
-	res.PersistentFlags().BoolP("version", "V", false, "Version for asconfig.")
-	res.PersistentFlags().BoolP("help", "u", false, "Display help information")
+	rootCmd.PersistentFlags().StringP("log-level", "l", "info", logLevelUsage)
+	rootCmd.PersistentFlags().AddFlagSet(cfFileFlags.NewFlagSet(flags.DefaultWrapHelpString))
+	flags.SetupRoot(rootCmd, "Aerospike Config")
 
-	res.SilenceErrors = true
-	res.SilenceUsage = true
+	rootCmd.SilenceErrors = true
+	rootCmd.SilenceUsage = true
 
-	res.SetFlagErrorFunc(func(cmd *cobra.Command, err error) error {
+	rootCmd.SetFlagErrorFunc(func(cmd *cobra.Command, err error) error {
 		logger.Error(err)
 		cmd.Println(cmd.UsageString())
 		return errors.Join(err, ErrSilent)
 	})
 
-	return res
+	return rootCmd
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
