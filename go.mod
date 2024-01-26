@@ -4,8 +4,8 @@ go 1.20
 
 require (
 	github.com/aerospike/aerospike-client-go/v6 v6.14.1
-	github.com/aerospike/aerospike-management-lib v1.1.0
-	github.com/aerospike/tools-common-go v0.0.0-20240119223231-5879272be88e
+	github.com/aerospike/aerospike-management-lib v1.2.0
+	github.com/aerospike/tools-common-go v0.0.0-20240126183151-d9f720a5507f
 	github.com/bombsimon/logrusr/v4 v4.1.0
 	github.com/docker/docker v24.0.7+incompatible
 	github.com/go-logr/logr v1.4.1
