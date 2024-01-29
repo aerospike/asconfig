@@ -1,4 +1,4 @@
 [submodule "schemas"]
 	path = schema/schemas
-	url = git@github.com:aerospike/schemas
+	url = https://github.com/aerospike/schemas # Tools build fails if ssh is used
 	ignore = dirty
