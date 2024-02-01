@@ -40,7 +40,6 @@ func NewASConfigFromBytes(log logr.Logger, src []byte, srcFmt Format) (*asconfig
 
 	cfg, err = asconfig.NewMapAsConfig(
 		log,
-		"", // TODO: Remove when management lib merges PR #41
 		*cmap,
 	)
 
@@ -58,7 +57,6 @@ func loadYAML(log logr.Logger, src []byte) (*asconfig.AsConfig, error) {
 
 	c, err := asconfig.NewMapAsConfig(
 		log,
-		"", // TODO: Remove when management lib merges PR #41
 		data,
 	)
 
@@ -94,7 +92,6 @@ func loadAsConf(log logr.Logger, src []byte) (*asconfig.AsConfig, error) {
 
 	c, err = asconfig.NewMapAsConfig(
 		log,
-		"", // TODO: Remove when management lib merges PR #41
 		cmap,
 	)
 
