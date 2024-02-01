@@ -38,6 +38,13 @@ func newRootCmd() *cobra.Command {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			var multiErr error
 
+			cfgFile, err := config.InitConfig(cfFileFlags.File, cfFileFlags.Instance, cmd.Flags())
+			if err != nil {
+				multiErr = errors.Join(multiErr, err)
+			}
+
+			logger.Infof("Using config file: %s", cfgFile)
+
 			lvl, err := cmd.Flags().GetString("log-level")
 			if err != nil {
 				multiErr = fmt.Errorf("%w, %w", multiErr, err)
@@ -49,13 +56,6 @@ func newRootCmd() *cobra.Command {
 			}
 
 			logger.SetLevel(lvlCode)
-
-			cfgFile, err := config.InitConfig(cfFileFlags.File, cfFileFlags.Instance, cmd.Flags())
-			if err != nil {
-				multiErr = errors.Join(multiErr, err)
-			}
-
-			logger.Infof("Using config file: %s", cfgFile)
 
 			return multiErr
 		},
