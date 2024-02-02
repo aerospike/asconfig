@@ -2,12 +2,10 @@ module github.com/aerospike/asconfig
 
 go 1.20
 
-// replace github.com/aerospike/tools-common-go => /Users/jesseschmidt/Developer/tools-common-go
-
 require (
 	github.com/aerospike/aerospike-client-go/v6 v6.14.1
 	github.com/aerospike/aerospike-management-lib v1.2.1-0.20240131023930-e7454a7e0866
-	github.com/aerospike/tools-common-go v0.0.0-20240201233954-71838744bae2
+	github.com/aerospike/tools-common-go v0.0.0-20240201223104-9536b835c556
 	github.com/bombsimon/logrusr/v4 v4.1.0
 	github.com/docker/docker v24.0.7+incompatible
 	github.com/go-logr/logr v1.4.1
