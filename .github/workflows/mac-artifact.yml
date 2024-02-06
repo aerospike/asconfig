@@ -81,7 +81,7 @@ jobs:
         working-directory: ${{ steps.working-dir.outputs.value }}
         run: |
           sudo make install
-          asconfig --version 2>&1 | grep "asconfig"
+          asconfig --version 2>&1 | grep "Aerospike Config"
       - uses: actions/upload-artifact@v3
         with:
           name: ${{ steps.system-info.outputs.platform }}-${{ runner.arch }}-${{ runner.os }}-${{ steps.system-info.outputs.release }}-asconfig
