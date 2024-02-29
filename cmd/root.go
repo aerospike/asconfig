@@ -63,12 +63,10 @@ func newRootCmd() *cobra.Command {
 		},
 	}
 
-	rootCmd.Version = VERSION
-
 	logLevelUsage := fmt.Sprintf("Set the logging detail level. Valid levels are: %v", log.GetLogLevels())
 	rootCmd.PersistentFlags().StringP("log-level", "l", "info", logLevelUsage)
 	rootCmd.PersistentFlags().AddFlagSet(cfFileFlags.NewFlagSet(flags.DefaultWrapHelpString))
-	flags.SetupRoot(rootCmd, "Aerospike Config")
+	flags.SetupRoot(rootCmd, "Aerospike Config", VERSION)
 
 	rootCmd.SilenceErrors = true
 	rootCmd.SilenceUsage = true

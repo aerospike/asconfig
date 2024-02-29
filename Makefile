@@ -7,6 +7,9 @@ TESTDATA_DIR = $(ROOT_DIR)/testdata
 COVERAGE_DIR = $(TESTDATA_DIR)/coverage
 COV_UNIT_DIR = $(COVERAGE_DIR)/unit
 COV_INTEGRATION_DIR = $(COVERAGE_DIR)/integration
+ASCONFIG = asconfig
+BUILD_DIR = $(ROOT_DIR)/bin
+ACONFIG_BIN = $(BUILD_DIR)/$(ASCONFIG)
 
 ifdef GOOS
 GO_ENV_VARS = GOOS=$(GOOS)
@@ -17,9 +20,8 @@ GO_ENV_VARS += GOARCH=$(GOARCH)
 endif
 
 # Builds asconfig binary
-.PHONY: asconfig
-asconfig: dependencies
-	$(GO_ENV_VARS) go build -ldflags="-X 'github.com/aerospike/asconfig/cmd.VERSION=$(VERSION)'" -o bin/asconfig .
+$(ACONFIG_BIN): $(wildcard *.go)
+	$(GO_ENV_VARS) go build -ldflags="-X 'github.com/aerospike/asconfig/cmd.VERSION=$(VERSION)'" -o $(ACONFIG_BIN) .
 
 # Clean up
 .PHONY: clean
@@ -29,17 +31,13 @@ clean:
 	$(RM) -r $(TESTDATA_DIR)/bin/*
 	$(MAKE) -C $(ROOT_DIR)/pkg/ $@
 
-PHONY: dependencies
-dependencies:
-	git submodule update --init
-
 PHONY: install
-install: asconfig
-	install -m 755 ./bin/asconfig $(INSTALL_DIR)
+install: $(ACONFIG_BIN)
+	install -m 755 $(ACONFIG_BIN) $(INSTALL_DIR)
 
 PHONY: uninstall
 uninstall:
-	rm $(INSTALL_DIR)/asconfig
+	rm $(INSTALL_DIR)/$(ASCONFIG)
 
 # fpm is needed to build these artifacts
 .PHONY: all
