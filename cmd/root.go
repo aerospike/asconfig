@@ -63,6 +63,7 @@ func newRootCmd() *cobra.Command {
 		},
 	}
 
+	// TODO: log levels should be generic and not tied to logrus or golang.
 	logLevelUsage := fmt.Sprintf("Set the logging detail level. Valid levels are: %v", log.GetLogLevels())
 	rootCmd.PersistentFlags().StringP("log-level", "l", "info", logLevelUsage)
 	rootCmd.PersistentFlags().AddFlagSet(cfFileFlags.NewFlagSet(flags.DefaultWrapHelpString))
