@@ -59,12 +59,12 @@ tar: asconfig
 test: integration unit
 
 .PHONY: integration
-integration: dependencies
+integration:
 	mkdir -p $(COV_INTEGRATION_DIR) || true
 	go test -tags=integration -timeout 30m
 
 .PHONY: unit
-unit: dependencies
+unit:
 	mkdir -p $(COV_UNIT_DIR) || true
 	go test -tags=unit -cover ./... -args -test.gocoverdir=$(COV_UNIT_DIR)
 

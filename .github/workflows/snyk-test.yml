@@ -8,6 +8,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          submodules: true
       - name: Get go version from go.mod
         run: |
           echo "GO_VERSION=$(grep '^go ' go.mod | cut -d " " -f 2)" >> $GITHUB_ENV
@@ -15,9 +17,6 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: ${{ env.GO_VERSION }}
-      - name: Install dependencies
-        run : |
-          make dependencies
       - name: Setup snyk CLI
         uses: snyk/actions/setup@master
       - name: Run Snyk to check for vulnerabilities and record dependencies
