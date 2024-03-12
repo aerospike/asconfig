@@ -6,7 +6,7 @@ toolchain go1.21.7
 
 require (
 	github.com/aerospike/aerospike-client-go/v7 v7.1.0
-	github.com/aerospike/aerospike-management-lib v1.2.1-0.20240131023930-e7454a7e0866
+	github.com/aerospike/aerospike-management-lib v1.2.1-0.20240312121654-af11e0a2cf3a
 	github.com/aerospike/tools-common-go v0.0.0-20240221005915-c73ebdf1bd6b
 	github.com/bombsimon/logrusr/v4 v4.1.0
 	github.com/docker/docker v25.0.3+incompatible
@@ -22,7 +22,6 @@ require (
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
-	github.com/aerospike/aerospike-client-go/v6 v6.14.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/deckarep/golang-set/v2 v2.6.0 // indirect

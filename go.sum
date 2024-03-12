@@ -2,12 +2,10 @@ github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 h1:UQHMgLO+TxOEl
 github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1/go.mod h1:xomTg63KZ2rFqZQzSB4Vz2SUXa1BpHTVz9L5PTmPC4E=
 github.com/Microsoft/go-winio v0.6.1 h1:9/kr64B9VUZrLm5YYwbGtUJnMgqWVOdUAXu6Migciow=
 github.com/Microsoft/go-winio v0.6.1/go.mod h1:LRdKpFKfdobln8UmuiYcKPot9D2v6svN5+sAH+4kjUM=
-github.com/aerospike/aerospike-client-go/v6 v6.14.0 h1:Z3FcGWJda1sagzdc6Akz4EJ13Pq55Uyn6qtFLrVUDd0=
-github.com/aerospike/aerospike-client-go/v6 v6.14.0/go.mod h1:/0Wm81GhMqem+9flWcpazPKoRfjFeG6WrQdXGiMNi0A=
 github.com/aerospike/aerospike-client-go/v7 v7.1.0 h1:yvCTKdbpqZxHvv7sWsFHV1j49jZcC8yXRooWsDFqKtA=
 github.com/aerospike/aerospike-client-go/v7 v7.1.0/go.mod h1:AkHiKvCbqa1c16gCNGju3c5X/yzwLVvblNczqjxNwNk=
-github.com/aerospike/aerospike-management-lib v1.2.1-0.20240131023930-e7454a7e0866 h1:h7rAmIJG/z+pq5hQ2Zi0xHbgG3pNdea/hSH4l5ay9FE=
-github.com/aerospike/aerospike-management-lib v1.2.1-0.20240131023930-e7454a7e0866/go.mod h1:NwegUX6or8xmwVMIueBmGTW7lfKlZ9XDQoCuhnQKMCA=
+github.com/aerospike/aerospike-management-lib v1.2.1-0.20240312121654-af11e0a2cf3a h1:VpxP8pP67yvquFwtVEdzJJQ3uuzCf1MEZGaMVD2tl2o=
+github.com/aerospike/aerospike-management-lib v1.2.1-0.20240312121654-af11e0a2cf3a/go.mod h1:qgALDfuDmVVD7Hbjx23YKrGw4SMrb1baGYgJd4gCqIs=
 github.com/aerospike/tools-common-go v0.0.0-20240221005915-c73ebdf1bd6b h1:Sk92l0SkqdshTp8QnW1xBcmoKYR4qa8VPy+T4RtsTh4=
 github.com/aerospike/tools-common-go v0.0.0-20240221005915-c73ebdf1bd6b/go.mod h1:mcux7qQwlXFXsDL/9upIPLjbOuqkQBwVBO9HJaqPQ6s=
 github.com/bombsimon/logrusr/v4 v4.1.0 h1:uZNPbwusB0eUXlO8hIUwStE6Lr5bLN6IgYgG+75kuh4=
