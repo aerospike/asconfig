@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	as "github.com/aerospike/aerospike-client-go/v6"
+	as "github.com/aerospike/aerospike-client-go/v7"
 	mgmtLib "github.com/aerospike/aerospike-management-lib"
 	mgmtLibInfo "github.com/aerospike/aerospike-management-lib/info"
 	"github.com/aerospike/asconfig/cmd"
