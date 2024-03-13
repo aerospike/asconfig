@@ -14,21 +14,12 @@ Build asconfig using the included makefile and display usage information.
 ```shell
 git clone https://github.com/aerospike/asconfig.git
 cd asconfig
+git submodule update --init
 make
 ./bin/asconfig --help
 ```
 
 The built binary is available at bin/asconfig.
-
-You can also build asconfig using `go build`.
-
-```shell
-git clone https://github.com/aerospike/asconfig.git
-cd asconfig
-git submodule update --init
-go build -o ./bin/asconfig
-./bin/asconfig --help
-```
 
 Install or uninstall asconfig.
 
