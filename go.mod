@@ -6,7 +6,7 @@ toolchain go1.21.7
 
 require (
 	github.com/aerospike/aerospike-client-go/v7 v7.1.0
-	github.com/aerospike/aerospike-management-lib v1.2.1-0.20240312121654-af11e0a2cf3a
+	github.com/aerospike/aerospike-management-lib v1.2.1-0.20240319095728-1600222cec4c
 	github.com/aerospike/tools-common-go v0.0.0-20240221005915-c73ebdf1bd6b
 	github.com/bombsimon/logrusr/v4 v4.1.0
 	github.com/docker/docker v25.0.3+incompatible
@@ -72,7 +72,7 @@ require (
 	golang.org/x/tools v0.16.1 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240108191215-35c7eff3a6b1 // indirect
 	google.golang.org/grpc v1.61.0 // indirect
-	google.golang.org/protobuf v1.32.0 // indirect
+	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 )
