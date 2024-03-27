@@ -16,7 +16,7 @@ namespaces:
         devices:
             - /dummy/mount/point1
         evict-used-pct: 70
-        flush-size: 1048576
+        flush-size: 2097152
         stop-writes-avail-pct: 20
         stop-writes-used-pct: 70
         type: device
@@ -35,7 +35,7 @@ namespaces:
         type: shmem
       storage-engine:
         data-size: 34359738368
-        flush-size: 2097152
+        flush-size: 1048576
         type: memory
 network:
     fabric:
