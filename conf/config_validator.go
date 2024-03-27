@@ -1,9 +1,11 @@
 package conf
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/aerospike/aerospike-management-lib/asconfig"
@@ -29,7 +31,7 @@ func NewConfigValidator(confHandler ConfHandler, mgmtLogger logr.Logger, version
 }
 
 // Validate validates the parsed configuration against the schema for the given versions.
-// ValidationErrors is not nil if any errors during validation occur.
+// ValidationErrors is not nil if any errors occur during validation.
 func (cv *ConfigValidator) Validate() (*ValidationErrors, error) {
 
 	valid, tempVerrs, err := cv.IsValid(cv.mgmtLogger, cv.version)
@@ -43,6 +45,30 @@ func (cv *ConfigValidator) Validate() (*ValidationErrors, error) {
 	}
 
 	if !valid || err != nil || len(verrs.Errors) > 0 {
+
+		config := cv.ToMap()
+
+		jsonConfigStr, err := json.Marshal(config)
+		if err != nil {
+			return nil, err
+		}
+
+		jsonConfig := map[string]any{}
+		err = json.Unmarshal(jsonConfigStr, &jsonConfig)
+
+		// check the context of each error and use that context to get the name
+		// of the field that is causing the error from the json config
+		for i, verr := range verrs.Errors {
+			context, _ := strings.CutPrefix(verr.Context, "(root).")
+			context, err := jsonToConfigContext(jsonConfig, context)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+
+			verrs.Errors[i].Context = context
+		}
+
 		return &verrs, errors.Join(ErrConfigValidation, err)
 	}
 
@@ -106,4 +132,59 @@ func (o ValidationErrors) Error() string {
 	}
 
 	return errString
+}
+
+func jsonToConfigContext(jsonConfig any, context string) (string, error) {
+	split := strings.SplitN(context, ".", 2)
+	key := split[0]
+
+	var res string
+
+	if index, err := strconv.Atoi(key); err == nil {
+		jsonSlice, ok := jsonConfig.([]any)
+		if !ok {
+			return "", fmt.Errorf("context is not a slice in json config at: %s", context)
+		}
+
+		indexedMap, ok := jsonSlice[index].(map[string]any)
+		if !ok {
+			return "", fmt.Errorf("context is not a map in json config at: %s", context)
+		}
+
+		name, ok := indexedMap["name"]
+		if !ok {
+			return "", fmt.Errorf("name not found in json config at: %s", context)
+		}
+
+		if nameStr, ok := name.(string); !ok {
+			return "", fmt.Errorf("name is not a string in json config at: %v", context)
+		} else {
+			res = nameStr
+		}
+
+		jsonConfig = indexedMap
+	} else {
+		jsonMap, ok := jsonConfig.(map[string]any)
+		if !ok {
+			return "", fmt.Errorf("context is not a map in json config at: %s", context)
+		}
+
+		jsonConfig, ok = jsonMap[key]
+		if !ok {
+			return "", fmt.Errorf("context not found in json config at: %s", key)
+		}
+
+		res = key
+	}
+
+	if len(split) > 1 {
+		val, err := jsonToConfigContext(jsonConfig, split[1])
+		if err != nil {
+			return "", err
+		}
+
+		res = fmt.Sprintf("%s.%s", res, val)
+	}
+
+	return res, nil
 }
