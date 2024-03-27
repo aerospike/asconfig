@@ -19,8 +19,10 @@ ifdef GOARCH
 GO_ENV_VARS += GOARCH=$(GOARCH)
 endif
 
+SOURCES := $(shell find . -name "*.go")
+
 # Builds asconfig binary
-$(ACONFIG_BIN): $(wildcard *.go)
+$(ACONFIG_BIN): $(SOURCES)
 	$(GO_ENV_VARS) go build -ldflags="-X 'github.com/aerospike/asconfig/cmd.VERSION=$(VERSION)'" -o $(ACONFIG_BIN) .
 
 # Clean up
