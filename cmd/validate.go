@@ -91,14 +91,13 @@ func newValidateCmd() *cobra.Command {
 			}
 
 			verrs, err := conf.NewConfigValidator(asconfig, mgmtLibLogger, version).Validate()
-			if verrs != nil {
+			// verrs is an empty slice if err is not nil but no
+			// validation errors were found
+			if len(verrs.Errors) > 0 {
 				// force validation errors to be written to stdout
 				// so they can more easily be grepd etc.
 				cmd.Print(verrs.Error())
 				return errors.Join(conf.ErrConfigValidation, ErrSilent)
-			}
-			if err != nil {
-				return err
 			}
 
 			return err
