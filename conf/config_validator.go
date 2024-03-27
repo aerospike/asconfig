@@ -62,7 +62,8 @@ func (cv *ConfigValidator) Validate() (*ValidationErrors, error) {
 			context, _ := strings.CutPrefix(verr.Context, "(root).")
 			context, err := jsonToConfigContext(jsonConfig, context)
 			if err != nil {
-				fmt.Println(err)
+				// if we can't associate the error with its
+				// corresponding field, just use the current context
 				continue
 			}
 
