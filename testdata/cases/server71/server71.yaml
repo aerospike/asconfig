@@ -20,8 +20,7 @@ namespaces:
         stop-writes-avail-pct: 20
         stop-writes-used-pct: 70
         type: device
-    - batch-max-requests: 1000
-      default-read-touch-ttl-pct: 50
+    - default-read-touch-ttl-pct: 50
       evict-sys-memory-pct: 80
       index-type:
         type: shmem
@@ -56,7 +55,9 @@ network:
 security:
     default-password-file: /dummy/file/path2
 service:
+    batch-max-requests: 1000
     cluster-name: cl1
     group: root
     pidfile: /dummy/file/path1
+    tls-refresh-period: 300
     user: root
