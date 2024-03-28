@@ -1,5 +1,3 @@
-//go:build integration
-
 package main
 
 import (
@@ -1017,23 +1015,23 @@ var validateTests = []validateTest{
 		expectError: true,
 		source:      filepath.Join(extraTestPath, "server64", "server64.yaml"),
 		expectedResult: `context: namespaces.ns1
-        - description: Additional property memory-size is not allowed, error-type: additional_property_not_allowed
+	- description: Additional property memory-size is not allowed, error-type: additional_property_not_allowed
 context: namespaces.ns1.index-type
-        - description: Additional property mounts-high-water-pct is not allowed, error-type: additional_property_not_allowed
-        - description: Additional property mounts-size-limit is not allowed, error-type: additional_property_not_allowed
-        - description: mounts-budget is required, error-type: required
+	- description: Additional property mounts-high-water-pct is not allowed, error-type: additional_property_not_allowed
+	- description: Additional property mounts-size-limit is not allowed, error-type: additional_property_not_allowed
+	- description: mounts-budget is required, error-type: required
 context: namespaces.ns1.sindex-type
-        - description: Additional property mounts-high-water-pct is not allowed, error-type: additional_property_not_allowed
-        - description: Additional property mounts-size-limit is not allowed, error-type: additional_property_not_allowed
-        - description: mounts-budget is required, error-type: required
+	- description: Additional property mounts-high-water-pct is not allowed, error-type: additional_property_not_allowed
+	- description: Additional property mounts-size-limit is not allowed, error-type: additional_property_not_allowed
+	- description: mounts-budget is required, error-type: required
 context: namespaces.ns1.storage-engine
-        - description: devices is required, error-type: required
+	- description: devices is required, error-type: required
 context: namespaces.ns2
-        - description: Additional property memory-size is not allowed, error-type: additional_property_not_allowed
+	- description: Additional property memory-size is not allowed, error-type: additional_property_not_allowed
 context: namespaces.ns2.storage-engine
-        - description: devices is required, error-type: required
+	- description: devices is required, error-type: required
 context: service
-        - description: cluster-name is required, error-type: required
+	- description: cluster-name is required, error-type: required
 `,
 	},
 }
