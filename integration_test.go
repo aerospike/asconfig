@@ -1,5 +1,3 @@
-//go:build integration
-
 package main
 
 import (
@@ -73,11 +71,11 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	featKeyDir = os.Getenv("FEATKEY_DIR")
-	fmt.Println(featKeyDir)
-	if featKeyDir == "" {
-		panic("FEATKEY_DIR environement variable must an absolute path to a directory containing valid aerospike feature key files featuresv1.conf and featuresv2.conf of feature key format 1 and 2 respectively.")
-	}
+	// featKeyDir = os.Getenv("FEATKEY_DIR")
+	// fmt.Println(featKeyDir)
+	// if featKeyDir == "" {
+	// 	panic("FEATKEY_DIR environement variable must an absolute path to a directory containing valid aerospike feature key files featuresv1.conf and featuresv2.conf of feature key format 1 and 2 respectively.")
+	// }
 
 	code := m.Run()
 
@@ -1001,19 +999,19 @@ type validateTest struct {
 
 var validateTests = []validateTest{
 	{
-		arguments:      []string{"validate", "-a", "6.2.0", filepath.Join(sourcePath, "pmem_cluster_cr.yaml")},
+		arguments:      []string{"validate", "-a", "6.2.0", "-l", "panic", filepath.Join(sourcePath, "pmem_cluster_cr.yaml")},
 		expectError:    false,
 		expectedResult: "",
 		source:         filepath.Join(sourcePath, "pmem_cluster_cr.yaml"),
 	},
 	{
-		arguments:      []string{"validate", filepath.Join(extraTestPath, "metadata", "metadata.conf")},
+		arguments:      []string{"validate", "-l", "panic", filepath.Join(extraTestPath, "metadata", "metadata.conf")},
 		expectError:    false,
 		expectedResult: "",
 		source:         filepath.Join(extraTestPath, "metadata", "metadata.conf"),
 	},
 	{
-		arguments:   []string{"validate", "-a", "7.0.0", filepath.Join(extraTestPath, "server64", "server64.yaml")},
+		arguments:   []string{"validate", "-a", "7.0.0", "-l", "panic", filepath.Join(extraTestPath, "server64", "server64.yaml")},
 		expectError: true,
 		source:      filepath.Join(extraTestPath, "server64", "server64.yaml"),
 		expectedResult: `context: namespaces.ns1
@@ -1042,7 +1040,7 @@ func TestValidate(t *testing.T) {
 	for _, tf := range validateTests {
 		com := exec.Command(binPath+"/asconfig.test", tf.arguments...)
 		com.Env = []string{"GOCOVERDIR=" + coveragePath}
-		out, err := com.Output()
+		out, err := com.CombinedOutput()
 		if tf.expectError == (err == nil) {
 			t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf.arguments, err)
 		}
@@ -1064,7 +1062,7 @@ func TestStdinValidate(t *testing.T) {
 		com := exec.Command(binPath+"/asconfig.test", tf.arguments...)
 		com.Env = []string{"GOCOVERDIR=" + coveragePath}
 		com.Stdin = in
-		out, err := com.Output()
+		out, err := com.CombinedOutput()
 		if tf.expectError == (err == nil) {
 			t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf.arguments, err)
 		}

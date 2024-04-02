@@ -43,10 +43,6 @@ func newRootCmd() *cobra.Command {
 				multiErr = errors.Join(multiErr, err)
 			}
 
-			if cfgFile != "" {
-				logger.Infof("Using config file: %s", cfgFile)
-			}
-
 			lvl, err := cmd.Flags().GetString("log-level")
 			if err != nil {
 				multiErr = fmt.Errorf("%w, %w", multiErr, err)
@@ -58,6 +54,10 @@ func newRootCmd() *cobra.Command {
 			}
 
 			logger.SetLevel(lvlCode)
+
+			if cfgFile != "" {
+				logger.Infof("Using config file: %s", cfgFile)
+			}
 
 			return multiErr
 		},
