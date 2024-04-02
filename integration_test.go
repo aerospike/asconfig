@@ -1001,38 +1001,38 @@ type validateTest struct {
 
 var validateTests = []validateTest{
 	{
-		arguments:      []string{"validate", "-a", "6.2.0", filepath.Join(sourcePath, "pmem_cluster_cr.yaml")},
+		arguments:      []string{"validate", "-a", "6.2.0", "-l", "panic", filepath.Join(sourcePath, "pmem_cluster_cr.yaml")},
 		expectError:    false,
 		expectedResult: "",
 		source:         filepath.Join(sourcePath, "pmem_cluster_cr.yaml"),
 	},
 	{
-		arguments:      []string{"validate", filepath.Join(extraTestPath, "metadata", "metadata.conf")},
+		arguments:      []string{"validate", "-l", "panic", filepath.Join(extraTestPath, "metadata", "metadata.conf")},
 		expectError:    false,
 		expectedResult: "",
 		source:         filepath.Join(extraTestPath, "metadata", "metadata.conf"),
 	},
 	{
-		arguments:   []string{"validate", "-a", "7.0.0", filepath.Join(extraTestPath, "server64", "server64.yaml")},
+		arguments:   []string{"validate", "-a", "7.0.0", "-l", "panic", filepath.Join(extraTestPath, "server64", "server64.yaml")},
 		expectError: true,
 		source:      filepath.Join(extraTestPath, "server64", "server64.yaml"),
-		expectedResult: `context: (root).namespaces.0
+		expectedResult: `context: namespaces.ns1
 	- description: Additional property memory-size is not allowed, error-type: additional_property_not_allowed
-context: (root).namespaces.0.storage-engine
-	- description: devices is required, error-type: required
-context: (root).namespaces.1
-	- description: Additional property memory-size is not allowed, error-type: additional_property_not_allowed
-context: (root).namespaces.1.index-type
+context: namespaces.ns1.index-type
 	- description: Additional property mounts-high-water-pct is not allowed, error-type: additional_property_not_allowed
 	- description: Additional property mounts-size-limit is not allowed, error-type: additional_property_not_allowed
 	- description: mounts-budget is required, error-type: required
-context: (root).namespaces.1.sindex-type
+context: namespaces.ns1.sindex-type
 	- description: Additional property mounts-high-water-pct is not allowed, error-type: additional_property_not_allowed
 	- description: Additional property mounts-size-limit is not allowed, error-type: additional_property_not_allowed
 	- description: mounts-budget is required, error-type: required
-context: (root).namespaces.1.storage-engine
+context: namespaces.ns1.storage-engine
 	- description: devices is required, error-type: required
-context: (root).service
+context: namespaces.ns2
+	- description: Additional property memory-size is not allowed, error-type: additional_property_not_allowed
+context: namespaces.ns2.storage-engine
+	- description: devices is required, error-type: required
+context: service
 	- description: cluster-name is required, error-type: required
 `,
 	},
@@ -1050,7 +1050,6 @@ func TestValidate(t *testing.T) {
 		if string(out) != tf.expectedResult {
 			t.Errorf("\nTESTCASE: %+v\nACTUAL: %s\nEXPECTED: %s", tf.arguments, string(out), tf.expectedResult)
 		}
-
 	}
 }
 
