@@ -1042,7 +1042,7 @@ func TestValidate(t *testing.T) {
 	for _, tf := range validateTests {
 		com := exec.Command(binPath+"/asconfig.test", tf.arguments...)
 		com.Env = []string{"GOCOVERDIR=" + coveragePath}
-		out, err := com.CombinedOutput()
+		out, err := com.Output()
 		if tf.expectError == (err == nil) {
 			t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf.arguments, err)
 		}
@@ -1050,7 +1050,6 @@ func TestValidate(t *testing.T) {
 		if string(out) != tf.expectedResult {
 			t.Errorf("\nTESTCASE: %+v\nACTUAL: %s\nEXPECTED: %s", tf.arguments, string(out), tf.expectedResult)
 		}
-
 	}
 }
 
@@ -1065,7 +1064,7 @@ func TestStdinValidate(t *testing.T) {
 		com := exec.Command(binPath+"/asconfig.test", tf.arguments...)
 		com.Env = []string{"GOCOVERDIR=" + coveragePath}
 		com.Stdin = in
-		out, err := com.CombinedOutput()
+		out, err := com.Output()
 		if tf.expectError == (err == nil) {
 			t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf.arguments, err)
 		}

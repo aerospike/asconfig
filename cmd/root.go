@@ -44,7 +44,7 @@ func newRootCmd() *cobra.Command {
 			}
 
 			if cfgFile != "" {
-				logger.Debugf("Using config file: %s", cfgFile)
+				logger.Infof("Using config file: %s", cfgFile)
 			}
 
 			lvl, err := cmd.Flags().GetString("log-level")
