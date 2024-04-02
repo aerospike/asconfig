@@ -1,3 +1,5 @@
+//go:build integration
+
 package main
 
 import (
@@ -71,11 +73,11 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	// featKeyDir = os.Getenv("FEATKEY_DIR")
-	// fmt.Println(featKeyDir)
-	// if featKeyDir == "" {
-	// 	panic("FEATKEY_DIR environement variable must an absolute path to a directory containing valid aerospike feature key files featuresv1.conf and featuresv2.conf of feature key format 1 and 2 respectively.")
-	// }
+	featKeyDir = os.Getenv("FEATKEY_DIR")
+	fmt.Println(featKeyDir)
+	if featKeyDir == "" {
+		panic("FEATKEY_DIR environement variable must an absolute path to a directory containing valid aerospike feature key files featuresv1.conf and featuresv2.conf of feature key format 1 and 2 respectively.")
+	}
 
 	code := m.Run()
 
