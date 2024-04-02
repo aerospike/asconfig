@@ -1,0 +1,63 @@
+logging:
+    - any: info
+      name: console
+namespaces:
+    - default-read-touch-ttl-pct: 0
+      index-type:
+        type: shmem
+      name: ns2
+      replication-factor: 2
+      sets:
+        - default-read-touch-ttl-pct: 50
+          name: s2
+      sindex-type:
+        type: shmem
+      storage-engine:
+        devices:
+            - /dummy/mount/point1
+        evict-used-pct: 70
+        flush-size: 2097152
+        stop-writes-avail-pct: 20
+        stop-writes-used-pct: 70
+        type: device
+    - default-read-touch-ttl-pct: 50
+      evict-sys-memory-pct: 80
+      index-type:
+        type: shmem
+      name: ns1
+      nsup-period: 2048
+      replication-factor: 2
+      sets:
+        - default-read-touch-ttl-pct: -1
+          name: s1
+      sindex-type:
+        type: shmem
+      storage-engine:
+        data-size: 34359738368
+        flush-size: 1048576
+        type: memory
+network:
+    fabric:
+        port: 3001
+    heartbeat:
+        interval: 150
+        mode: multicast
+        multicast-groups:
+            - 127.0.0.1
+        port: 9918
+        timeout: 10
+    info:
+        port: 3003
+    service:
+        addresses:
+            - any
+        port: 3000
+security:
+    default-password-file: /dummy/file/path2
+service:
+    batch-max-requests: 1000
+    cluster-name: cl1
+    group: root
+    pidfile: /dummy/file/path1
+    tls-refresh-period: 300
+    user: root
