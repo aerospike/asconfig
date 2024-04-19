@@ -8,6 +8,8 @@ github.com/aerospike/aerospike-management-lib v1.2.1-0.20240326221916-a8800a6bb7
 github.com/aerospike/aerospike-management-lib v1.2.1-0.20240326221916-a8800a6bb793/go.mod h1:o1TV3BTsAiuZ5HtZi9E4FgXqWRwjDzlkS4bfvfaAHLU=
 github.com/aerospike/aerospike-management-lib v1.3.1-0.20240409220947-a6f802af72d4 h1:8Wt/yfWEKLyuzDeqdPgNI97CZ/5XPmwJ8weV6hxIGGE=
 github.com/aerospike/aerospike-management-lib v1.3.1-0.20240409220947-a6f802af72d4/go.mod h1:o1TV3BTsAiuZ5HtZi9E4FgXqWRwjDzlkS4bfvfaAHLU=
+github.com/aerospike/aerospike-management-lib v1.3.1-0.20240418222400-0d7c09d1b513 h1:mqaKimj6pWkZaIWTMnoj1kSuzExUATwGa4FEO2L6NI0=
+github.com/aerospike/aerospike-management-lib v1.3.1-0.20240418222400-0d7c09d1b513/go.mod h1:o1TV3BTsAiuZ5HtZi9E4FgXqWRwjDzlkS4bfvfaAHLU=
 github.com/aerospike/tools-common-go v0.0.0-20240221005915-c73ebdf1bd6b h1:Sk92l0SkqdshTp8QnW1xBcmoKYR4qa8VPy+T4RtsTh4=
 github.com/aerospike/tools-common-go v0.0.0-20240221005915-c73ebdf1bd6b/go.mod h1:mcux7qQwlXFXsDL/9upIPLjbOuqkQBwVBO9HJaqPQ6s=
 github.com/bombsimon/logrusr/v4 v4.1.0 h1:uZNPbwusB0eUXlO8hIUwStE6Lr5bLN6IgYgG+75kuh4=
