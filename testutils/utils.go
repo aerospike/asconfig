@@ -60,7 +60,7 @@ func StopAerospikeContainer(id string, cli *client.Client) error {
 func RemoveAerospikeContainer(id string, cli *client.Client) error {
 	ctx := context.Background()
 
-	if err := cli.ContainerRemove(ctx, id, types.ContainerRemoveOptions{}); err != nil {
+	if err := cli.ContainerRemove(ctx, id, container.RemoveOptions{}); err != nil {
 		log.Printf("Unable to remove container %s: %s", id, err)
 		return err
 	}
@@ -95,7 +95,7 @@ func CreateAerospikeContainer(name string, c *container.Config, ch *container.Ho
 func StartAerospikeContainer(id string, cli *client.Client) error {
 	ctx := context.Background()
 
-	if err := cli.ContainerStart(ctx, id, types.ContainerStartOptions{}); err != nil {
+	if err := cli.ContainerStart(ctx, id, container.StartOptions{}); err != nil {
 		log.Printf("Unable to start container %s: %s", id, err)
 		return err
 	}
