@@ -21,9 +21,11 @@ namespaces:
         stop-writes-used-pct: 70
         type: device
     - default-read-touch-ttl-pct: 50
+      evict-indexes-memory-pct: 50
       evict-sys-memory-pct: 80
       index-type:
         type: shmem
+      indexes-memory-budget: 2147483648
       name: ns1
       nsup-period: 2048
       replication-factor: 2
@@ -34,7 +36,6 @@ namespaces:
         type: shmem
       storage-engine:
         data-size: 34359738368
-        flush-size: 1048576
         type: memory
 network:
     fabric:
