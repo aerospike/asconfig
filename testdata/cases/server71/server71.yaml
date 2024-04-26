@@ -36,7 +36,6 @@ namespaces:
         type: shmem
       storage-engine:
         data-size: 34359738368
-        flush-size: 1048576
         type: memory
 network:
     fabric:
