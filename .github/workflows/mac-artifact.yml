@@ -63,7 +63,7 @@ jobs:
           check-latest: true
           cache: true
           cache-dependency-path: ${{ steps.working-dir.outputs.value }}/go.sum
-      - uses: kenchan0130/actions-system-info@master
+      - uses: kenchan0130/actions-system-info@v1.3.0
         id: system-info
       - name: Cache asconfig
         uses: actions/cache@v3
@@ -85,7 +85,7 @@ jobs:
         run: |
           sudo make install
           asconfig --version 2>&1 | grep "Aerospike Config"
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.system-info.outputs.platform }}-${{ runner.arch }}-${{ runner.os }}-${{ steps.system-info.outputs.release }}-asconfig
           path: ${{ steps.working-dir.outputs.value }}/bin/asconfig
