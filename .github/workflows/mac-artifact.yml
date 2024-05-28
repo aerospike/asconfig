@@ -14,7 +14,10 @@ on:
 
 jobs:
   build:
-    runs-on: macos-11
+    strategy:
+      matrix: 
+        os: [macos-11, macos-14]
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Get checkout directory
         uses: haya14busa/action-cond@v1
