@@ -73,7 +73,7 @@ func loadAsConf(log logr.Logger, src []byte) (*asconfig.AsConfig, error) {
 
 	// TODO: Why doesn't the management lib do the map mutation? FromConfFile
 	// implies it does.
-	c, err := asconfig.FromConfFile(log, "", reader) // TODO: Remove "" when management lib merges PR #41
+	c, err := asconfig.FromConfFile(log, reader)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse asconfig file: %w", err)
 	}
