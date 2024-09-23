@@ -69,6 +69,7 @@ xdr:
             - name: ns1
               remote-namespace: ns2
               restrict-version-skipping: true
-              skip-versions-within: 120
+              ship-versions-interval: 120
+              ship-versions-policy: interval
           node-address-ports:
             - 127.0.0.1:3000
