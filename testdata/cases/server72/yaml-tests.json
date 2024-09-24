@@ -6,7 +6,7 @@
         "Arguments":["convert","--aerospike-version","7.2.0.0","--format","yaml","--output","testdata/cases/server72/server72-res-.conf"],
         "SkipServerTest":false,
         "ServerErrorAllowList":null,
-        "ServerImage":"aerospike.jfrog.io/docker-remote/aerospike/aerospike-server-enterprise-rc:7.2.0.0-rc1",
+        "ServerImage":"aerospike.jfrog.io/docker-remote/aerospike/aerospike-server-enterprise-rc:7.2.0.0-rc3",
         "DockerAuth":{"Username":"ASC_DOCKER_USER","Password":"ASC_DOCKER_PASS"}
     }
 ]
