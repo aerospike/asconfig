@@ -9,7 +9,7 @@ require (
 	github.com/aerospike/aerospike-management-lib v1.4.1-0.20240924074645-465f90bedf30
 	github.com/aerospike/tools-common-go v0.0.0-20240425222921-596724ec5926
 	github.com/bombsimon/logrusr/v4 v4.1.0
-	github.com/docker/docker v26.1.0+incompatible
+	github.com/docker/docker v26.1.5+incompatible
 	github.com/go-logr/logr v1.4.1
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/sirupsen/logrus v1.9.3
