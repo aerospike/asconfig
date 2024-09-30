@@ -1,12 +1,12 @@
 module github.com/aerospike/asconfig
 
-go 1.21
+go 1.22
 
-toolchain go1.21.7
+toolchain go1.23.1
 
 require (
 	github.com/aerospike/aerospike-client-go/v7 v7.2.1
-	github.com/aerospike/aerospike-management-lib v1.4.1-0.20240924074645-465f90bedf30
+	github.com/aerospike/aerospike-management-lib v1.4.1-0.20240930043254-141a52ad6c51
 	github.com/aerospike/tools-common-go v0.0.0-20240425222921-596724ec5926
 	github.com/bombsimon/logrusr/v4 v4.1.0
 	github.com/docker/docker v26.1.0+incompatible
@@ -60,10 +60,10 @@ require (
 	go.opentelemetry.io/proto/otlp v1.2.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20240416160154-fe59bbe5cc7f // indirect
-	golang.org/x/net v0.24.0 // indirect
+	golang.org/x/net v0.26.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
-	golang.org/x/sys v0.19.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/sys v0.21.0 // indirect
+	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240415180920-8c6c420018be // indirect
 	google.golang.org/grpc v1.63.2 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
