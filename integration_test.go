@@ -27,8 +27,8 @@ import (
 	"github.com/aerospike/asconfig/testutils"
 	"github.com/go-logr/logr"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
 )
@@ -465,7 +465,7 @@ func runServer(version string, serverVersion string, confPath string, auth testu
 		t.Error(err)
 	}
 
-	imagePullOptions := types.ImagePullOptions{
+	imagePullOptions := image.PullOptions{
 		Platform:     "amd64",
 		RegistryAuth: dockerAuth,
 	}
