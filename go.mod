@@ -5,12 +5,12 @@ go 1.22
 toolchain go1.23.1
 
 require (
-	github.com/aerospike/aerospike-client-go/v7 v7.2.1
+	github.com/aerospike/aerospike-client-go/v7 v7.7.1
 	github.com/aerospike/aerospike-management-lib v1.4.1-0.20240930043254-141a52ad6c51
 	github.com/aerospike/tools-common-go v0.0.0-20240425222921-596724ec5926
 	github.com/bombsimon/logrusr/v4 v4.1.0
-	github.com/docker/docker v26.1.0+incompatible
-	github.com/go-logr/logr v1.4.1
+	github.com/docker/docker v27.3.1+incompatible
+	github.com/go-logr/logr v1.4.2
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.8.0
@@ -64,9 +64,9 @@ require (
 	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/sys v0.21.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240415180920-8c6c420018be // indirect
-	google.golang.org/grpc v1.63.2 // indirect
-	google.golang.org/protobuf v1.33.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240711142825-46eb208f015d // indirect
+	google.golang.org/grpc v1.63.3 // indirect
+	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	k8s.io/apimachinery v0.29.0 // indirect
