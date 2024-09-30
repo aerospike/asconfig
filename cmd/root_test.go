@@ -160,7 +160,6 @@ func (suite *RootTest) TestPersistentPreRunRootInitConfig() {
 			bool2, err := flagSet2.GetBool("bool2")
 			suite.NoError(err)
 			suite.Equal(false, bool2)
-
 		})
 	}
 }

@@ -19,7 +19,6 @@ func NewConfigMarshaller(conf ConfHandler, format Format) ConfigMarshaller {
 }
 
 func (cm ConfigMarshaller) MarshalText() (text []byte, err error) {
-
 	switch cm.Format {
 	case AsConfig:
 		text = []byte(cm.ToConfFile())

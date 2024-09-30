@@ -183,9 +183,8 @@ func newConvertCmd() *cobra.Command {
 			}
 
 			logger.Debugf("Writing converted data to: %s", outputPath)
-			_, err = outFile.Write([]byte(out))
+			_, err = outFile.WriteString(out)
 			return err
-
 		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > convertArgMax {

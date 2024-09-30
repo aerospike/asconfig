@@ -47,7 +47,6 @@ func NewASConfigFromBytes(log logr.Logger, src []byte, srcFmt Format) (*asconfig
 }
 
 func loadYAML(log logr.Logger, src []byte) (*asconfig.AsConfig, error) {
-
 	var data map[string]any
 
 	err := yaml.Unmarshal(src, &data)
@@ -68,7 +67,6 @@ func loadYAML(log logr.Logger, src []byte) (*asconfig.AsConfig, error) {
 }
 
 func loadAsConf(log logr.Logger, src []byte) (*asconfig.AsConfig, error) {
-
 	reader := bytes.NewReader(src)
 
 	// TODO: Why doesn't the management lib do the map mutation? FromConfFile
@@ -111,9 +109,7 @@ type mapping func(k string, v any, m configMap)
 // mutateMap maps functions to each key value pair in the management lib's Stats map
 // the functions are applied sequentially to each k,v pair.
 func mutateMap(in configMap, funcs []mapping) {
-
 	for k, v := range in {
-
 		switch v := v.(type) {
 		case configMap:
 			mutateMap(v, funcs)
@@ -150,7 +146,6 @@ Ex configMap
 	}
 */
 func typedContextsToObject(k string, v any, m configMap) {
-
 	if isTypedContext(k) {
 		v := m[k]
 		// if a typed context does not have a map value.
@@ -166,7 +161,6 @@ func typedContextsToObject(k string, v any, m configMap) {
 // isTypedContext returns true for asconfig contexts
 // that can map to strings instead of contexts
 func isTypedContext(in string) bool {
-
 	switch in {
 	case "storage-engine", "index-type", "sindex-type":
 		return true
@@ -195,7 +189,6 @@ Ex configMap
 	}
 */
 func toPlural(k string, v any, m configMap) {
-
 	// convert asconfig fields/contexts that need to be plural
 	// in order to create valid asconfig yaml.
 	if plural := asconfig.PluralOf(k); plural != k {

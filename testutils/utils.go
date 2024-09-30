@@ -104,7 +104,6 @@ func StartAerospikeContainer(id string, cli *client.Client) error {
 }
 
 func IndexOf(l []string, s string) int {
-
 	for i, e := range l {
 		if e == s {
 			return i
