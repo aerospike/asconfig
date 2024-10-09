@@ -11,7 +11,7 @@ import (
 
 func Test_asconf_MarshalText(t *testing.T) {
 	type fields struct {
-		cfg    ConfHandler
+		cfg    Handler
 		outFmt Format
 	}
 	tests := []struct {
