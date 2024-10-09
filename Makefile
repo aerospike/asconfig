@@ -41,7 +41,7 @@ $(GOLANGCI_LINT): $(GOBIN)
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) $(GOLANGCI_LINT_VERSION)
 
 go-lint: golanci-lint ## Run golangci-lint against code.
-	$(GOLANGCI_LINT) run -c .golangci.yml --cache
+	$(GOLANGCI_LINT) run
 
 # Clean up
 .PHONY: clean
