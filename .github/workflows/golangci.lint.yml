@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v3
+        with:
+          submodules: true
       - name: Get go version from go.mod
         run: |
           echo "GO_VERSION=$(grep '^go ' go.mod | cut -d " " -f 2)" >> $GITHUB_ENV
