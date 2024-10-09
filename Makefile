@@ -43,6 +43,11 @@ $(GOLANGCI_LINT): $(GOBIN)
 go-lint: golanci-lint ## Run golangci-lint against code.
 	$(GOLANGCI_LINT) run -c .golangci.yml -v
 
+
+.PHONY: remove-lint
+remove-lint:
+	$(RM) ${GOBIN}/golangci-lint
+
 # Clean up
 .PHONY: clean
 clean:
