@@ -5,7 +5,7 @@ import (
 	"github.com/go-logr/logr"
 )
 
-type ConfHandler interface {
+type Handler interface {
 	IsValid(log logr.Logger, version string) (bool, []*asconfig.ValidationErr, error)
 	ToMap() *asconfig.Conf
 	ToConfFile() asconfig.DotConf

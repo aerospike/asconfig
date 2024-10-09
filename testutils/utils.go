@@ -68,16 +68,23 @@ func RemoveAerospikeContainer(id string, cli *client.Client) error {
 	return nil
 }
 
-func CreateAerospikeContainer(name string, c *container.Config, ch *container.HostConfig, imagePullOpts image.PullOptions, cli *client.Client) (string, error) {
+func CreateAerospikeContainer(name string, c *container.Config, ch *container.HostConfig,
+	imagePullOpts image.PullOptions, cli *client.Client) (string, error) {
 	ctx := context.Background()
 	reader, err := cli.ImagePull(ctx, name, imagePullOpts)
+
 	if err != nil {
 		log.Printf("Unable to pull image %s: %s", name, err)
 		return "", err
 	}
 
 	defer reader.Close()
-	io.Copy(os.Stdout, reader)
+	_, err = io.Copy(os.Stdout, reader)
+
+	if err != nil {
+		log.Printf("Unable to copy image pull output: %s", err)
+		return "", err
+	}
 
 	platform := &v1.Platform{
 		Architecture: imagePullOpts.Platform,
@@ -104,7 +111,6 @@ func StartAerospikeContainer(id string, cli *client.Client) error {
 }
 
 func IndexOf(l []string, s string) int {
-
 	for i, e := range l {
 		if e == s {
 			return i
