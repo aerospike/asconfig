@@ -35,13 +35,21 @@ $(ACONFIG_BIN): $(SOURCES)
 GOLANGCI_LINT ?= $(GOBIN)/golangci-lint
 GOLANGCI_LINT_VERSION ?= v1.61.0
 
+# install golangci-lint
 .PHONY: golanci-lint
 golanci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
 $(GOLANGCI_LINT): $(GOBIN)
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) $(GOLANGCI_LINT_VERSION)
 
+# Run linting in verbose
+.PHONY: go-lint
 go-lint: golanci-lint ## Run golangci-lint against code.
 	$(GOLANGCI_LINT) run -c .golangci.yml -v
+
+# Clean up golangci-lint
+.PHONY: remove-lint
+remove-lint:
+	$(RM) ${GOBIN}/golangci-lint
 
 # Clean up
 .PHONY: clean
