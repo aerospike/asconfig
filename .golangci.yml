@@ -63,5 +63,5 @@ issues:
   exclude-dirs:
     - testdata
     - .git
-    - schema
+    - schema/schemas
 
