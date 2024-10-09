@@ -9,8 +9,8 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 )
@@ -68,7 +68,7 @@ func RemoveAerospikeContainer(id string, cli *client.Client) error {
 	return nil
 }
 
-func CreateAerospikeContainer(name string, c *container.Config, ch *container.HostConfig, imagePullOpts types.ImagePullOptions, cli *client.Client) (string, error) {
+func CreateAerospikeContainer(name string, c *container.Config, ch *container.HostConfig, imagePullOpts image.PullOptions, cli *client.Client) (string, error) {
 	ctx := context.Background()
 	reader, err := cli.ImagePull(ctx, name, imagePullOpts)
 	if err != nil {
