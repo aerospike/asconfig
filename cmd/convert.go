@@ -35,23 +35,7 @@ func init() {
 var convertCmd = newConvertCmd()
 
 func newConvertCmd() *cobra.Command {
-	cmd := createConvertCmd()
-	initConvertCmdFlags(cmd)
-	cmd.RunE = runConvertCmd
-	cmd.PreRunE = preRunConvertCmd
-
-	return cmd
-}
-func initConvertCmdFlags(cmd *cobra.Command) {
-	asCommonFlags := getCommonFlags()
-	cmd.Flags().AddFlagSet(asCommonFlags)
-	cmd.Flags().BoolP("force", "f", false, "Override checks for supported server version and config validation")
-	cmd.Flags().StringP("output", "o", os.Stdout.Name(), "File path to write output to")
-	cmd.Flags().StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
-}
-
-func createConvertCmd() *cobra.Command {
-	return &cobra.Command{
+	res := &cobra.Command{
 		Use:   "convert [flags] <path/to/config_file>",
 		Short: "Convert between yaml and Aerospike config format.",
 		Long: `Convert is used to convert between yaml and aerospike configuration
@@ -75,14 +59,27 @@ func createConvertCmd() *cobra.Command {
 				Ex: asconfig convert -a "6.4.0"
 				If the file has been converted by asconfig before, the --aerospike-version option is not needed.
 				Ex: asconfig convert -a "6.4.0" aerospike.yaml | asconfig convert --format conf`,
+		RunE:    runCmdE,
+		PreRunE: runPreCmdE,
 	}
+
+	// flags and configuration settings
+	// aerospike-version is marked required in this cmd's PreRun if the --force flag is not provided
+	asCommonFlags := getCommonFlags()
+	res.Flags().AddFlagSet(asCommonFlags)
+	res.Flags().BoolP("force", "f", false, "Override checks for supported server version and config validation")
+	res.Flags().StringP("output", "o", os.Stdout.Name(), "File path to write output to")
+	res.Flags().StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
+
+	res.Version = VERSION
+
+	return res
 }
 
-func runConvertCmd(cmd *cobra.Command, args []string) error {
-	var cfgData []byte
-
+func runCmdE(cmd *cobra.Command, args []string) error {
 	logger.Debug("Running convert command")
 
+	var cfgData []byte
 	// read stdin by default
 	var srcPath string
 	if len(args) == 0 {
@@ -120,7 +117,7 @@ func runConvertCmd(cmd *cobra.Command, args []string) error {
 	case conf.YAML:
 		outFmt = conf.AsConfig
 	case conf.Invalid:
-		return fmt.Errorf("%w: %s", errInvalidFormat, srcFormat)
+		return fmt.Errorf("%w: %s", errInvalidFormat, srcPath)
 	default:
 		return fmt.Errorf("%w: %s", errInvalidFormat, srcFormat)
 	}
@@ -183,6 +180,7 @@ func runConvertCmd(cmd *cobra.Command, args []string) error {
 		}
 
 		outFileName = strings.TrimSuffix(outFileName, filepath.Ext(outFileName))
+
 		outputPath = filepath.Join(outputPath, outFileName)
 
 		switch outFmt {
@@ -201,7 +199,7 @@ func runConvertCmd(cmd *cobra.Command, args []string) error {
 	if outputPath == os.Stdout.Name() {
 		outFile = os.Stdout
 	} else {
-		outFile, err = os.OpenFile(outputPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
+		outFile, err = os.OpenFile(outputPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
 		if err != nil {
 			return err
 		}
@@ -216,7 +214,7 @@ func runConvertCmd(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-func preRunConvertCmd(cmd *cobra.Command, args []string) error {
+func runPreCmdE(cmd *cobra.Command, args []string) error {
 	var cfgData []byte
 
 	if len(args) > convertArgMax {
