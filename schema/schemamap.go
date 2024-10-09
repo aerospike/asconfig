@@ -12,10 +12,10 @@ import (
 //go:embed schemas/json/aerospike
 var schemas embed.FS
 
-type SchemaMap map[string]string
+type Map map[string]string
 
-func NewSchemaMap() (SchemaMap, error) {
-	schema := make(SchemaMap)
+func NewMap() (Map, error) {
+	schema := make(Map)
 
 	if err := fs.WalkDir(
 		schemas, ".", func(path string, d fs.DirEntry, err error) error {

@@ -1,0 +1,33 @@
+name: golangci-lint
+on:
+  push:
+    tags:
+      - v*
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  golangci:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Get go version from go.mod
+        run: |
+          echo "GO_VERSION=$(grep '^go ' go.mod | cut -d " " -f 2)" >> $GITHUB_ENV
+      - name: Setup-go
+        uses: actions/setup-go@v3
+        with:
+            go-version: 1.22
+      - name: Run Lint
+        run: |
+          make remove-lint
+          make golanci-lint
+          make go-lint
+

@@ -13,7 +13,7 @@ import (
 
 func Test_asconf_Validate(t *testing.T) {
 	type fields struct {
-		cfg                 ConfHandler
+		cfg                 Handler
 		logger              *logrus.Logger
 		managementLibLogger logr.Logger
 		aerospikeVersion    string

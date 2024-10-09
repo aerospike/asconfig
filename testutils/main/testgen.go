@@ -52,7 +52,7 @@ func (o *obfuscateEntry) obfuscateLine(line []byte) ([]byte, error) {
 
 func obfuscateNamespaceCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 	chop := len(strconv.Itoa(namespacesSeen))
-	namespacesSeen = namespacesSeen + 1
+	namespacesSeen++
 	o.value = o.value[:len(o.value)-chop] + strconv.Itoa(namespacesSeen)
 
 	return line, nil
@@ -60,7 +60,7 @@ func obfuscateNamespaceCallback(o *obfuscateEntry, line []byte) ([]byte, error) 
 
 func obfuscateMountCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 	chop := len(strconv.Itoa(mountSeen))
-	mountSeen = mountSeen + 1
+	mountSeen++
 	o.value = o.value[:len(o.value)-chop] + strconv.Itoa(mountSeen)
 
 	return line, nil
@@ -68,7 +68,7 @@ func obfuscateMountCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 
 func obfuscateSetCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 	chop := len(strconv.Itoa(setSeen))
-	setSeen = setSeen + 1
+	setSeen++
 	o.value = o.value[:len(o.value)-chop] + strconv.Itoa(setSeen)
 
 	return line, nil
@@ -76,7 +76,7 @@ func obfuscateSetCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 
 func obfuscateDcCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 	chop := len(strconv.Itoa(dcSeen))
-	dcSeen = dcSeen + 1
+	dcSeen++
 	o.value = o.value[:len(o.value)-chop] + strconv.Itoa(dcSeen)
 
 	return line, nil
@@ -84,7 +84,7 @@ func obfuscateDcCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 
 func obfuscateDeviceCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 	chop := len(strconv.Itoa(deviceSeen))
-	deviceSeen = deviceSeen + 1
+	deviceSeen++
 	o.value = o.value[:len(o.value)-chop] + strconv.Itoa(deviceSeen)
 
 	return line, nil
@@ -92,7 +92,7 @@ func obfuscateDeviceCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 
 func obfuscateFilePathCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 	chop := len(strconv.Itoa(fileSeen))
-	fileSeen = fileSeen + 1
+	fileSeen++
 	o.value = o.value[:len(o.value)-chop] + strconv.Itoa(fileSeen)
 
 	return line, nil
@@ -100,7 +100,7 @@ func obfuscateFilePathCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 
 func obfuscateTLSClusterName(o *obfuscateEntry, line []byte) ([]byte, error) {
 	chop := len(strconv.Itoa(tlsSeen))
-	tlsSeen = tlsSeen + 1
+	tlsSeen++
 	o.value = o.value[:len(o.value)-chop] + strconv.Itoa(tlsSeen)
 
 	return line, nil
@@ -153,7 +153,7 @@ var obfuscateThese = []*obfuscateEntry{
 		cb:      obfuscateDeviceCallback,
 	},
 	{
-		pattern: regexp.MustCompile(`(file\s+)([^{][\S]+)`),
+		pattern: regexp.MustCompile(`(file\s+)([^{]\S+)`),
 		value:   "/dummy/file/path1",
 		cb:      obfuscateFilePathCallback,
 	},
@@ -281,17 +281,18 @@ var obfuscateThese = []*obfuscateEntry{
 	},
 }
 
-var namespacesSeen int = 1
-var mountSeen int = 1
-var setSeen int = 1
-var dcSeen int = 1
-var deviceSeen int = 1
-var fileSeen int = 1
-var tlsSeen int = 1
+var namespacesSeen = 1
+var mountSeen = 1
+var setSeen = 1
+var dcSeen = 1
+var deviceSeen = 1
+var fileSeen = 1
+var tlsSeen = 1
 
 func processFileData(in io.Reader) (io.Reader, error) {
 	processedData := bytes.Buffer{}
 	scanner := bufio.NewScanner(in)
+
 	for scanner.Scan() {
 		tmp := scanner.Bytes()
 		// inefficient but this is just a test gen tool
@@ -310,6 +311,7 @@ func processFileData(in io.Reader) (io.Reader, error) {
 			for _, obfs := range obfuscateThese {
 				var err error
 				line, err = obfs.obfuscateLine(line)
+
 				if err != nil {
 					return nil, err
 				}
@@ -329,11 +331,27 @@ func main() {
 	output := flag.String("output", "./testdata/cases", "path to output directory")
 	overwrite := flag.Bool("overwrite", false, "if a testcase directory already exists for this input, overwrite it")
 	obfuscate = flag.Bool("obfuscate", false, "obfuscate sensitive fields in the copied source config file")
-	aerospikeVersion := flag.String("aerospike-version", "6.2.0.2", "the aerospike version to pass to asconfig e.g: 6.2.0.2")
-	originalVersion := flag.String("original-version", "6.2.0.2", "the aerospike version that was originally used with this config e.g: 6.2.0.2")
-	serverImage := flag.String("server-image", "", "url to an Aerospike image to use. Overrides aerospike-version")
-	dockerUser := flag.String("docker-user", "", "Environment variable that holds a username used to authenticate with docker repositories during image pulls")
-	dockerPass := flag.String("docker-pass", "", "Environment variable that holds a base64 password or ID token used to authenticate with docker repositories during image pulls")
+	aerospikeVersion := flag.String(
+		"aerospike-version",
+		"6.2.0.2",
+		"the aerospike version to pass to asconfig e.g: 6.2.0.2")
+	originalVersion := flag.String(
+		"original-version",
+		"6.2.0.2",
+		"the aerospike version that was originally used with this config e.g: 6.2.0.2")
+	serverImage := flag.String(
+		"server-image",
+		"",
+		"url to an Aerospike image to use. Overrides aerospike-version")
+	dockerUser := flag.String(
+		"docker-user",
+		"",
+		"Environment variable that holds a username used to authenticate with docker repositories during image pulls")
+	dockerPass := flag.String(
+		"docker-pass",
+		"",
+		`Environment variable that holds a base64 password or ID token used to authenticate \
+		with docker repositories during image pulls`)
 
 	flag.Parse()
 
@@ -362,7 +380,7 @@ func main() {
 		}
 	}
 
-	err := os.Mkdir(testCasePath, 0755)
+	err := os.Mkdir(testCasePath, 0o755)
 	if err != nil {
 		log.Fatalf("failed to create directory %s", testCasePath)
 	}
@@ -372,7 +390,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to open %s", inputPath)
 	}
-	defer r.Close()
 
 	processedFile, err := processFileData(r)
 	if err != nil {
@@ -381,10 +398,10 @@ func main() {
 
 	copiedSrcPath := filepath.Join(testCasePath, filepath.Base(inputPath))
 	w, err := os.Create(copiedSrcPath)
+
 	if err != nil {
 		log.Fatalf("failed to create %s", copiedSrcPath)
 	}
-	defer w.Close()
 
 	_, err = w.ReadFrom(processedFile)
 	if err != nil {
@@ -413,6 +430,7 @@ func main() {
 
 	cmd := exec.Command("asconfig", args...)
 	out, err := cmd.CombinedOutput()
+
 	if err != nil {
 		log.Fatalf("command failed to run %v, %+v, out: %s", cmd, err, string(out))
 	}
@@ -452,7 +470,8 @@ func main() {
 	}
 
 	yamlTestPath := filepath.Join(testCasePath, "yaml-tests.json")
-	err = os.WriteFile(yamlTestPath, data, 0655)
+	err = os.WriteFile(yamlTestPath, data, 0o600)
+
 	if err != nil {
 		log.Fatalf("failed to write to %s", yamlTestPath)
 	}
@@ -485,7 +504,8 @@ func main() {
 	}
 
 	confTestPath := filepath.Join(testCasePath, "conf-tests.json")
-	err = os.WriteFile(confTestPath, data, 0655)
+	err = os.WriteFile(confTestPath, data, 0o600)
+
 	if err != nil {
 		log.Fatalf("failed to write to %s", confTestPath)
 	}
@@ -498,11 +518,17 @@ func main() {
 	}
 
 	data, err = json.Marshal(vs)
+	if err != nil {
+		log.Fatalf("failed to marshal versions to json, %v", err)
+	}
 
-	err = os.WriteFile(versionsPath, data, 0655)
+	err = os.WriteFile(versionsPath, data, 0o600)
 	if err != nil {
 		log.Fatalf("failed to write to %s", versionsPath)
 	}
+
+	r.Close()
+	w.Close()
 
 	fmt.Println("Done")
 }
