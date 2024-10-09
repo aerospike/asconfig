@@ -24,7 +24,7 @@ var rootCmd = newRootCmd()
 
 var (
 	VERSION            = "development" // Replaced at compile time
-	errInvalidLogLevel = fmt.Errorf("Invalid log-level flag")
+	errInvalidLogLevel = fmt.Errorf("invalid log-level flag")
 	aerospikeFlags     = flags.NewDefaultAerospikeFlags()
 	cfFileFlags        = flags.NewConfFileFlags()
 )
@@ -35,7 +35,7 @@ func newRootCmd() *cobra.Command {
 		Use:   "asconfig",
 		Short: "Manage Aerospike configuration",
 		Long:  "Asconfig is used to manage Aerospike configuration.",
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			var multiErr error
 
 			cfgFile, err := config.InitConfig(cfFileFlags.File, cfFileFlags.Instance, cmd.Flags())
@@ -75,6 +75,7 @@ func newRootCmd() *cobra.Command {
 	rootCmd.SetFlagErrorFunc(func(cmd *cobra.Command, err error) error {
 		logger.Error(err)
 		cmd.Println(cmd.UsageString())
+
 		return errors.Join(err, ErrSilent)
 	})
 
@@ -94,6 +95,7 @@ func Execute() {
 				logger.Error(err)
 			}
 		}
+
 		os.Exit(1)
 	}
 }
@@ -104,12 +106,12 @@ var mgmtLibLogger logr.Logger
 func init() {
 	logger = logrus.New()
 
-	fmt := logrus.TextFormatter{}
-	fmt.FullTimestamp = true
+	logFmt := logrus.TextFormatter{}
+	logFmt.FullTimestamp = true
 
-	logger.SetFormatter(&fmt)
+	logger.SetFormatter(&logFmt)
 
-	schemaMap, err := schema.NewSchemaMap()
+	schemaMap, err := schema.NewMap()
 	if err != nil {
 		panic(err)
 	}

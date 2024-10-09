@@ -61,6 +61,7 @@ func TestUnmarshal(t *testing.T) {
 		src []byte
 		dst map[string]string
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -118,6 +119,7 @@ func TestUnmarshal(t *testing.T) {
 			if err := metadata.Unmarshal(tt.args.src, tt.args.dst); (err != nil) != tt.wantErr {
 				t.Errorf("Unmarshal() error = %v, wantErr %v", err, tt.wantErr)
 			}
+
 			if !reflect.DeepEqual(tt.args.dst, tt.want) {
 				t.Errorf("Unmarshal() = %v, want %v", tt.args.dst, tt.want)
 			}
@@ -139,6 +141,7 @@ func TestMarshalText(t *testing.T) {
 	type args struct {
 		src map[string]string
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -175,6 +178,7 @@ func TestMarshalText(t *testing.T) {
 			want: []byte(testMarshalMetaPartial),
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := metadata.Marshal(tt.args.src)
@@ -182,6 +186,7 @@ func TestMarshalText(t *testing.T) {
 				t.Errorf("Marshal() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
+
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Marshal() = %v, want %v", got, tt.want)
 			}

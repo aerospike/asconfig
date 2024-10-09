@@ -17,16 +17,16 @@ var (
 )
 
 type ConfigValidator struct {
-	ConfHandler
+	Handler
 	mgmtLogger logr.Logger
 	version    string
 }
 
-func NewConfigValidator(confHandler ConfHandler, mgmtLogger logr.Logger, version string) *ConfigValidator {
+func NewConfigValidator(confHandler Handler, mgmtLogger logr.Logger, version string) *ConfigValidator {
 	return &ConfigValidator{
-		ConfHandler: confHandler,
-		mgmtLogger:  mgmtLogger,
-		version:     version,
+		Handler:    confHandler,
+		mgmtLogger: mgmtLogger,
+		version:    version,
 	}
 }
 
@@ -36,6 +36,7 @@ func (cv *ConfigValidator) Validate() (*ValidationErrors, error) {
 	valid, tempVerrs, err := cv.IsValid(cv.mgmtLogger, cv.version)
 
 	verrs := ValidationErrors{}
+
 	for _, v := range tempVerrs {
 		verr := ValidationErr{
 			ValidationErr: *v,
@@ -59,6 +60,7 @@ func (cv *ConfigValidator) Validate() (*ValidationErrors, error) {
 		for i, verr := range verrs.Errors {
 			context, _ := strings.CutPrefix(verr.Context, "(root).")
 			context, err := jsonToConfigContext(jsonConfig, context)
+
 			if err != nil {
 				// if we can't associate the error with its
 				// corresponding field, just use the current context
@@ -86,7 +88,7 @@ func (a VErrSlice) Less(i, j int) bool { return a[i].Error() < a[j].Error() }
 
 // Outputs a human readable string of validation error details.
 // error is not nil if validation, or any other type of error occurs.
-func (o ValidationErr) Error() string {
+func (o *ValidationErr) Error() string {
 	verrTemplate := "description: %s, error-type: %s"
 	return fmt.Sprintf(verrTemplate, o.Description, o.ErrType)
 }
@@ -178,12 +180,12 @@ func jsonToConfigContext(jsonConfig any, context string) (string, error) {
 		}
 
 		// name should be a string
-		if nameStr, ok := name.(string); !ok {
+		nameStr, ok := name.(string)
+		if !ok {
 			return "", fmt.Errorf("name is not a string in json config at: %v", context)
-		} else {
-			// set res to the name instead of the index
-			res = nameStr
 		}
+		// set res to the name instead of the index
+		res = nameStr
 
 		// set jsonConfig to the indexed object
 		jsonConfig = indexedMap

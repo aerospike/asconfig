@@ -35,12 +35,18 @@ func TestPersistentPreRunRootFlags(t *testing.T) {
 			},
 		},
 	}
+
 	cmd := newRootCmd()
 
 	for _, tc := range testCases {
 		t.Run(tc.flags[0], func(t *testing.T) {
-			cmd.ParseFlags(tc.flags)
-			err := cmd.PersistentPreRunE(cmd, tc.arguments)
+			err := cmd.ParseFlags(tc.flags)
+			if err != nil {
+				t.Fatalf("unable to parse flags: %v", err)
+			}
+
+			err = cmd.PersistentPreRunE(cmd, tc.arguments)
+
 			for _, expectedErr := range tc.expectedErrors {
 				if !errors.Is(err, expectedErr) {
 					t.Errorf("%v\n actual err: %v\n is not expected err: %v", tc.flags, err, expectedErr)
@@ -78,7 +84,7 @@ type RootTest struct {
 	suite.Suite
 }
 
-func (suite *RootTest) TestPersistentPreRunRootInitConfig() {
+func (tsuite *RootTest) TestPersistentPreRunRootInitConfig() {
 	testCases := []struct {
 		configFile    string
 		configFileTxt string
@@ -97,7 +103,7 @@ func (suite *RootTest) TestPersistentPreRunRootInitConfig() {
 		rootCmd := newRootCmd()
 		subCmd := &cobra.Command{
 			Use: "sub",
-			Run: func(cmd *cobra.Command, args []string) {},
+			Run: func(_ *cobra.Command, _ []string) {},
 		}
 		flagSet1 := &pflag.FlagSet{}
 		flagSet2 := &pflag.FlagSet{}
@@ -118,12 +124,12 @@ func (suite *RootTest) TestPersistentPreRunRootInitConfig() {
 	}
 
 	for _, tc := range testCases {
-		suite.T().Run(tc.configFile, func(t *testing.T) {
+		tsuite.T().Run(tc.configFile, func(t *testing.T) {
 			config.Reset()
 
 			rootCmd, flagSet1, flagSet2 := createCmd()
 
-			err := os.WriteFile(tc.configFile, []byte(tc.configFileTxt), 0600)
+			err := os.WriteFile(tc.configFile, []byte(tc.configFileTxt), 0o600)
 			if err != nil {
 				t.Fatalf("unable to write %s: %v", tc.configFile, err)
 			}
@@ -134,32 +140,32 @@ func (suite *RootTest) TestPersistentPreRunRootInitConfig() {
 			err = rootCmd.Execute()
 
 			if err != nil {
-				suite.FailNow("unexpected error", err)
+				tsuite.FailNow("unexpected error", err)
 			}
 
 			str1, err := flagSet1.GetString("str1")
-			suite.NoError(err)
-			suite.Equal("localhost:3000", str1)
+			tsuite.NoError(err)
+			tsuite.Equal("localhost:3000", str1)
 
 			int1, err := flagSet1.GetInt("int1")
-			suite.NoError(err)
-			suite.Equal(3000, int1)
+			tsuite.NoError(err)
+			tsuite.Equal(3000, int1)
 
 			bool1, err := flagSet1.GetBool("bool1")
-			suite.NoError(err)
-			suite.Equal(true, bool1)
+			tsuite.NoError(err)
+			tsuite.Equal(true, bool1)
 
 			str2, err := flagSet2.GetString("str2")
-			suite.NoError(err)
-			suite.Equal("localhost:4000", str2)
+			tsuite.NoError(err)
+			tsuite.Equal("localhost:4000", str2)
 
 			int2, err := flagSet2.GetInt("int2")
-			suite.NoError(err)
-			suite.Equal(4000, int2)
+			tsuite.NoError(err)
+			tsuite.Equal(4000, int2)
 
 			bool2, err := flagSet2.GetBool("bool2")
-			suite.NoError(err)
-			suite.Equal(false, bool2)
+			tsuite.NoError(err)
+			tsuite.Equal(false, bool2)
 		})
 	}
 }

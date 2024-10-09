@@ -14,6 +14,7 @@ import (
 
 func NewASConfigFromBytes(log logr.Logger, src []byte, srcFmt Format) (*asconfig.AsConfig, error) {
 	var err error
+
 	var cfg *asconfig.AsConfig
 
 	switch srcFmt {
@@ -21,6 +22,8 @@ func NewASConfigFromBytes(log logr.Logger, src []byte, srcFmt Format) (*asconfig
 		cfg, err = loadYAML(log, src)
 	case AsConfig:
 		cfg, err = loadAsConf(log, src)
+	case Invalid:
+		return nil, fmt.Errorf("%w %s", ErrInvalidFormat, srcFmt)
 	default:
 		return nil, fmt.Errorf("%w %s", ErrInvalidFormat, srcFmt)
 	}
@@ -145,7 +148,7 @@ Ex configMap
 		}
 	}
 */
-func typedContextsToObject(k string, v any, m configMap) {
+func typedContextsToObject(k string, _ any, m configMap) {
 	if isTypedContext(k) {
 		v := m[k]
 		// if a typed context does not have a map value.
@@ -304,6 +307,7 @@ func sortLists(k string, v any, m configMap) {
 				panic("unexpected gt value")
 			}
 		})
+
 		m[k] = v
 	}
 }

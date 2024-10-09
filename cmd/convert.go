@@ -35,8 +35,23 @@ func init() {
 var convertCmd = newConvertCmd()
 
 func newConvertCmd() *cobra.Command {
-	var cfgData []byte
-	res := &cobra.Command{
+	cmd := createConvertCmd()
+	initConvertCmdFlags(cmd)
+	cmd.RunE = runConvertCmd
+	cmd.PreRunE = preRunConvertCmd
+
+	return cmd
+}
+func initConvertCmdFlags(cmd *cobra.Command) {
+	asCommonFlags := getCommonFlags()
+	cmd.Flags().AddFlagSet(asCommonFlags)
+	cmd.Flags().BoolP("force", "f", false, "Override checks for supported server version and config validation")
+	cmd.Flags().StringP("output", "o", os.Stdout.Name(), "File path to write output to")
+	cmd.Flags().StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
+}
+
+func createConvertCmd() *cobra.Command {
+	return &cobra.Command{
 		Use:   "convert [flags] <path/to/config_file>",
 		Short: "Convert between yaml and Aerospike config format.",
 		Long: `Convert is used to convert between yaml and aerospike configuration
@@ -60,226 +75,238 @@ func newConvertCmd() *cobra.Command {
 				Ex: asconfig convert -a "6.4.0"
 				If the file has been converted by asconfig before, the --aerospike-version option is not needed.
 				Ex: asconfig convert -a "6.4.0" aerospike.yaml | asconfig convert --format conf`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			logger.Debug("Running convert command")
+	}
+}
 
-			// read stdin by default
-			var srcPath string
-			if len(args) == 0 {
-				srcPath = os.Stdin.Name()
-			} else {
-				srcPath = args[0]
-			}
+func runConvertCmd(cmd *cobra.Command, args []string) error {
+	var cfgData []byte
 
-			asVersion, err := cmd.Flags().GetString("aerospike-version")
-			if err != nil {
-				return err
-			}
+	logger.Debug("Running convert command")
 
-			logger.Debugf("Processing flag aerospike-version value=%s", asVersion)
-
-			force, err := cmd.Flags().GetBool("force")
-			if err != nil {
-				return err
-			}
-
-			logger.Debugf("Processing flag force value=%t", force)
-
-			srcFormat, err := getConfFileFormat(srcPath, cmd)
-			if err != nil {
-				return err
-			}
-
-			logger.Debugf("Processing flag format value=%v", srcFormat)
-
-			var outFmt conf.Format
-			switch srcFormat {
-			case conf.AsConfig:
-				outFmt = conf.YAML
-			case conf.YAML:
-				outFmt = conf.AsConfig
-			default:
-				return fmt.Errorf("%w: %s", errInvalidFormat, srcFormat)
-			}
-
-			// if the version option is empty,
-			// try populating from the metadata
-			if asVersion == "" {
-				asVersion, err = getMetaDataItem(cfgData, metaKeyAerospikeVersion)
-				if err != nil && !force {
-					return errors.Join(errMissingAerospikeVersion, err)
-				}
-			}
-
-			// load
-			asconfig, err := conf.NewASConfigFromBytes(mgmtLibLogger, cfgData, srcFormat)
-
-			if err != nil {
-				return err
-			}
-
-			// validate
-			if !force {
-				verrs, err := conf.NewConfigValidator(asconfig, mgmtLibLogger, asVersion).Validate()
-				if err != nil || verrs != nil {
-					return errors.Join(err, verrs)
-				}
-			}
-
-			// convert
-			out, err := conf.NewConfigMarshaller(asconfig, outFmt).MarshalText()
-			if err != nil {
-				return err
-			}
-
-			// prepend metadata to the config output
-			mtext, err := genMetaDataText(
-				cfgData,
-				nil,
-				map[string]string{
-					metaKeyAerospikeVersion: asVersion,
-					metaKeyAsconfigVersion:  VERSION,
-				},
-			)
-			if err != nil {
-				return err
-			}
-			out = append(mtext, out...)
-
-			outputPath, err := cmd.Flags().GetString("output")
-			if err != nil {
-				return err
-			}
-
-			if stat, err := os.Stat(outputPath); !errors.Is(err, os.ErrNotExist) && stat.IsDir() {
-				// output path is a directory so write a new file to it
-				outFileName := filepath.Base(srcPath)
-				if srcPath == os.Stdin.Name() {
-					outFileName = defaultOutputFileName
-				}
-
-				outFileName = strings.TrimSuffix(outFileName, filepath.Ext(outFileName))
-
-				outputPath = filepath.Join(outputPath, outFileName)
-				if outFmt == conf.YAML {
-					outputPath += ".yaml"
-				} else if outFmt == conf.AsConfig {
-					outputPath += ".conf"
-				} else {
-					return fmt.Errorf("output format unrecognized %w", errInvalidFormat)
-				}
-			}
-
-			var outFile *os.File
-			if outputPath == os.Stdout.Name() {
-				outFile = os.Stdout
-			} else {
-				outFile, err = os.OpenFile(outputPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
-				if err != nil {
-					return err
-				}
-
-				defer outFile.Close()
-			}
-
-			logger.Debugf("Writing converted data to: %s", outputPath)
-			_, err = outFile.WriteString(out)
-			return err
-		},
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) > convertArgMax {
-				return errTooManyArguments
-			}
-
-			if len(args) > 0 {
-				source := args[0]
-				if _, err := os.Stat(source); errors.Is(err, os.ErrNotExist) {
-					return errors.Join(errFileNotExist, err)
-				}
-			}
-
-			// validate flags
-			_, err := cmd.Flags().GetString("output")
-			if err != nil {
-				return err
-			}
-
-			force, err := cmd.Flags().GetBool("force")
-			if err != nil {
-				return err
-			}
-
-			// read stdin by default
-			var srcPath string
-			if len(args) == 0 {
-				srcPath = os.Stdin.Name()
-			} else {
-				srcPath = args[0]
-			}
-
-			cfgData, err = os.ReadFile(srcPath)
-			if err != nil {
-				return err
-			}
-
-			metaData := map[string]string{}
-			metadata.Unmarshal(cfgData, metaData)
-
-			// if the aerospike server version is in the cfg file's
-			// metadata, don't mark --aerospike-version as required
-			var aeroVersionRequired bool
-			if _, ok := metaData[metaKeyAerospikeVersion]; !ok {
-				if !force {
-					cmd.MarkFlagRequired("aerospike-version")
-					aeroVersionRequired = true
-				}
-			}
-
-			av, err := cmd.Flags().GetString("aerospike-version")
-			if err != nil {
-				return err
-			}
-
-			if aeroVersionRequired {
-				if av == "" {
-					return errors.Join(errMissingAerospikeVersion, err)
-				}
-
-				supported, err := asconfig.IsSupportedVersion(av)
-				if err != nil {
-					return errors.Join(errInvalidAerospikeVersion, err)
-				}
-
-				// TODO include valid versions in the error message
-				// asconfig lib needs a getSupportedVersions func
-				if !supported {
-					return errUnsupportedAerospikeVersion
-				}
-			}
-
-			formatString, err := cmd.Flags().GetString("format")
-			if err != nil {
-				return errors.Join(errMissingFormat, err)
-			}
-
-			_, err = ParseFmtString(formatString)
-			if err != nil && formatString != "" {
-				return errors.Join(errInvalidFormat, err)
-			}
-
-			return nil
-		},
+	// read stdin by default
+	var srcPath string
+	if len(args) == 0 {
+		srcPath = os.Stdin.Name()
+	} else {
+		srcPath = args[0]
 	}
 
-	// flags and configuration settings
-	// aerospike-version is marked required in this cmd's PreRun if the --force flag is not provided
-	asCommonFlags := getCommonFlags()
-	res.Flags().AddFlagSet(asCommonFlags)
-	res.Flags().BoolP("force", "f", false, "Override checks for supported server version and config validation")
-	res.Flags().StringP("output", "o", os.Stdout.Name(), "File path to write output to")
-	res.Flags().StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
+	asVersion, err := cmd.Flags().GetString("aerospike-version")
+	if err != nil {
+		return err
+	}
 
-	res.Version = VERSION
+	logger.Debugf("Processing flag aerospike-version value=%s", asVersion)
 
-	return res
+	force, err := cmd.Flags().GetBool("force")
+	if err != nil {
+		return err
+	}
+
+	logger.Debugf("Processing flag force value=%t", force)
+
+	srcFormat, err := getConfFileFormat(srcPath, cmd)
+	if err != nil {
+		return err
+	}
+
+	logger.Debugf("Processing flag format value=%v", srcFormat)
+
+	var outFmt conf.Format
+
+	switch srcFormat {
+	case conf.AsConfig:
+		outFmt = conf.YAML
+	case conf.YAML:
+		outFmt = conf.AsConfig
+	case conf.Invalid:
+		return fmt.Errorf("%w: %s", errInvalidFormat, srcFormat)
+	default:
+		return fmt.Errorf("%w: %s", errInvalidFormat, srcFormat)
+	}
+
+	// if the version option is empty,
+	// try populating from the metadata
+	if asVersion == "" {
+		asVersion, err = getMetaDataItem(cfgData, metaKeyAerospikeVersion)
+		if err != nil && !force {
+			return errors.Join(errMissingAerospikeVersion, err)
+		}
+	}
+
+	// load
+	asConfig, err := conf.NewASConfigFromBytes(mgmtLibLogger, cfgData, srcFormat)
+
+	if err != nil {
+		return err
+	}
+
+	// validate
+	if !force {
+		verrs, err := conf.NewConfigValidator(asConfig, mgmtLibLogger, asVersion).Validate()
+		if err != nil || verrs != nil {
+			return errors.Join(err, verrs)
+		}
+	}
+
+	// convert
+	out, err := conf.NewConfigMarshaller(asConfig, outFmt).MarshalText()
+	if err != nil {
+		return err
+	}
+
+	// prepend metadata to the config output
+	mtext, err := genMetaDataText(
+		cfgData,
+		nil,
+		map[string]string{
+			metaKeyAerospikeVersion: asVersion,
+			metaKeyAsconfigVersion:  VERSION,
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	out = append(mtext, out...)
+
+	outputPath, err := cmd.Flags().GetString("output")
+	if err != nil {
+		return err
+	}
+
+	if stat, err := os.Stat(outputPath); !errors.Is(err, os.ErrNotExist) && stat.IsDir() {
+		// output path is a directory so write a new file to it
+		outFileName := filepath.Base(srcPath)
+		if srcPath == os.Stdin.Name() {
+			outFileName = defaultOutputFileName
+		}
+
+		outFileName = strings.TrimSuffix(outFileName, filepath.Ext(outFileName))
+		outputPath = filepath.Join(outputPath, outFileName)
+
+		switch outFmt {
+		case conf.YAML:
+			outputPath += ".yaml"
+		case conf.AsConfig:
+			outputPath += ".conf"
+		case conf.Invalid:
+			return fmt.Errorf("output format unrecognized %w", errInvalidFormat)
+		default:
+			return fmt.Errorf("output format unrecognized %w", errInvalidFormat)
+		}
+	}
+
+	var outFile *os.File
+	if outputPath == os.Stdout.Name() {
+		outFile = os.Stdout
+	} else {
+		outFile, err = os.OpenFile(outputPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
+		if err != nil {
+			return err
+		}
+
+		defer outFile.Close()
+	}
+
+	logger.Debugf("Writing converted data to: %s", outputPath)
+
+	_, err = outFile.WriteString(string(out))
+
+	return err
+}
+
+func preRunConvertCmd(cmd *cobra.Command, args []string) error {
+	var cfgData []byte
+
+	if len(args) > convertArgMax {
+		return errTooManyArguments
+	}
+
+	if len(args) > 0 {
+		source := args[0]
+		if _, err := os.Stat(source); errors.Is(err, os.ErrNotExist) {
+			return errors.Join(errFileNotExist, err)
+		}
+	}
+
+	// validate flags
+	_, err := cmd.Flags().GetString("output")
+	if err != nil {
+		return err
+	}
+
+	force, err := cmd.Flags().GetBool("force")
+	if err != nil {
+		return err
+	}
+
+	// read stdin by default
+	var srcPath string
+	if len(args) == 0 {
+		srcPath = os.Stdin.Name()
+	} else {
+		srcPath = args[0]
+	}
+
+	cfgData, err = os.ReadFile(srcPath)
+	if err != nil {
+		return err
+	}
+
+	metaData := map[string]string{}
+	err = metadata.Unmarshal(cfgData, metaData)
+
+	if err != nil {
+		return err
+	}
+
+	// if the aerospike server version is in the cfg file's
+	// metadata, don't mark --aerospike-version as required
+	var aeroVersionRequired bool
+
+	if _, ok := metaData[metaKeyAerospikeVersion]; !ok {
+		if !force {
+			err = cmd.MarkFlagRequired("aerospike-version")
+			if err != nil {
+				return err
+			}
+
+			aeroVersionRequired = true
+		}
+	}
+
+	av, err := cmd.Flags().GetString("aerospike-version")
+	if err != nil {
+		return err
+	}
+
+	if aeroVersionRequired {
+		if av == "" {
+			return errors.Join(errMissingAerospikeVersion, err)
+		}
+
+		supported, err := asconfig.IsSupportedVersion(av)
+		if err != nil {
+			return errors.Join(errInvalidAerospikeVersion, err)
+		}
+
+		// TODO include valid versions in the error message
+		// asconfig lib needs a getSupportedVersions func
+		if !supported {
+			return errUnsupportedAerospikeVersion
+		}
+	}
+
+	formatString, err := cmd.Flags().GetString("format")
+	if err != nil {
+		return errors.Join(errMissingFormat, err)
+	}
+
+	_, err = ParseFmtString(formatString)
+	if err != nil && formatString != "" {
+		return errors.Join(errInvalidFormat, err)
+	}
+
+	return nil
 }

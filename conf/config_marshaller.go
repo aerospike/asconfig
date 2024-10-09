@@ -8,13 +8,13 @@ import (
 
 type ConfigMarshaller struct {
 	Format Format
-	ConfHandler
+	Handler
 }
 
-func NewConfigMarshaller(conf ConfHandler, format Format) ConfigMarshaller {
+func NewConfigMarshaller(conf Handler, format Format) ConfigMarshaller {
 	return ConfigMarshaller{
-		Format:      format,
-		ConfHandler: conf,
+		Format:  format,
+		Handler: conf,
 	}
 }
 
@@ -25,6 +25,8 @@ func (cm ConfigMarshaller) MarshalText() (text []byte, err error) {
 	case YAML:
 		m := cm.ToMap()
 		text, err = yaml.Marshal(m)
+	case Invalid:
+		err = fmt.Errorf("%w %s", ErrInvalidFormat, cm.Format)
 	default:
 		err = fmt.Errorf("%w %s", ErrInvalidFormat, cm.Format)
 	}

@@ -27,7 +27,7 @@ linters:
     - dogsled
     - dupl
     - errcheck
-    - exportloopref
+    - copyloopvar
     - exhaustive
     - goconst
     - gocritic
@@ -59,4 +59,8 @@ run:
   issues-exit-code: 1
   go: '1.22'
 
+issues:
+  exclude-dirs:
+    - testdata
+    - .git
 
