@@ -23,9 +23,8 @@ jobs:
         uses: actions/setup-go@v3
         with:
             go-version: 1.22
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v3
-        with:
-          version: v1.59.1
-          args: --timeout=5m -v
+      - name: Run Lint
+        run: |
+          make golanci-lint | make go-lint 
+          
 
