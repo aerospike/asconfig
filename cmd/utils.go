@@ -19,10 +19,53 @@ const (
 	metaKeyAsadmVersion     = "asadm-version"
 )
 
+// LoggingEnum is a map of valid logging levels - collated from schema
+var LoggingEnum = map[string]bool{
+	"critical": true,
+	"warning":  true,
+	"info":     true,
+	"debug":    true,
+	"detail":   true,
+}
+
 type metaDataArgs struct {
 	src              []byte
 	aerospikeVersion string
 	asconfigVersion  string
+}
+
+func isValidLoggingEnumCompare(s1 any, s2 any) bool {
+	// convert to string
+	str1, ok := toString(s1)
+	if !ok {
+		return false
+	}
+	str2, ok := toString(s2)
+	if !ok {
+		return false
+	}
+	// convert to lower case
+	str1Lower := strings.ToLower(str1)
+	str2Lower := strings.ToLower(str2)
+
+	// check if the strings are valid logging levels
+	if _, ok := LoggingEnum[str1Lower]; !ok {
+		return false
+	}
+	if _, ok := LoggingEnum[str2Lower]; !ok {
+		return false
+	}
+
+	// compare the strings
+	if str1Lower == str2Lower {
+		return true
+	}
+	return false
+}
+
+func toString(value interface{}) (string, bool) {
+	str, ok := value.(string)
+	return str, ok
 }
 
 func genMetaDataText(src []byte, msg []byte, mdata map[string]string) ([]byte, error) {
