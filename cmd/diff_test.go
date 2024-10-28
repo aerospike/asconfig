@@ -68,6 +68,11 @@ var testDiffArgs = []runTestDiff{
 		arguments:   []string{},
 		expectError: true,
 	},
+	{
+		flags:       []string{"--log-level", "debug"},
+		arguments:   []string{"../testdata/expected/all_flash_cluster_cr.conf", "../testdata/expected/all_flash_cluster_cr_info_cap.conf"},
+		expectError: false,
+	},
 }
 
 func TestRunEDiff(t *testing.T) {
