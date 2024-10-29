@@ -59,6 +59,11 @@ var testDiffArgs = []runTestDiff{
 		expectError: false,
 	},
 	{
+		flags:       []string{"--log-level", "debug"},
+		arguments:   []string{"../testdata/expected/all_flash_cluster_cr.conf", "../testdata/expected/all_flash_cluster_cr_info_cap.conf"},
+		expectError: false,
+	},
+	{
 		flags:       []string{"--format", "bad_fmt"},
 		arguments:   []string{},
 		expectError: true,
@@ -67,11 +72,6 @@ var testDiffArgs = []runTestDiff{
 		flags:       []string{"-F", "bad_fmt"},
 		arguments:   []string{},
 		expectError: true,
-	},
-	{
-		flags:       []string{"--log-level", "debug"},
-		arguments:   []string{"../testdata/expected/all_flash_cluster_cr.conf", "../testdata/expected/all_flash_cluster_cr_info_cap.conf"},
-		expectError: false,
 	},
 }
 
