@@ -34,33 +34,27 @@ type metaDataArgs struct {
 	asconfigVersion  string
 }
 
+// isValidLoggingEnumCompare compares two values to determine if they are valid logging levels and if they are equal.
+// It first converts the values to strings, then to lower case, and checks if they are valid logging levels.
+// If both values are valid logging levels and are equal, it returns true; otherwise, it returns false.
+//
+// Parameters:
+//   - s1: The first value to compare, of any type.
+//   - s2: The second value to compare, of any type.
+//
+// Returns:
+//   - bool: True if both values are valid logging levels and are equal, false otherwise.
 func isValidLoggingEnumCompare(s1 any, s2 any) bool {
-	// convert to string
-	str1, ok := toString(s1)
-	if !ok {
+	str1, ok1 := toString(s1)
+	str2, ok2 := toString(s2)
+	if !ok1 || !ok2 {
 		return false
 	}
-	str2, ok := toString(s2)
-	if !ok {
-		return false
-	}
-	// convert to lower case
+
 	str1Lower := strings.ToLower(str1)
 	str2Lower := strings.ToLower(str2)
 
-	// check if the strings are valid logging levels
-	if _, ok := LoggingEnum[str1Lower]; !ok {
-		return false
-	}
-	if _, ok := LoggingEnum[str2Lower]; !ok {
-		return false
-	}
-
-	// compare the strings
-	if str1Lower == str2Lower {
-		return true
-	}
-	return false
+	return str1Lower == str2Lower && LoggingEnum[str1Lower]
 }
 
 func toString(value interface{}) (string, bool) {
