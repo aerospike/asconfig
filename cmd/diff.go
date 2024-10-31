@@ -162,6 +162,11 @@ func diffFlatMaps(m1 map[string]any, m2 map[string]any) []string {
 			continue
 		}
 
+		// #TOOLS-2979 if part of logging section and is valid logging enum when compared "info" == "INFO"
+		if strings.HasPrefix(k, "logging.") && isValidLoggingEnumCompare(v1, v2) {
+			continue
+		}
+
 		if !reflect.DeepEqual(v1, v2) {
 			res = append(res, fmt.Sprintf("%s:\n\t<: %v\n\t>: %v\n", k, v1, v2))
 		}
