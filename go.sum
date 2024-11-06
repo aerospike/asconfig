@@ -4,8 +4,8 @@ github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERo
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
 github.com/aerospike/aerospike-client-go/v7 v7.7.1 h1:lcskBtPZYe6ESObhIEQEp4XO1axYZpaFD3ie4iwr6tg=
 github.com/aerospike/aerospike-client-go/v7 v7.7.1/go.mod h1:STlBtOkKT8nmp7iD+sEkr/JGEOu+4e2jGlNN0Jiu2a4=
-github.com/aerospike/aerospike-management-lib v1.4.1-0.20240930043254-141a52ad6c51 h1:HWz+pF8rC2y8DFKl8Fu0gf6JSlwl8z563sHZ+yJ+2yQ=
-github.com/aerospike/aerospike-management-lib v1.4.1-0.20240930043254-141a52ad6c51/go.mod h1:hsEptY/AmTmHoJnItJNmfJ4yCMG8LIB8YPnIpIyvGXI=
+github.com/aerospike/aerospike-management-lib v1.5.1-0.20241028112258-5562cfa38ea5 h1:hJsmyWNrXYLILGC520ZOOjVkbcCjkK3X3h829ZipZLk=
+github.com/aerospike/aerospike-management-lib v1.5.1-0.20241028112258-5562cfa38ea5/go.mod h1:hsEptY/AmTmHoJnItJNmfJ4yCMG8LIB8YPnIpIyvGXI=
 github.com/aerospike/tools-common-go v0.0.0-20240425222921-596724ec5926 h1:CqkNasGC/7x5JvYjCSuAVX/rG+nUgRQtXfxIURXo5OE=
 github.com/aerospike/tools-common-go v0.0.0-20240425222921-596724ec5926/go.mod h1:Ig1lRynXx0tXNOY3MdtanTsKz1ifG/2AyDFMXn3RMTc=
 github.com/bombsimon/logrusr/v4 v4.1.0 h1:uZNPbwusB0eUXlO8hIUwStE6Lr5bLN6IgYgG+75kuh4=
