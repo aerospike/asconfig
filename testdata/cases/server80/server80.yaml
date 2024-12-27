@@ -31,6 +31,7 @@ namespaces:
       replication-factor: 2
       disable-mrt-writes: false
       mrt-duration: 60
+      strong-consistency: true
       migrate-skip-unreadable: false
       sets:
         - default-read-touch-ttl-pct: -1
