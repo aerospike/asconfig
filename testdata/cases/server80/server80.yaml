@@ -30,8 +30,8 @@ namespaces:
       nsup-period: 2048
       replication-factor: 2
       disable-mrt-writes: false
-	    mrt-duration: 86400
-	    migrate-skip-unreadable: false
+      mrt-duration: 86400
+      migrate-skip-unreadable: false
       sets:
         - default-read-touch-ttl-pct: -1
           name: s1
