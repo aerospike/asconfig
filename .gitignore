@@ -28,4 +28,3 @@ pkg/*
 # Meta files
 .DS_Store
 testdata/*.log
-
