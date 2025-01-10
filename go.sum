@@ -8,6 +8,8 @@ github.com/aerospike/aerospike-management-lib v1.6.0 h1:+bV9bjO9APvF4EOH7+l6608B
 github.com/aerospike/aerospike-management-lib v1.6.0/go.mod h1:hsEptY/AmTmHoJnItJNmfJ4yCMG8LIB8YPnIpIyvGXI=
 github.com/aerospike/tools-common-go v0.0.0-20250103065152-e9dbc6120714 h1:KNMoO/NWboyWJhB7CGXUhESYPIQd2MtNDJdfQdrfQLo=
 github.com/aerospike/tools-common-go v0.0.0-20250103065152-e9dbc6120714/go.mod h1:4DNS6ukaprOST0wb3n4hJ6/wDLyM6MQ0MCsmZC/CqKU=
+github.com/aerospike/tools-common-go v0.0.0-20250110055921-7e8ad21c5c02 h1:u92W492hilN0i0ogWRWiXYYAe5bl8JIHZ4e/urk/p9k=
+github.com/aerospike/tools-common-go v0.0.0-20250110055921-7e8ad21c5c02/go.mod h1:4DNS6ukaprOST0wb3n4hJ6/wDLyM6MQ0MCsmZC/CqKU=
 github.com/bombsimon/logrusr/v4 v4.1.0 h1:uZNPbwusB0eUXlO8hIUwStE6Lr5bLN6IgYgG+75kuh4=
 github.com/bombsimon/logrusr/v4 v4.1.0/go.mod h1:pjfHC5e59CvjTBIU3V3sGhFWFAnsnhOR03TRc6im0l8=
 github.com/cenkalti/backoff/v4 v4.3.0 h1:MyRJ/UdXutAwSAT+s3wNd7MfTIcy71VQueUuFK343L8=
