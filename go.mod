@@ -7,9 +7,9 @@ toolchain go1.23.1
 require (
 	github.com/aerospike/aerospike-client-go/v7 v7.8.0
 	github.com/aerospike/aerospike-management-lib v1.6.0
-	github.com/aerospike/tools-common-go v0.0.0-20250110055921-7e8ad21c5c02
+	github.com/aerospike/tools-common-go v0.2.0
 	github.com/bombsimon/logrusr/v4 v4.1.0
-	github.com/docker/docker v27.4.1+incompatible
+	github.com/docker/docker v27.5.0+incompatible
 	github.com/go-logr/logr v1.4.2
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/sirupsen/logrus v1.9.3
@@ -60,9 +60,9 @@ require (
 	go.opentelemetry.io/proto/otlp v1.2.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20240416160154-fe59bbe5cc7f // indirect
-	golang.org/x/net v0.33.0 // indirect
+	golang.org/x/net v0.34.0 // indirect
 	golang.org/x/sync v0.10.0 // indirect
-	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240711142825-46eb208f015d // indirect
 	google.golang.org/grpc v1.63.3 // indirect
