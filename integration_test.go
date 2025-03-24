@@ -20,7 +20,6 @@ import (
 	"time"
 
 	as "github.com/aerospike/aerospike-client-go/v7"
-	mgmtLib "github.com/aerospike/aerospike-management-lib"
 	mgmtLibInfo "github.com/aerospike/aerospike-management-lib/info"
 	"github.com/aerospike/asconfig/cmd"
 	"github.com/aerospike/asconfig/conf/metadata"
@@ -76,7 +75,7 @@ func TestMain(m *testing.M) {
 	featKeyDir = os.Getenv("FEATKEY_DIR")
 	fmt.Println(featKeyDir)
 	if featKeyDir == "" {
-		panic("FEATKEY_DIR environement variable must an absolute path to a directory containing valid aerospike feature key files featuresv1.conf and featuresv2.conf of feature key format 1 and 2 respectively.")
+		panic("FEATKEY_DIR environment variable must an absolute path to a directory containing valid aerospike feature key file featuresv2.conf of feature key v2.")
 	}
 
 	code := m.Run()
@@ -422,13 +421,6 @@ func runServer(version string, serverVersion string, confPath string, auth testu
 	tmpf.Close()
 
 	featureKeyPath := filepath.Join(featKeyDir, "featuresv2.conf")
-	lastServerWithFeatureKeyVersion1 := "5.3.0"
-
-	if val, err := mgmtLib.CompareVersionsIgnoreRevision(strings.TrimPrefix(version, "ee-"), lastServerWithFeatureKeyVersion1); err != nil {
-		t.Error(err)
-	} else if val <= 0 {
-		featureKeyPath = filepath.Join(featKeyDir, "featuresv1.conf")
-	}
 
 	containerHostConf := &container.HostConfig{
 		Mounts: []mount.Mount{
