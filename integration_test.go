@@ -20,7 +20,6 @@ import (
 	"time"
 
 	as "github.com/aerospike/aerospike-client-go/v7"
-	mgmtLib "github.com/aerospike/aerospike-management-lib"
 	mgmtLibInfo "github.com/aerospike/aerospike-management-lib/info"
 	"github.com/aerospike/asconfig/cmd"
 	"github.com/aerospike/asconfig/conf/metadata"
@@ -76,7 +75,7 @@ func TestMain(m *testing.M) {
 	featKeyDir = os.Getenv("FEATKEY_DIR")
 	fmt.Println(featKeyDir)
 	if featKeyDir == "" {
-		panic("FEATKEY_DIR environement variable must an absolute path to a directory containing valid aerospike feature key files featuresv1.conf and featuresv2.conf of feature key format 1 and 2 respectively.")
+		panic("FEATKEY_DIR environment variable must an absolute path to a directory containing valid aerospike feature key file featuresv2.conf of feature key v2.")
 	}
 
 	code := m.Run()
@@ -112,12 +111,6 @@ var testFiles = []testutils.TestData{
 		Destination: filepath.Join(destinationPath, "dim_nostorage_cluster_cr.conf"),
 		Expected:    filepath.Join(expectedPath, "dim_nostorage_cluster_cr.conf"),
 		Arguments:   []string{"convert", "-a", "6.2.0.2", "-o", destinationPath},
-	},
-	{
-		Source:      filepath.Join(sourcePath, "dim_nostorage_cluster_cr.yaml"),
-		Destination: filepath.Join(destinationPath, "dim_nostorage_cluster_cr.conf"),
-		Expected:    filepath.Join(expectedPath, "dim_nostorage_cluster_cr.conf"),
-		Arguments:   []string{"convert", "-a", "5.3.0.16", "-o", destinationPath},
 	},
 	{
 		Source:      filepath.Join(sourcePath, "dim_nostorage_cluster_cr.yaml"),
@@ -198,12 +191,6 @@ var testFiles = []testutils.TestData{
 		Expected:             filepath.Join(expectedPath, "tls_cluster_cr.conf"),
 		Arguments:            []string{"convert", "-a", "6.2.0.2", "-o", filepath.Join(destinationPath, "tls_cluster_cr.conf")},
 		ServerErrorAllowList: []string{"failed to set up service tls"},
-	},
-	{
-		Source:      filepath.Join(sourcePath, "xdr_dst_cluster_cr.yaml"),
-		Destination: filepath.Join(destinationPath, "xdr_dst_cluster_cr.conf"),
-		Expected:    filepath.Join(expectedPath, "xdr_dst_cluster_cr.conf"),
-		Arguments:   []string{"convert", "-a", "5.6.0.13", "-o", destinationPath},
 	},
 	{
 		Source:      filepath.Join(sourcePath, "xdr_src_cluster_cr.yaml"),
@@ -422,13 +409,6 @@ func runServer(version string, serverVersion string, confPath string, auth testu
 	tmpf.Close()
 
 	featureKeyPath := filepath.Join(featKeyDir, "featuresv2.conf")
-	lastServerWithFeatureKeyVersion1 := "5.3.0"
-
-	if val, err := mgmtLib.CompareVersionsIgnoreRevision(strings.TrimPrefix(version, "ee-"), lastServerWithFeatureKeyVersion1); err != nil {
-		t.Error(err)
-	} else if val <= 0 {
-		featureKeyPath = filepath.Join(featKeyDir, "featuresv1.conf")
-	}
 
 	containerHostConf := &container.HostConfig{
 		Mounts: []mount.Mount{
@@ -471,8 +451,35 @@ func runServer(version string, serverVersion string, confPath string, auth testu
 	}
 
 	// TODO if possible, don't create new containers each time
-	id, err := testutils.CreateAerospikeContainer(containerName, containerConf, containerHostConf, imagePullOptions, dockerClient)
-	if err != nil {
+	var id string
+	maxRetries := 5
+	retryCount := 0
+	backoffTime := 5 * time.Second
+
+	for {
+		id, err = testutils.CreateAerospikeContainer(containerName, containerConf, containerHostConf, imagePullOptions, dockerClient)
+		if err == nil {
+			break
+		}
+
+		// Check if this is a rate limit error
+		if strings.Contains(err.Error(), "toomanyrequests") {
+			retryCount++
+			if retryCount > maxRetries {
+				t.Errorf("Failed after %d retries: %v", maxRetries, err)
+				return "", ""
+			}
+
+			// Log the retry
+			t.Logf("Docker pull rate limit reached, retrying in %v (attempt %d/%d)", backoffTime, retryCount, maxRetries)
+
+			// Sleep with exponential backoff
+			time.Sleep(backoffTime)
+			backoffTime *= 2 // exponential backoff
+			continue
+		}
+
+		// If it's not a rate limit error, just fail
 		t.Error(err)
 		return "", ""
 	}
@@ -542,12 +549,6 @@ var confToYamlTests = []testutils.TestData{
 		Destination: filepath.Join(destinationPath, "dim_nostorage_cluster_cr.yaml"),
 		Expected:    filepath.Join(sourcePath, "dim_nostorage_cluster_cr.yaml"),
 		Arguments:   []string{"convert", "-a", "6.2.0.2", "--format", "asconfig", "-o", destinationPath},
-	},
-	{
-		Source:      filepath.Join(expectedPath, "dim_nostorage_cluster_cr.conf"),
-		Destination: filepath.Join(destinationPath, "dim_nostorage_cluster_cr.yaml"),
-		Expected:    filepath.Join(sourcePath, "dim_nostorage_cluster_cr.yaml"),
-		Arguments:   []string{"convert", "-a", "5.3.0.16", "--format", "asconfig", "-o", destinationPath},
 	},
 	{
 		Source:      filepath.Join(expectedPath, "dim_nostorage_cluster_cr.conf"),

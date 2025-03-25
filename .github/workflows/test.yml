@@ -22,10 +22,8 @@ jobs:
           go-version-file: go.mod
       - name: Write feature keys
         run: |
-          echo "$FEATURESV1" > /tmp/featuresv1.conf
           echo "$FEATURESV2" > /tmp/featuresv2.conf
         env:
-          FEATURESV1 : ${{secrets.FEATURES_V1}}
           FEATURESV2 : ${{secrets.FEATURES_V2}}
       - name: Run tests
         run: |
