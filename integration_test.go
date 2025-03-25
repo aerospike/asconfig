@@ -1096,18 +1096,20 @@ var generateTests = []generateTC{
 		arguments:   []string{"generate", "-h", "<ip>", "-Uadmin", "-Padmin", "--format", "asconfig", "-o", filepath.Join(destinationPath, "dim_nostorage_cluster_cr.conf")},
 		version:     "ee-6.4.0.2",
 	},
-	{
-		source:      filepath.Join(expectedPath, "hdd_dii_storage_cluster_cr.conf"),
-		destination: filepath.Join(destinationPath, "hdd_dii_storage_cluster_cr.conf"),
-		arguments:   []string{"generate", "-h", "<ip>", "-Uadmin", "-Padmin", "--format", "asconfig", "-o", filepath.Join(destinationPath, "hdd_dii_storage_cluster_cr.conf")},
-		version:     "ee-6.2.0.2",
-	},
-	{
-		source:      filepath.Join(expectedPath, "hdd_dim_storage_cluster_cr.conf"),
-		destination: filepath.Join(destinationPath, "hdd_dim_storage_cluster_cr.conf"),
-		arguments:   []string{"generate", "-h", "<ip>", "-Uadmin", "-Padmin", "--format", "asconfig", "--output", filepath.Join(destinationPath, "hdd_dim_storage_cluster_cr.conf")},
-		version:     "ee-6.4.0.2",
-	},
+	// Uncomment after https://github.com/aerospike/schemas/pull/6 is merged and
+	// the schemas submodule is updated
+	// {
+	// 	source:      filepath.Join(expectedPath, "hdd_dii_storage_cluster_cr.conf"),
+	// 	destination: filepath.Join(destinationPath, "hdd_dii_storage_cluster_cr.conf"),
+	// 	arguments:   []string{"generate", "-h", "<ip>", "-Uadmin", "-Padmin", "--format", "asconfig", "-o", filepath.Join(destinationPath, "hdd_dii_storage_cluster_cr.conf")},
+	// 	version:     "ee-6.2.0.2",
+	// },
+	// {
+	// 	source:      filepath.Join(expectedPath, "hdd_dim_storage_cluster_cr.conf"),
+	// 	destination: filepath.Join(destinationPath, "hdd_dim_storage_cluster_cr.conf"),
+	// 	arguments:   []string{"generate", "-h", "<ip>", "-Uadmin", "-Padmin", "--format", "asconfig", "--output", filepath.Join(destinationPath, "hdd_dim_storage_cluster_cr.conf")},
+	// 	version:     "ee-6.4.0.2",
+	// },
 	{
 		source:      filepath.Join(expectedPath, "podspec_cr.conf"),
 		destination: filepath.Join(destinationPath, "podspec_cr.conf"),
