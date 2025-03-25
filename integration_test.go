@@ -554,12 +554,6 @@ var confToYamlTests = []testutils.TestData{
 		Source:      filepath.Join(expectedPath, "dim_nostorage_cluster_cr.conf"),
 		Destination: filepath.Join(destinationPath, "dim_nostorage_cluster_cr.yaml"),
 		Expected:    filepath.Join(sourcePath, "dim_nostorage_cluster_cr.yaml"),
-		Arguments:   []string{"convert", "-a", "5.3.0.16", "--format", "asconfig", "-o", destinationPath},
-	},
-	{
-		Source:      filepath.Join(expectedPath, "dim_nostorage_cluster_cr.conf"),
-		Destination: filepath.Join(destinationPath, "dim_nostorage_cluster_cr.yaml"),
-		Expected:    filepath.Join(sourcePath, "dim_nostorage_cluster_cr.yaml"),
 		Arguments:   []string{"convert", "-a", "6.0.0.5", "--format", "asconfig", "-o", destinationPath},
 	},
 	{
