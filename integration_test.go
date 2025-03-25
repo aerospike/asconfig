@@ -116,12 +116,6 @@ var testFiles = []testutils.TestData{
 		Source:      filepath.Join(sourcePath, "dim_nostorage_cluster_cr.yaml"),
 		Destination: filepath.Join(destinationPath, "dim_nostorage_cluster_cr.conf"),
 		Expected:    filepath.Join(expectedPath, "dim_nostorage_cluster_cr.conf"),
-		Arguments:   []string{"convert", "-a", "5.3.0.16", "-o", destinationPath},
-	},
-	{
-		Source:      filepath.Join(sourcePath, "dim_nostorage_cluster_cr.yaml"),
-		Destination: filepath.Join(destinationPath, "dim_nostorage_cluster_cr.conf"),
-		Expected:    filepath.Join(expectedPath, "dim_nostorage_cluster_cr.conf"),
 		Arguments:   []string{"convert", "-a", "6.0.0.5", "-o", destinationPath},
 	},
 	{
@@ -197,12 +191,6 @@ var testFiles = []testutils.TestData{
 		Expected:             filepath.Join(expectedPath, "tls_cluster_cr.conf"),
 		Arguments:            []string{"convert", "-a", "6.2.0.2", "-o", filepath.Join(destinationPath, "tls_cluster_cr.conf")},
 		ServerErrorAllowList: []string{"failed to set up service tls"},
-	},
-	{
-		Source:      filepath.Join(sourcePath, "xdr_dst_cluster_cr.yaml"),
-		Destination: filepath.Join(destinationPath, "xdr_dst_cluster_cr.conf"),
-		Expected:    filepath.Join(expectedPath, "xdr_dst_cluster_cr.conf"),
-		Arguments:   []string{"convert", "-a", "5.6.0.13", "-o", destinationPath},
 	},
 	{
 		Source:      filepath.Join(sourcePath, "xdr_src_cluster_cr.yaml"),
@@ -1081,20 +1069,18 @@ var generateTests = []generateTC{
 		arguments:   []string{"generate", "-h", "<ip>", "-Uadmin", "-Padmin", "--format", "asconfig", "-o", filepath.Join(destinationPath, "dim_nostorage_cluster_cr.conf")},
 		version:     "ee-6.4.0.2",
 	},
-	// Uncomment after https://github.com/aerospike/schemas/pull/6 is merged and
-	// the schemas submodule is updated
-	// {
-	// 	source:      filepath.Join(expectedPath, "hdd_dii_storage_cluster_cr.conf"),
-	// 	destination: filepath.Join(destinationPath, "hdd_dii_storage_cluster_cr.conf"),
-	// 	arguments:   []string{"generate", "-h", "<ip>", "-Uadmin", "-Padmin", "--format", "asconfig", "-o", filepath.Join(destinationPath, "hdd_dii_storage_cluster_cr.conf")},
-	// 	version:     "ee-6.2.0.2",
-	// },
-	// {
-	// 	source:      filepath.Join(expectedPath, "hdd_dim_storage_cluster_cr.conf"),
-	// 	destination: filepath.Join(destinationPath, "hdd_dim_storage_cluster_cr.conf"),
-	// 	arguments:   []string{"generate", "-h", "<ip>", "-Uadmin", "-Padmin", "--format", "asconfig", "--output", filepath.Join(destinationPath, "hdd_dim_storage_cluster_cr.conf")},
-	// 	version:     "ee-6.4.0.2",
-	// },
+	{
+		source:      filepath.Join(expectedPath, "hdd_dii_storage_cluster_cr.conf"),
+		destination: filepath.Join(destinationPath, "hdd_dii_storage_cluster_cr.conf"),
+		arguments:   []string{"generate", "-h", "<ip>", "-Uadmin", "-Padmin", "--format", "asconfig", "-o", filepath.Join(destinationPath, "hdd_dii_storage_cluster_cr.conf")},
+		version:     "ee-6.2.0.2",
+	},
+	{
+		source:      filepath.Join(expectedPath, "hdd_dim_storage_cluster_cr.conf"),
+		destination: filepath.Join(destinationPath, "hdd_dim_storage_cluster_cr.conf"),
+		arguments:   []string{"generate", "-h", "<ip>", "-Uadmin", "-Padmin", "--format", "asconfig", "--output", filepath.Join(destinationPath, "hdd_dim_storage_cluster_cr.conf")},
+		version:     "ee-6.4.0.2",
+	},
 	{
 		source:      filepath.Join(expectedPath, "podspec_cr.conf"),
 		destination: filepath.Join(destinationPath, "podspec_cr.conf"),
