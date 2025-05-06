@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/aerospike/asconfig/conf"
+	asConf "github.com/aerospike/aerospike-management-lib/asconfig"
 	"github.com/aerospike/asconfig/conf/metadata"
 
 	"github.com/spf13/cobra"
@@ -126,13 +126,13 @@ func getCommonFlags() *pflag.FlagSet {
 // this function implements the defaults scheme for file formats in asconfig
 // if the --format flag is defined use that, else if the path has an extension
 // use that, else use the default value from --format
-func getConfFileFormat(path string, cmd *cobra.Command) (conf.Format, error) {
+func getConfFileFormat(path string, cmd *cobra.Command) (asConf.Format, error) {
 	ext := filepath.Ext(path)
 	ext = strings.TrimPrefix(ext, ".")
 
 	fmtStr, err := cmd.Flags().GetString("format")
 	if err != nil {
-		return conf.Invalid, err
+		return asConf.Invalid, err
 	}
 
 	logger.Debugf("Processing flag format value=%v", fmtStr)
@@ -145,7 +145,7 @@ func getConfFileFormat(path string, cmd *cobra.Command) (conf.Format, error) {
 
 	fmt, err := ParseFmtString(fmtStr)
 	if err != nil {
-		return conf.Invalid, err
+		return asConf.Invalid, err
 	}
 
 	return fmt, nil
@@ -153,16 +153,16 @@ func getConfFileFormat(path string, cmd *cobra.Command) (conf.Format, error) {
 
 var ErrSilent = errors.New("SILENT")
 
-func ParseFmtString(in string) (f conf.Format, err error) {
+func ParseFmtString(in string) (f asConf.Format, err error) {
 
 	switch strings.ToLower(in) {
 	case "yaml", "yml":
-		f = conf.YAML
+		f = asConf.YAML
 	case "asconfig", "conf", "asconf":
-		f = conf.AsConfig
+		f = asConf.AeroConfig
 	default:
-		f = conf.Invalid
-		err = fmt.Errorf("%w: %s", conf.ErrInvalidFormat, in)
+		f = asConf.Invalid
+		err = fmt.Errorf("%w: %s", asConf.ErrInvalidFormat, in)
 	}
 
 	return

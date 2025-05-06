@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"os"
 
+	asConf "github.com/aerospike/aerospike-management-lib/asconfig"
 	"github.com/aerospike/asconfig/conf"
+
 	"github.com/spf13/cobra"
 )
 
@@ -84,7 +86,7 @@ func newValidateCmd() *cobra.Command {
 
 			logger.Debugf("Processing flag aerospike-version value=%s", version)
 
-			asconfig, err := conf.NewASConfigFromBytes(mgmtLibLogger, fdata, srcFormat)
+			asconfig, err := asConf.NewASConfigFromBytes(mgmtLibLogger, fdata, srcFormat)
 
 			if err != nil {
 				return err

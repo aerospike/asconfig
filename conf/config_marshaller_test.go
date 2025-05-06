@@ -6,13 +6,13 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/aerospike/aerospike-management-lib/asconfig"
+	asConf "github.com/aerospike/aerospike-management-lib/asconfig"
 )
 
 func Test_asconf_MarshalText(t *testing.T) {
 	type fields struct {
 		cfg    ConfHandler
-		outFmt Format
+		outFmt asConf.Format
 	}
 	tests := []struct {
 		name     string
@@ -26,7 +26,7 @@ func Test_asconf_MarshalText(t *testing.T) {
 				cfg: &mockCFG{
 					confText: "namespace ns1 {}\n namespace ns2 {}",
 				},
-				outFmt: AsConfig,
+				outFmt: asConf.AeroConfig,
 			},
 			wantErr:  false,
 			wantText: []byte("namespace ns1 {}\n namespace ns2 {}"),
@@ -35,12 +35,12 @@ func Test_asconf_MarshalText(t *testing.T) {
 			name: "valid yaml format",
 			fields: fields{
 				cfg: &mockCFG{
-					confMap: &asconfig.Conf{
+					confMap: &asConf.Conf{
 						"namespaces": "ns1",
 					},
 					confText: "",
 				},
-				outFmt: YAML,
+				outFmt: asConf.YAML,
 			},
 			wantErr:  false,
 			wantText: []byte("namespaces: ns1\n"),
@@ -48,7 +48,7 @@ func Test_asconf_MarshalText(t *testing.T) {
 		{
 			name: "invalid format",
 			fields: fields{
-				outFmt: Invalid,
+				outFmt: asConf.Invalid,
 			},
 			wantErr:  true,
 			wantText: nil,
