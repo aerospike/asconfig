@@ -2,7 +2,7 @@ module github.com/aerospike/asconfig
 
 go 1.23.0
 
-toolchain go1.23.8
+toolchain go1.24.2
 
 require (
 	github.com/aerospike/aerospike-client-go/v8 v8.2.1
