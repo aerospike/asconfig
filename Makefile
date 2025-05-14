@@ -40,13 +40,13 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 GOLANGCI_LINT ?= $(GOBIN)/golangci-lint
-GOLANGCI_LINT_VERSION ?= v1.60.2
-.PHONY: golanci-lint
-golanci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
+GOLANGCI_LINT_VERSION ?= v1.63.2
+.PHONY: golangci-lint
+golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
 $(GOLANGCI_LINT): $(GOBIN)
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) $(GOLANGCI_LINT_VERSION)
 
-go-lint: golanci-lint ## Run golangci-lint against code.
+go-lint: golangci-lint ## Run golangci-lint against code.
 	$(GOLANGCI_LINT) run
 
 PHONY: install
