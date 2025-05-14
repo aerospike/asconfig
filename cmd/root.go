@@ -13,7 +13,7 @@ import (
 	"github.com/aerospike/asconfig/schema"
 
 	"github.com/aerospike/aerospike-management-lib/asconfig"
-	"github.com/bombsimon/logrusr/v4"
+	logrusr "github.com/bombsimon/logrusr/v4"
 	"github.com/go-logr/logr"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"

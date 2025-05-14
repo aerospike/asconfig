@@ -3,7 +3,7 @@ package conf
 import (
 	"fmt"
 
-	"gopkg.in/yaml.v3"
+	yaml "gopkg.in/yaml.v3"
 
 	asConf "github.com/aerospike/aerospike-management-lib/asconfig"
 )

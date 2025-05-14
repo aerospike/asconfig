@@ -59,7 +59,7 @@ func (cv *ConfigValidator) Validate() (*ValidationErrors, error) {
 		// check the context of each error and use that context to get the name
 		// of the field that is causing the error from the json config
 		for i, verr := range verrs.Errors {
-			context, _ := strings.CutPrefix(verr.Context, "(root).")
+			context, _ := strings.CutPrefix(verr.ValidationErr.Context, "(root).")
 			context, err := jsonToConfigContext(jsonConfig, context)
 			if err != nil {
 				// if we can't associate the error with its
@@ -67,7 +67,7 @@ func (cv *ConfigValidator) Validate() (*ValidationErrors, error) {
 				continue
 			}
 
-			verrs.Errors[i].Context = context
+			verrs.Errors[i].ValidationErr.Context = context
 		}
 
 		return &verrs, errors.Join(ErrConfigValidation, err)
@@ -90,7 +90,7 @@ func (a VErrSlice) Less(i, j int) bool { return strings.Compare(a[i].Error(), a[
 // error is not nil if validation, or any other type of error occurs.
 func (o ValidationErr) Error() string {
 	verrTemplate := "description: %s, error-type: %s"
-	return fmt.Sprintf(verrTemplate, o.Description, o.ErrType)
+	return fmt.Sprintf(verrTemplate, o.ValidationErr.Description, o.ValidationErr.ErrType)
 }
 
 type ValidationErrors struct {
@@ -103,7 +103,7 @@ func (o ValidationErrors) Error() string {
 	sort.Sort(o.Errors)
 
 	for _, err := range o.Errors {
-		errorsByContext[err.Context] = append(errorsByContext[err.Context], err)
+		errorsByContext[err.ValidationErr.Context] = append(errorsByContext[err.ValidationErr.Context], err)
 	}
 
 	contexts := []string{}
@@ -124,7 +124,7 @@ func (o ValidationErrors) Error() string {
 			// filter "Must validate one and only one schema " errors
 			// I have never seen a useful one and they seem to always be
 			// accompanied by another more useful error that will be displayed
-			if err.ErrType == "number_one_of" {
+			if err.ValidationErr.ErrType == "number_one_of" {
 				continue
 			}
 
