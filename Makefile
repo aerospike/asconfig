@@ -40,7 +40,7 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 GOLANGCI_LINT ?= $(GOBIN)/golangci-lint
-GOLANGCI_LINT_VERSION ?= v1.63.2
+GOLANGCI_LINT_VERSION ?= v1.61.0
 .PHONY: golangci-lint
 golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
 $(GOLANGCI_LINT): $(GOBIN)
