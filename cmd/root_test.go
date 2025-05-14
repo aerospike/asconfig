@@ -118,20 +118,24 @@ func (suite *RootTest) TestPersistentPreRunRootInitConfig() {
 	}
 
 	for _, tc := range testCases {
-		testName := tc.configFile
-		suite.Run(testName, func() {
+		suite.T().Run(tc.configFile, func(t *testing.T) {
 			config.Reset()
 
 			rootCmd, flagSet1, flagSet2 := createCmd()
 
 			err := os.WriteFile(tc.configFile, []byte(tc.configFileTxt), 0600)
-			suite.NoError(err, "unable to write %s", tc.configFile)
+			if err != nil {
+				t.Fatalf("unable to write %s: %v", tc.configFile, err)
+			}
 
 			defer os.Remove(tc.configFile)
 
 			rootCmd.SetArgs([]string{"sub", "--config-file", tc.configFile})
 			err = rootCmd.Execute()
-			suite.NoError(err, "unexpected error")
+
+			if err != nil {
+				suite.FailNow("unexpected error", err)
+			}
 
 			str1, err := flagSet1.GetString("str1")
 			suite.NoError(err)
@@ -156,6 +160,7 @@ func (suite *RootTest) TestPersistentPreRunRootInitConfig() {
 			bool2, err := flagSet2.GetBool("bool2")
 			suite.NoError(err)
 			suite.Equal(false, bool2)
+
 		})
 	}
 }
