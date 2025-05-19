@@ -6,7 +6,7 @@ toolchain go1.23.8
 
 require (
 	github.com/aerospike/aerospike-client-go/v8 v8.2.1
-	github.com/aerospike/aerospike-management-lib v1.7.1-0.20250506165321-ed46bec64c19
+	github.com/aerospike/aerospike-management-lib v1.7.1-0.20250519063642-57d55e3eddf8
 	github.com/aerospike/tools-common-go v0.2.1-0.20250130070321-acda09110e14
 	github.com/bombsimon/logrusr/v4 v4.1.0
 	github.com/docker/docker v27.5.0+incompatible
