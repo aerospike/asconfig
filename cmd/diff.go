@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/aerospike/asconfig/conf"
+	asConf "github.com/aerospike/aerospike-management-lib/asconfig"
 
 	"github.com/spf13/cobra"
 )
@@ -87,12 +87,12 @@ func newDiffCmd() *cobra.Command {
 			// won't be marshaling these configs to text so use Invalid output format
 			// TODO decouple output format from asconf, probably pass it as an
 			// arg to marshal text
-			conf1, err := conf.NewASConfigFromBytes(mgmtLibLogger, f1, fmt1)
+			conf1, err := asConf.NewASConfigFromBytes(mgmtLibLogger, f1, fmt1)
 			if err != nil {
 				return err
 			}
 
-			conf2, err := conf.NewASConfigFromBytes(mgmtLibLogger, f2, fmt2)
+			conf2, err := asConf.NewASConfigFromBytes(mgmtLibLogger, f2, fmt2)
 			if err != nil {
 				return err
 			}

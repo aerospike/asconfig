@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/aerospike/aerospike-management-lib/asconfig"
+	asConf "github.com/aerospike/aerospike-management-lib/asconfig"
 	"github.com/aerospike/asconfig/conf"
 	"github.com/aerospike/asconfig/conf/metadata"
 	"github.com/spf13/cobra"
@@ -92,12 +92,12 @@ func newConvertCmd() *cobra.Command {
 
 			logger.Debugf("Processing flag format value=%v", srcFormat)
 
-			var outFmt conf.Format
+			var outFmt asConf.Format
 			switch srcFormat {
-			case conf.AsConfig:
-				outFmt = conf.YAML
-			case conf.YAML:
-				outFmt = conf.AsConfig
+			case asConf.AeroConfig:
+				outFmt = asConf.YAML
+			case asConf.YAML:
+				outFmt = asConf.AeroConfig
 			default:
 				return fmt.Errorf("%w: %s", errInvalidFormat, srcFormat)
 			}
@@ -112,7 +112,7 @@ func newConvertCmd() *cobra.Command {
 			}
 
 			// load
-			asconfig, err := conf.NewASConfigFromBytes(mgmtLibLogger, cfgData, srcFormat)
+			asconfig, err := asConf.NewASConfigFromBytes(mgmtLibLogger, cfgData, srcFormat)
 
 			if err != nil {
 				return err
@@ -161,9 +161,9 @@ func newConvertCmd() *cobra.Command {
 				outFileName = strings.TrimSuffix(outFileName, filepath.Ext(outFileName))
 
 				outputPath = filepath.Join(outputPath, outFileName)
-				if outFmt == conf.YAML {
+				if outFmt == asConf.YAML {
 					outputPath += ".yaml"
-				} else if outFmt == conf.AsConfig {
+				} else if outFmt == asConf.AeroConfig {
 					outputPath += ".conf"
 				} else {
 					return fmt.Errorf("output format unrecognized %w", errInvalidFormat)
@@ -246,7 +246,7 @@ func newConvertCmd() *cobra.Command {
 					return errors.Join(errMissingAerospikeVersion, err)
 				}
 
-				supported, err := asconfig.IsSupportedVersion(av)
+				supported, err := asConf.IsSupportedVersion(av)
 				if err != nil {
 					return errors.Join(errInvalidAerospikeVersion, err)
 				}

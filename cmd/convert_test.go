@@ -6,7 +6,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/aerospike/asconfig/conf"
+	asConf "github.com/aerospike/aerospike-management-lib/asconfig"
 )
 
 type preTestConvert struct {
@@ -51,14 +51,14 @@ var preTestsConvert = []preTestConvert{
 		flags:     []string{"--format", "bad_fmt"},
 		arguments: []string{"./convert_test.go"},
 		expectedErrors: []error{
-			conf.ErrInvalidFormat,
+			asConf.ErrInvalidFormat,
 		},
 	},
 	{
 		flags:     []string{"-F", "bad_fmt"},
 		arguments: []string{"./convert_test.go"},
 		expectedErrors: []error{
-			conf.ErrInvalidFormat,
+			asConf.ErrInvalidFormat,
 		},
 	},
 }

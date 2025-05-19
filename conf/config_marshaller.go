@@ -4,14 +4,16 @@ import (
 	"fmt"
 
 	"gopkg.in/yaml.v3"
+
+	asConf "github.com/aerospike/aerospike-management-lib/asconfig"
 )
 
 type ConfigMarshaller struct {
-	Format Format
+	Format asConf.Format
 	ConfHandler
 }
 
-func NewConfigMarshaller(conf ConfHandler, format Format) ConfigMarshaller {
+func NewConfigMarshaller(conf ConfHandler, format asConf.Format) ConfigMarshaller {
 	return ConfigMarshaller{
 		Format:      format,
 		ConfHandler: conf,
@@ -21,13 +23,13 @@ func NewConfigMarshaller(conf ConfHandler, format Format) ConfigMarshaller {
 func (cm ConfigMarshaller) MarshalText() (text []byte, err error) {
 
 	switch cm.Format {
-	case AsConfig:
+	case asConf.AeroConfig:
 		text = []byte(cm.ToConfFile())
-	case YAML:
+	case asConf.YAML:
 		m := cm.ToMap()
 		text, err = yaml.Marshal(m)
 	default:
-		err = fmt.Errorf("%w %s", ErrInvalidFormat, cm.Format)
+		err = fmt.Errorf("%w %s", asConf.ErrInvalidFormat, cm.Format)
 	}
 
 	return
