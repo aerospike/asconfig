@@ -5,6 +5,7 @@ namespaces:
     - default-read-touch-ttl-pct: 0
       index-type:
         type: shmem
+      max-record-size: 1048576
       name: ns2
       replication-factor: 2
       sets:
