@@ -26,6 +26,7 @@ namespaces:
       index-type:
         type: shmem
       indexes-memory-budget: 2147483648
+      max-record-size: 1048576
       name: ns1
       nsup-period: 2048
       replication-factor: 2
