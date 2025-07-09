@@ -7,7 +7,7 @@ namespaces:
         type: shmem
       name: ns2
       replication-factor: 2
-      apply-ttl-reduction: true
+      apply-ttl-reductions: true
       sets:
         - default-read-touch-ttl-pct: 50
           name: s2
@@ -33,7 +33,7 @@ namespaces:
       disable-mrt-writes: false
       mrt-duration: 60
       strong-consistency: true
-      apply-ttl-reduction: false
+      apply-ttl-reductions: false
       migrate-skip-unreadable: false
       sets:
         - default-read-touch-ttl-pct: -1
