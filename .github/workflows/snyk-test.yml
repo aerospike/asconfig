@@ -18,7 +18,9 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
       - name: Setup snyk CLI
-        uses: snyk/actions/setup@master
+        uses: snyk/actions/setup@cdb760004ba9ea4d525f2e043745dfe85bb9077e
+        with: 
+          snyk-version: v1.1297.3
       - name: Run Snyk to check for vulnerabilities and record dependencies
         run: |
           snyk test --print-deps | sed -r "s/\x1B\[([0-9]{1,3}((;[0-9]{1,3})*)?)?[m|K]//g" | tee asconfig-snyk.txt
