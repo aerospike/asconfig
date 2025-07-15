@@ -153,12 +153,7 @@ func valuesEqual(v1, v2 any) bool {
 		return slicesEqual(v1, v2)
 	}
 
-	// First try direct comparison
-	if v1 == v2 {
-		return true
-	}
-
-	// Convert both to strings and compare
+	// Convert both to strings and compare first
 	str1 := fmt.Sprintf("%v", v1)
 	str2 := fmt.Sprintf("%v", v2)
 
@@ -301,6 +296,8 @@ func runServerDiff(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+
+	logger.Debugf("Generating config from Aerospike node")
 
 	// Generate server config using existing generate functionality
 	asCommonConfig := aerospikeFlags.NewAerospikeConfig()
