@@ -4,12 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 
 	asConf "github.com/aerospike/aerospike-management-lib/asconfig"
 	"github.com/aerospike/aerospike-management-lib/info"
+	"github.com/aerospike/asconfig/conf"
 	"github.com/aerospike/tools-common-go/config"
 	"github.com/aerospike/tools-common-go/flags"
 
@@ -133,12 +134,67 @@ func diffFlatMaps(m1 map[string]any, m2 map[string]any) []string {
 			continue
 		}
 
-		if !reflect.DeepEqual(v1, v2) {
+		if !valuesEqual(v1, v2) {
+			// Debug: print types and values for investigation
+			logger.Debugf("Diff found for key '%s': local=%v (type=%T), server=%v (type=%T)", k, v1, v1, v2, v2)
 			res = append(res, fmt.Sprintf("%s:\n\t<: %v\n\t>: %v\n", k, v1, v2))
 		}
 	}
 
 	return res
+}
+
+// valuesEqual compares two values with type-aware comparison
+// This handles cases where values might be the same but different types
+// (e.g., int vs string, int vs int64, slices, etc.)
+func valuesEqual(v1, v2 any) bool {
+	// Check if either value is a slice first (to avoid panic on direct comparison)
+	if isSlice(v1) || isSlice(v2) {
+		return slicesEqual(v1, v2)
+	}
+
+	// First try direct comparison
+	if v1 == v2 {
+		return true
+	}
+
+	// Convert both to strings and compare
+	str1 := fmt.Sprintf("%v", v1)
+	str2 := fmt.Sprintf("%v", v2)
+
+	if str1 == str2 {
+		return true
+	}
+
+	// Try numeric comparison - convert both to numbers if possible
+	if num1, err1 := strconv.ParseFloat(str1, 64); err1 == nil {
+		if num2, err2 := strconv.ParseFloat(str2, 64); err2 == nil {
+			return num1 == num2
+		}
+	}
+
+	// Try boolean comparison - convert both to booleans if possible
+	if bool1, err1 := strconv.ParseBool(str1); err1 == nil {
+		if bool2, err2 := strconv.ParseBool(str2); err2 == nil {
+			return bool1 == bool2
+		}
+	}
+
+	return false
+}
+
+// isSlice checks if a value is a slice
+func isSlice(v any) bool {
+	str := fmt.Sprintf("%T", v)
+	return strings.HasPrefix(str, "[]")
+}
+
+// slicesEqual compares two values that might be slices
+func slicesEqual(v1, v2 any) bool {
+	// Convert both to string representations for comparison
+	str1 := fmt.Sprintf("%v", v1)
+	str2 := fmt.Sprintf("%v", v2)
+	return str1 == str2
 }
 
 // runFileDiff handles the original file-to-file diff functionality
@@ -264,12 +320,26 @@ func runServerDiff(cmd *cobra.Command, args []string) error {
 		return errors.Join(fmt.Errorf("unable to generate config from server"), err)
 	}
 
-	serverConf, err := asConf.NewMapAsConfig(mgmtLibLogger, generatedConf.Conf)
+	// Convert server config to the same format as local file to ensure same parsing path
+	serverConfHandler, err := asConf.NewMapAsConfig(mgmtLibLogger, generatedConf.Conf)
 	if err != nil {
 		return errors.Join(fmt.Errorf("unable to parse the generated server conf"), err)
 	}
 
-	// Get flattened config maps
+	// Marshal server config to bytes in the same format as local file
+	serverConfigMarshaller := conf.NewConfigMarshaller(serverConfHandler, localFormat)
+	serverConfigBytes, err := serverConfigMarshaller.MarshalText()
+	if err != nil {
+		return errors.Join(fmt.Errorf("unable to marshal server config"), err)
+	}
+
+	// Parse server config bytes using the same path as local file
+	serverConf, err := asConf.NewASConfigFromBytes(mgmtLibLogger, serverConfigBytes, localFormat)
+	if err != nil {
+		return errors.Join(fmt.Errorf("unable to parse server config bytes"), err)
+	}
+
+	// Get flattened config maps - now both should have the same data types
 	localMap := localConf.GetFlatMap()
 	serverMap := serverConf.GetFlatMap()
 
