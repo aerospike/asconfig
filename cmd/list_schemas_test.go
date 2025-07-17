@@ -19,13 +19,13 @@ func TestListSchemasCmd(t *testing.T) {
 			flags:       map[string]string{},
 			expectError: false,
 			checkOutput: func(output string) bool {
-				// Simple format should have versions separated by spaces
+				// Simple format should have versions separated by newlines
 				return strings.Contains(output, "6.4.0") && strings.Contains(output, "7.0.0")
 			},
 		},
 		{
 			name:        "table format",
-			flags:       map[string]string{"format": "table"},
+			flags:       map[string]string{"table": "true"},
 			expectError: false,
 			checkOutput: func(output string) bool {
 				// Table format should contain headers and numbered list
@@ -33,15 +33,6 @@ func TestListSchemasCmd(t *testing.T) {
 					strings.Contains(output, "Total:") &&
 					strings.Contains(output, "6.4.0") &&
 					strings.Contains(output, "7.0.0")
-			},
-		},
-		{
-			name:        "invalid format",
-			flags:       map[string]string{"format": "invalid"},
-			expectError: false, // Command should still run but use default behavior
-			checkOutput: func(output string) bool {
-				// Should default to simple format
-				return strings.Contains(output, "6.4.0") && strings.Contains(output, "7.0.0")
 			},
 		},
 	}

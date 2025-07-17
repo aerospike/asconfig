@@ -20,7 +20,8 @@ func newListSchemasCmd() *cobra.Command {
 		Use:     "list-schemas",
 		Short:   "List available Aerospike schema versions.",
 		Long:    `List all available Aerospike schema versions that can be used with the schema-diff command.`,
-		Example: `  asconfig list-schemas`,
+		Example: `  asconfig list-schemas
+  asconfig list-schemas --table`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger.Debug("Running list-schemas command")
 
@@ -42,10 +43,10 @@ func newListSchemasCmd() *cobra.Command {
 			sort.Strings(versions)
 
 			// Get output format
-			format, _ := cmd.Flags().GetString("format")
+			table, _ := cmd.Flags().GetBool("table")
 
 			// Display versions
-			if format == "table" {
+			if table {
 				cmd.Printf("Available Aerospike Schema Versions:\n")
 				cmd.Printf("====================================\n")
 				for i, version := range versions {
@@ -61,7 +62,7 @@ func newListSchemasCmd() *cobra.Command {
 		},
 	}
 
-	res.Flags().StringP("format", "f", "simple", "Output format: 'simple' (space-separated) or 'table' (numbered list)")
+	res.Flags().BoolP("table", "t", false, "Display output in table format with numbering")
 
 	return res
 }
