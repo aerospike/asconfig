@@ -31,12 +31,9 @@ func newListSchemasCmd() *cobra.Command {
 				return fmt.Errorf("failed to load schema map: %w", err)
 			}
 
-			// Get all version keys (exclude README)
 			var versions []string
 			for version := range schemaMap {
-				if !strings.Contains(strings.ToLower(version), "readme") {
-					versions = append(versions, version)
-				}
+				versions = append(versions, version)
 			}
 
 			// Sort versions

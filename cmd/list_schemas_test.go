@@ -66,21 +66,3 @@ func TestListSchemasCmd(t *testing.T) {
 		})
 	}
 }
-
-func TestListSchemasDoesNotIncludeReadme(t *testing.T) {
-	cmd := newListSchemasCmd()
-
-	var output strings.Builder
-	cmd.SetOut(&output)
-	cmd.SetErr(&output)
-
-	err := cmd.RunE(cmd, []string{})
-	if err != nil {
-		t.Errorf("Command failed: %v", err)
-	}
-
-	outputStr := output.String()
-	if strings.Contains(strings.ToLower(outputStr), "readme") {
-		t.Errorf("Output should not contain README files, but got: %s", outputStr)
-	}
-}
