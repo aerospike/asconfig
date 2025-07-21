@@ -19,7 +19,7 @@ func newListSchemasCmd() *cobra.Command {
 	res := &cobra.Command{
 		Use:   "list-schemas",
 		Short: "List available Aerospike schema versions.",
-		Long:  `List all available Aerospike schema versions that can be used with the schema-diff command.`,
+		Long:  `List all available Aerospike schema versions that can be used with the diff-schemas command.`,
 		Example: `  asconfig list-schemas
   asconfig list-schemas --table`,
 		RunE: func(cmd *cobra.Command, args []string) error {
