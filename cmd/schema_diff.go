@@ -108,11 +108,10 @@ func newSchemaDiffCmd() *cobra.Command {
 
 			// Get flags
 			verbose, _ := cmd.Flags().GetBool("verbose")
-			showDeprecated, _ := cmd.Flags().GetBool("show-deprecated")
 			filterPath, _ := cmd.Flags().GetString("filter-path")
 
 			// Compare schemas
-			diffs := compareSchemasDetailed(props1, props2, verbose, showDeprecated, filterPath)
+			diffs := compareSchemasDetailed(props1, props2, verbose, filterPath)
 
 			// Output results
 			if len(diffs) == 0 {
@@ -132,7 +131,6 @@ func newSchemaDiffCmd() *cobra.Command {
 	}
 
 	res.Flags().BoolP("verbose", "v", false, "Show detailed information about property changes (type, default values, etc.)")
-	res.Flags().BoolP("show-deprecated", "D", false, "Show deprecated properties")
 	res.Flags().StringP("filter-path", "f", "", "Filter results to only show properties under the specified path (e.g., 'service', 'namespaces')")
 
 	return res
@@ -160,7 +158,6 @@ type PropertyInfo struct {
 	Minimum        interface{}
 	Maximum        interface{}
 	Required       bool
-	Deprecated     bool
 }
 
 // extractPropertiesRecursive recursively extracts properties from nested objects
@@ -189,9 +186,6 @@ func extractPropertiesRecursive(props map[string]interface{}, prefix string, res
 			}
 			if ent, ok := propMap["enterpriseOnly"].(bool); ok {
 				info.EnterpriseOnly = ent
-			}
-			if dep, ok := propMap["deprecated"].(bool); ok {
-				info.Deprecated = dep
 			}
 			if enum, ok := propMap["enum"].([]interface{}); ok {
 				info.Enum = enum
@@ -240,7 +234,7 @@ func extractPropertiesRecursive(props map[string]interface{}, prefix string, res
 }
 
 // compareSchemasDetailed compares two sets of schema properties and returns detailed differences
-func compareSchemasDetailed(props1, props2 map[string]PropertyInfo, showDetails, showDeprecated bool, filterPath string) []string {
+func compareSchemasDetailed(props1, props2 map[string]PropertyInfo, showDetails bool, filterPath string) []string {
 	var diffs []string
 
 	// Get all unique keys
@@ -273,9 +267,6 @@ func compareSchemasDetailed(props1, props2 map[string]PropertyInfo, showDetails,
 		if !exists1 && exists2 {
 			// Property was added
 			added++
-			if !showDeprecated && prop2.Deprecated {
-				continue
-			}
 
 			diff := fmt.Sprintf("+ %s", key)
 			if showDetails {
@@ -286,9 +277,6 @@ func compareSchemasDetailed(props1, props2 map[string]PropertyInfo, showDetails,
 				if prop2.EnterpriseOnly {
 					diff += ", enterprise-only"
 				}
-				if prop2.Deprecated {
-					diff += ", deprecated"
-				}
 				diff += ")"
 			}
 			diffs = append(diffs, diff+"\n")
@@ -296,9 +284,6 @@ func compareSchemasDetailed(props1, props2 map[string]PropertyInfo, showDetails,
 		} else if exists1 && !exists2 {
 			// Property was removed
 			removed++
-			if !showDeprecated && prop1.Deprecated {
-				continue
-			}
 
 			diff := fmt.Sprintf("- %s", key)
 			if showDetails {
@@ -309,9 +294,6 @@ func compareSchemasDetailed(props1, props2 map[string]PropertyInfo, showDetails,
 				if prop1.EnterpriseOnly {
 					diff += ", enterprise-only"
 				}
-				if prop1.Deprecated {
-					diff += ", deprecated"
-				}
 				diff += ")"
 			}
 			diffs = append(diffs, diff+"\n")
@@ -320,9 +302,6 @@ func compareSchemasDetailed(props1, props2 map[string]PropertyInfo, showDetails,
 			// Property exists in both, check for changes
 			if !reflect.DeepEqual(prop1, prop2) {
 				changed++
-				if !showDeprecated && (prop1.Deprecated || prop2.Deprecated) {
-					continue
-				}
 
 				diff := fmt.Sprintf("~ %s", key)
 				if showDetails {
@@ -338,9 +317,6 @@ func compareSchemasDetailed(props1, props2 map[string]PropertyInfo, showDetails,
 					}
 					if prop1.EnterpriseOnly != prop2.EnterpriseOnly {
 						changes = append(changes, fmt.Sprintf("enterprise-only: %v → %v", prop1.EnterpriseOnly, prop2.EnterpriseOnly))
-					}
-					if prop1.Deprecated != prop2.Deprecated {
-						changes = append(changes, fmt.Sprintf("deprecated: %v → %v", prop1.Deprecated, prop2.Deprecated))
 					}
 					if len(changes) > 0 {
 						diff += fmt.Sprintf(" (%s)", strings.Join(changes, ", "))

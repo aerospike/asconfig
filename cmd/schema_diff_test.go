@@ -51,17 +51,12 @@ var testSchemaDiffArgs = []runTestSchemaDiff{
 		expectError: false, // valid with details
 	},
 	{
-		flags:       []string{"--show-deprecated"},
-		arguments:   []string{"6.4.0", "7.0.0"},
-		expectError: false, // valid with deprecated
-	},
-	{
 		flags:       []string{"--filter-path", "service"},
 		arguments:   []string{"6.4.0", "7.0.0"},
 		expectError: false, // valid with filter
 	},
 	{
-		flags:       []string{"-d", "-D", "-f", "namespaces"},
+		flags:       []string{"-v", "-f", "namespaces"},
 		arguments:   []string{"6.4.0", "7.0.0"},
 		expectError: false, // valid with all flags
 	},
@@ -76,8 +71,6 @@ func TestRunESchemaDiff(t *testing.T) {
 			for j := 0; j < len(test.flags); j++ {
 				if test.flags[j] == "--verbose" || test.flags[j] == "-v" {
 					cmd.Flags().Set("verbose", "true")
-				} else if test.flags[j] == "--show-deprecated" || test.flags[j] == "-D" {
-					cmd.Flags().Set("show-deprecated", "true")
 				} else if test.flags[j] == "--filter-path" || test.flags[j] == "-f" {
 					if j+1 < len(test.flags) {
 						cmd.Flags().Set("filter-path", test.flags[j+1])
@@ -418,7 +411,7 @@ func TestCompareSchemasDetailed(t *testing.T) {
 		},
 	}
 
-	diffs := compareSchemasDetailed(props1, props2, false, false, "")
+	diffs := compareSchemasDetailed(props1, props2, false, "")
 
 	if len(diffs) == 0 {
 		t.Error("Expected differences to be found")
@@ -448,7 +441,7 @@ func TestCompareSchemasDetailed(t *testing.T) {
 	}
 
 	// Test with filter
-	filteredDiffs := compareSchemasDetailed(props1, props2, false, false, "service.cluster")
+	filteredDiffs := compareSchemasDetailed(props1, props2, false, "service.cluster")
 	filteredText := strings.Join(filteredDiffs, "")
 
 	if strings.Contains(filteredText, "service.new-prop") {
@@ -456,7 +449,7 @@ func TestCompareSchemasDetailed(t *testing.T) {
 	}
 
 	// Test with namespace filter
-	namespaceDiffs := compareSchemasDetailed(props1, props2, false, false, "namespaces")
+	namespaceDiffs := compareSchemasDetailed(props1, props2, false, "namespaces")
 	namespaceText := strings.Join(namespaceDiffs, "")
 
 	if !strings.Contains(namespaceText, "namespaces.items.new-namespace-prop") {
@@ -493,7 +486,7 @@ func TestCompareSchemasDetailedWithDetailedOutput(t *testing.T) {
 		},
 	}
 
-	diffs := compareSchemasDetailed(props1, props2, true, false, "")
+	diffs := compareSchemasDetailed(props1, props2, true, "")
 	diffText := strings.Join(diffs, "")
 
 	// Check that detailed output includes type changes
@@ -513,56 +506,6 @@ func TestCompareSchemasDetailedWithDetailedOutput(t *testing.T) {
 	// Check that detailed output includes enterprise-only changes
 	if !strings.Contains(diffText, "enterprise-only: false → true") {
 		t.Error("Expected detailed output to show enterprise-only change")
-	}
-}
-
-func TestCompareSchemasDetailedWithDeprecated(t *testing.T) {
-	props1 := map[string]PropertyInfo{
-		"service.old-prop": {
-			Type:       "string",
-			Default:    "old",
-			Deprecated: true,
-		},
-		"service.normal-prop": {
-			Type:    "string",
-			Default: "normal",
-		},
-	}
-
-	props2 := map[string]PropertyInfo{
-		"service.normal-prop": {
-			Type:    "string",
-			Default: "normal",
-		},
-		"service.new-prop": {
-			Type:       "string",
-			Default:    "new",
-			Deprecated: true,
-		},
-	}
-
-	// Test without showing deprecated
-	diffs := compareSchemasDetailed(props1, props2, false, false, "")
-	diffText := strings.Join(diffs, "")
-
-	if strings.Contains(diffText, "service.old-prop") {
-		t.Error("Expected deprecated properties to be hidden by default")
-	}
-
-	if strings.Contains(diffText, "service.new-prop") {
-		t.Error("Expected deprecated properties to be hidden by default")
-	}
-
-	// Test with showing deprecated
-	diffs = compareSchemasDetailed(props1, props2, false, true, "")
-	diffText = strings.Join(diffs, "")
-
-	if !strings.Contains(diffText, "- service.old-prop") {
-		t.Error("Expected deprecated removed properties to be shown when flag is set")
-	}
-
-	if !strings.Contains(diffText, "+ service.new-prop") {
-		t.Error("Expected deprecated added properties to be shown when flag is set")
 	}
 }
 
@@ -686,7 +629,7 @@ func TestRealWorldSchemaComparison(t *testing.T) {
 	props1 := extractConfigProperties(schema1)
 	props2 := extractConfigProperties(schema2)
 
-	diffs := compareSchemasDetailed(props1, props2, false, false, "namespaces")
+	diffs := compareSchemasDetailed(props1, props2, false, "namespaces")
 
 	if len(diffs) == 0 {
 		t.Error("Expected to find differences in namespace storage-engine")
