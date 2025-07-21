@@ -339,6 +339,10 @@ func runServerDiff(cmd *cobra.Command, args []string) error {
 		return errDiffServerTooManyArgs
 	}
 
+	logger.Warning(
+		"This feature is currently in beta. Use at your own risk and please report any issue to support.",
+	)
+
 	localPath := args[0]
 	logger.Debugf("Comparing local file %s against server", localPath)
 
@@ -369,7 +373,7 @@ func runServerDiff(cmd *cobra.Command, args []string) error {
 		return errors.Join(fmt.Errorf("unable to create client policy"), err)
 	}
 
-	logger.Infof("Retrieving Aerospike configuration from server")
+	logger.Debugf("Retrieving Aerospike configuration from server")
 
 	asHosts := asCommonConfig.NewHosts()
 	asinfo := info.NewAsInfo(mgmtLibLogger, asHosts[0], asPolicy)
