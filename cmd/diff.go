@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -178,18 +179,79 @@ func valuesEqual(v1, v2 any) bool {
 	return false
 }
 
-// isSlice checks if a value is a slice
+// isSlice checks if a value is a slice using reflection
 func isSlice(v any) bool {
-	str := fmt.Sprintf("%T", v)
-	return strings.HasPrefix(str, "[]")
+	if v == nil {
+		return false
+	}
+	return reflect.ValueOf(v).Kind() == reflect.Slice
 }
 
-// slicesEqual compares two values that might be slices
+// slicesEqual compares two values that might be slices in an order-agnostic way
+// Uses frequency counting for O(n) complexity
 func slicesEqual(v1, v2 any) bool {
-	// Convert both to string representations for comparison
-	str1 := fmt.Sprintf("%v", v1)
-	str2 := fmt.Sprintf("%v", v2)
-	return str1 == str2
+	// Convert both to string slice representations
+	slice1 := convertToStringSlice(v1)
+	slice2 := convertToStringSlice(v2)
+
+	// If lengths are different, they can't be equal
+	if len(slice1) != len(slice2) {
+		return false
+	}
+
+	// Use frequency map for O(n) comparison
+	freq := make(map[string]int)
+
+	// Count occurrences in first slice
+	for _, elem := range slice1 {
+		freq[elem]++
+	}
+
+	// Subtract occurrences from second slice
+	for _, elem := range slice2 {
+		freq[elem]--
+		if freq[elem] < 0 {
+			return false // More occurrences in slice2 than slice1
+		}
+	}
+
+	// Check if all frequencies are zero
+	for _, count := range freq {
+		if count != 0 {
+			return false
+		}
+	}
+
+	return true
+}
+
+// convertToStringSlice converts any slice type to a slice of strings for comparison
+// Uses reflection for efficient direct access to slice elements
+func convertToStringSlice(v any) []string {
+	if v == nil {
+		return []string{}
+	}
+
+	// Use reflection to check if it's actually a slice
+	rv := reflect.ValueOf(v)
+	if rv.Kind() != reflect.Slice {
+		// Not a slice, return as single element
+		return []string{fmt.Sprintf("%v", v)}
+	}
+
+	// Pre-allocate slice with known length for efficiency
+	length := rv.Len()
+	if length == 0 {
+		return []string{}
+	}
+
+	result := make([]string, length)
+	for i := 0; i < length; i++ {
+		elem := rv.Index(i)
+		result[i] = fmt.Sprintf("%v", elem.Interface())
+	}
+
+	return result
 }
 
 // runFileDiff handles the original file-to-file diff functionality

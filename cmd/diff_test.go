@@ -749,3 +749,71 @@ func TestSliceComparisonNoPanic(t *testing.T) {
 		})
 	}
 }
+
+// Test that validates order-agnostic slice comparison
+func TestSlicesEqualOrderAgnostic(t *testing.T) {
+	testCases := []struct {
+		name     string
+		v1       any
+		v2       any
+		expected bool
+	}{
+		{
+			name:     "same order string slices",
+			v1:       []string{"a", "b", "c"},
+			v2:       []string{"a", "b", "c"},
+			expected: true,
+		},
+		{
+			name:     "different order string slices",
+			v1:       []string{"a", "b", "c"},
+			v2:       []string{"c", "a", "b"},
+			expected: true,
+		},
+		{
+			name:     "different order int slices",
+			v1:       []int{1, 2, 3},
+			v2:       []int{3, 1, 2},
+			expected: true,
+		},
+		{
+			name:     "different order interface slices",
+			v1:       []interface{}{"x", "y", "z"},
+			v2:       []interface{}{"z", "x", "y"},
+			expected: true,
+		},
+		{
+			name:     "different elements",
+			v1:       []string{"a", "b", "c"},
+			v2:       []string{"a", "b", "d"},
+			expected: false,
+		},
+		{
+			name:     "different lengths",
+			v1:       []string{"a", "b"},
+			v2:       []string{"a", "b", "c"},
+			expected: false,
+		},
+		{
+			name:     "empty slices",
+			v1:       []string{},
+			v2:       []string{},
+			expected: true,
+		},
+		{
+			name:     "mixed types same values",
+			v1:       []string{"1", "2", "3"},
+			v2:       []int{3, 1, 2},
+			expected: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := slicesEqual(tc.v1, tc.v2)
+			if result != tc.expected {
+				t.Errorf("slicesEqual(%v, %v) = %v, expected %v", tc.v1, tc.v2, result, tc.expected)
+			}
+		})
+	}
+}
