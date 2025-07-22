@@ -6,7 +6,6 @@ import (
 	"os"
 	"reflect"
 	"sort"
-	"strconv"
 	"strings"
 
 	asConf "github.com/aerospike/aerospike-management-lib/asconfig"
@@ -47,211 +46,47 @@ func newDiffCmd() *cobra.Command {
 				It is used on two files of the same format from any format
 				supported by the asconfig tool, e.g. yaml or Aerospike config.
 				Schema validation is not performed on either file. The file names must end with
-				extensions signifying their formats, e.g. .conf or .yaml, or --format must be used.
-				
-				When using --server flag, compare a local configuration file against
-				the live configuration from a running Aerospike server. In this mode,
-				only one config file path is required as an argument.
-				
-				Examples:
-				  # Compare two local configuration files
-				  asconfig diff aerospike1.yaml aerospike2.yaml
-				  
-				  # Compare local config against running server
-				  asconfig diff --server -h 127.0.0.1 -U admin -P admin aerospike.yaml
-				  
-				  # Compare local config against server with TLS
-				  asconfig diff -s -h aerospike.example.com --tls-enable aerospike.conf`,
+				extensions signifying their formats, e.g. .conf or .yaml, or --format must be used.`,
+		Example: `  # Compare two local configuration files
+				  asconfig diff aerospike1.yaml aerospike2.yaml`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger.Debug("Running diff command")
-
-			isServerDiff, err := cmd.Flags().GetBool("server")
-			if err != nil {
-				return err
-			}
-
-			if isServerDiff {
-				return runServerDiff(cmd, args)
-			}
-
 			return runFileDiff(cmd, args)
 		},
 	}
 
-	res.Flags().StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
-	res.Flags().BoolP("server", "s", false, "Compare local config file against a running Aerospike server configuration.")
+	res.Version = VERSION
+	res.PersistentFlags().StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
+
+	// Add server diff command
+	res.AddCommand(newDiffServerCmd())
+
+	return res
+}
+
+func newDiffServerCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "server [flags] <path/to/config>",
+		Short: "Compare a local config file against a running Aerospike server.",
+		Long: `Compare a local configuration file against the live configuration from a running Aerospike server. In this mode,
+only one config file path is required as an argument.`,
+		Example: `  # Compare a local .conf file against a running server
+  asconfig diff server -h 127.0.0.1 -U admin -P admin aerospike.conf
+  
+  # Compare a local .yaml file against a running server
+  asconfig diff server --format yaml -h 127.0.0.1 -U admin -P admin aerospike.yaml`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			logger.Debug("Running server diff command")
+			return runServerDiff(cmd, args)
+		},
+	}
 
 	// Add Aerospike connection flags when server mode is enabled
 	asFlagSet := aerospikeFlags.NewFlagSet(flags.DefaultWrapHelpString)
-	res.Flags().AddFlagSet(asFlagSet)
+	cmd.Flags().AddFlagSet(asFlagSet)
 	config.BindPFlags(asFlagSet, "cluster")
 
-	return res
-}
-
-// diffFlatMaps reports differences between flattened config maps
-// this only works for maps 1 layer deep as produced by the management
-// lib's flattenConf function
-func diffFlatMaps(m1 map[string]any, m2 map[string]any) []string {
-	var res []string
-
-	allKeys := map[string]struct{}{}
-	for k := range m1 {
-		allKeys[k] = struct{}{}
-	}
-
-	for k := range m2 {
-		allKeys[k] = struct{}{}
-	}
-
-	var keysList []string
-	for k := range allKeys {
-		keysList = append(keysList, k)
-	}
-	sort.Strings(keysList)
-
-	for _, k := range keysList {
-		// "index" is a metadata key added by
-		// the management lib to these flat maps
-		// ignore it
-		if strings.HasSuffix(k, ".<index>") {
-			continue
-		}
-
-		v1, ok := m1[k]
-		if !ok {
-			res = append(res, fmt.Sprintf(">: %s\n", k))
-			continue
-		}
-
-		v2, ok := m2[k]
-		if !ok {
-			res = append(res, fmt.Sprintf("<: %s\n", k))
-			continue
-		}
-
-		// #TOOLS-2979 if part of logging section and is valid logging enum when compared "info" == "INFO"
-		if strings.HasPrefix(k, "logging.") && isValidLoggingEnumCompare(v1, v2) {
-			continue
-		}
-
-		if !valuesEqual(v1, v2) {
-			// Debug: print types and values for investigation
-			logger.Debugf("Diff found for key '%s': local=%v (type=%T), server=%v (type=%T)", k, v1, v1, v2, v2)
-			res = append(res, fmt.Sprintf("%s:\n\t<: %v\n\t>: %v\n", k, v1, v2))
-		}
-	}
-
-	return res
-}
-
-// valuesEqual compares two values with type-aware comparison
-// This handles cases where values might be the same but different types
-// (e.g., int vs string, int vs int64, slices, etc.)
-func valuesEqual(v1, v2 any) bool {
-	// Check if either value is a slice first (to avoid panic on direct comparison)
-	if isSlice(v1) || isSlice(v2) {
-		return slicesEqual(v1, v2)
-	}
-
-	// Convert both to strings and compare first
-	str1 := fmt.Sprintf("%v", v1)
-	str2 := fmt.Sprintf("%v", v2)
-
-	if str1 == str2 {
-		return true
-	}
-
-	// Try numeric comparison - convert both to numbers if possible
-	if num1, err1 := strconv.ParseFloat(str1, 64); err1 == nil {
-		if num2, err2 := strconv.ParseFloat(str2, 64); err2 == nil {
-			return num1 == num2
-		}
-	}
-
-	// Try boolean comparison - convert both to booleans if possible
-	if bool1, err1 := strconv.ParseBool(str1); err1 == nil {
-		if bool2, err2 := strconv.ParseBool(str2); err2 == nil {
-			return bool1 == bool2
-		}
-	}
-
-	return false
-}
-
-// isSlice checks if a value is a slice using reflection
-func isSlice(v any) bool {
-	if v == nil {
-		return false
-	}
-	return reflect.ValueOf(v).Kind() == reflect.Slice
-}
-
-// slicesEqual compares two values that might be slices in an order-agnostic way
-// Uses frequency counting for O(n) complexity
-func slicesEqual(v1, v2 any) bool {
-	// Convert both to string slice representations
-	slice1 := convertToStringSlice(v1)
-	slice2 := convertToStringSlice(v2)
-
-	// If lengths are different, they can't be equal
-	if len(slice1) != len(slice2) {
-		return false
-	}
-
-	// Use frequency map for O(n) comparison
-	freq := make(map[string]int)
-
-	// Count occurrences in first slice
-	for _, elem := range slice1 {
-		freq[elem]++
-	}
-
-	// Subtract occurrences from second slice
-	for _, elem := range slice2 {
-		freq[elem]--
-		if freq[elem] < 0 {
-			return false // More occurrences in slice2 than slice1
-		}
-	}
-
-	// Check if all frequencies are zero
-	for _, count := range freq {
-		if count != 0 {
-			return false
-		}
-	}
-
-	return true
-}
-
-// convertToStringSlice converts any slice type to a slice of strings for comparison
-// Uses reflection for efficient direct access to slice elements
-func convertToStringSlice(v any) []string {
-	if v == nil {
-		return []string{}
-	}
-
-	// Use reflection to check if it's actually a slice
-	rv := reflect.ValueOf(v)
-	if rv.Kind() != reflect.Slice {
-		// Not a slice, return as single element
-		return []string{fmt.Sprintf("%v", v)}
-	}
-
-	// Pre-allocate slice with known length for efficiency
-	length := rv.Len()
-	if length == 0 {
-		return []string{}
-	}
-
-	result := make([]string, length)
-	for i := 0; i < length; i++ {
-		elem := rv.Index(i)
-		result[i] = fmt.Sprintf("%v", elem.Interface())
-	}
-
-	return result
+	return cmd
 }
 
 // runFileDiff handles the original file-to-file diff functionality
@@ -418,4 +253,60 @@ func runServerDiff(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+// diffFlatMaps reports differences between flattened config maps
+// this only works for maps 1 layer deep as produced by the management
+// lib's flattenConf function
+func diffFlatMaps(m1 map[string]any, m2 map[string]any) []string {
+	var res []string
+
+	allKeys := map[string]struct{}{}
+	for k := range m1 {
+		allKeys[k] = struct{}{}
+	}
+
+	for k := range m2 {
+		allKeys[k] = struct{}{}
+	}
+
+	var keysList []string
+	for k := range allKeys {
+		keysList = append(keysList, k)
+	}
+	sort.Strings(keysList)
+
+	for _, k := range keysList {
+		// "index" is a metadata key added by
+		// the management lib to these flat maps
+		// ignore it
+		if strings.HasSuffix(k, ".<index>") {
+			continue
+		}
+
+		v1, ok := m1[k]
+		if !ok {
+			res = append(res, fmt.Sprintf(">: %s\n", k))
+			continue
+		}
+
+		v2, ok := m2[k]
+		if !ok {
+			res = append(res, fmt.Sprintf("<: %s\n", k))
+			continue
+		}
+
+		// #TOOLS-2979 if part of logging section and is valid logging enum when compared "info" == "INFO"
+		if strings.HasPrefix(k, "logging.") && isValidLoggingEnumCompare(v1, v2) {
+			continue
+		}
+
+		if !reflect.DeepEqual(v1, v2) {
+			// Debug: print types and values for investigation
+			logger.Debugf("Diff found for key '%s': local=%v (type=%T), server=%v (type=%T)", k, v1, v1, v2, v2)
+			res = append(res, fmt.Sprintf("%s:\n\t<: %v\n\t>: %v\n", k, v1, v2))
+		}
+	}
+
+	return res
 }
