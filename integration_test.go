@@ -882,7 +882,8 @@ func TestDiff(t *testing.T) {
 			t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf.path1, err)
 		}
 
-		if string(output) != tf.expectedResult {
+		// added warning for the diff command
+		if !strings.Contains(string(output), tf.expectedResult) {
 			t.Errorf("\nTESTCASE: %+v\nACTUAL: %s\nEXPECTED: %s", tf.path1, output, tf.expectedResult)
 		}
 
