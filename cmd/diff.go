@@ -56,8 +56,7 @@ func newDiffCmd() *cobra.Command {
 	}
 
 	res.Version = VERSION
-	// --format is used by both file and server diff, so it's persistent on the parent
-	res.PersistentFlags().StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
+	res.Flags().StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
 
 	// Add server diff command
 	res.AddCommand(newDiffServerCmd())
@@ -79,6 +78,10 @@ func newDiffServerCmd() *cobra.Command {
 			return runServerDiff(cmd, args)
 		},
 	}
+
+	// Add format flag but hide it from help output as it will be automatically detected
+	cmd.Flags().StringP("format", "F", "conf", "")
+	cmd.Flags().MarkHidden("format")
 
 	// Add Aerospike connection flags when server mode is enabled
 	asFlagSet := aerospikeFlags.NewFlagSet(flags.DefaultWrapHelpString)
@@ -185,6 +188,8 @@ func runServerDiff(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+
+	logger.Debugf("Local file format is %v", localFormat)
 
 	localFile, err := os.ReadFile(localPath)
 	if err != nil {
