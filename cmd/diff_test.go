@@ -361,3 +361,71 @@ func TestServerDiffArgValidation(t *testing.T) {
 		})
 	}
 }
+
+func TestDiffFilesAndLegacyCommands(t *testing.T) {
+	rootCmd := newRootCmd()
+	rootCmd.AddCommand(newDiffCmd())
+
+	testCases := []struct {
+		name        string
+		command     string
+		expectError bool
+	}{
+		{
+			name:        "legacy diff with two valid files (identical)",
+			command:     "diff ../testdata/sources/all_flash_cluster_cr.yaml ../testdata/sources/all_flash_cluster_cr.yaml",
+			expectError: false,
+		},
+		{
+			name:        "diff files with two valid files (identical)",
+			command:     "diff files ../testdata/sources/all_flash_cluster_cr.yaml ../testdata/sources/all_flash_cluster_cr.yaml",
+			expectError: false,
+		},
+		{
+			name:        "legacy diff with too few args",
+			command:     "diff only_one_file.yaml",
+			expectError: true,
+		},
+		{
+			name:        "diff files with too few args",
+			command:     "diff files only_one_file.yaml",
+			expectError: true,
+		},
+		{
+			name:        "legacy diff with too many args",
+			command:     "diff file1.yaml file2.yaml file3.yaml",
+			expectError: true,
+		},
+		{
+			name:        "diff files with too many args",
+			command:     "diff files file1.yaml file2.yaml file3.yaml",
+			expectError: true,
+		},
+		{
+			name:        "legacy diff with non-existent files",
+			command:     "diff file1.yaml file2.yaml",
+			expectError: true,
+		},
+		{
+			name:        "diff files with non-existent files",
+			command:     "diff files file1.yaml file2.yaml",
+			expectError: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			rootCmd.SetArgs(strings.Split(tc.command, " "))
+			err := rootCmd.Execute()
+			if tc.expectError {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Expected no error but got: %v", err)
+				}
+			}
+		})
+	}
+}
