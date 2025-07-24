@@ -43,15 +43,15 @@ func newDiffCmd() *cobra.Command {
 		Use:   "diff",
 		Short: "Diff Aerospike configuration files or a file against a running server's configuration.",
 		Long: `Diff is used to compare Aerospike configuration files, or a file against a running server's configuration.
+					
+			If no subcommand is provided, 'files' is used by default for backward compatibility.
 
-If no subcommand is provided, 'files' is used by default for backward compatibility.
-
-See subcommands for available diff modes.`,
+			See subcommands for available diff modes.`,
 		Example: `
-		# Compare two local configuration files
-		asconfig diff files aerospike1.yaml aerospike2.yaml
+		# Diff two local yaml configuration files
+			asconfig diff files aerospike1.yaml aerospike2.yaml
 		# Diff a local .conf file against a running server
-		asconfig diff server -h 127.0.0.1  aerospike.conf`,
+			asconfig diff server -h 127.0.0.1:3000  aerospike.conf`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger.Warn("Using legacy 'diff' subcommand. Use 'diff files' instead.")
 			return runFileDiff(cmd, args)
@@ -72,12 +72,17 @@ See subcommands for available diff modes.`,
 func newDiffFilesCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "files [flags] <path/to/config1> <path/to/config2>",
-		Short: "Diff two Aerospike configuration files.",
+		Short: "Diff yaml or conf Aerospike configuration files.",
 		Long: `Diff is used to compare differences between two Aerospike configuration files.
-It is used on two files of the same format from any format supported by the asconfig tool, e.g. yaml or Aerospike config.
-Schema validation is not performed on either file. The file names must end with extensions signifying their formats, e.g. .conf or .yaml, or --format must be used.`,
-		Example: `Compare two local configuration files
-  				asconfig diff files aerospike1.yaml aerospike2.yaml`,
+			It is used on two files of the same format from any format
+			supported by the asconfig tool, e.g. yaml or Aerospike config.
+			Schema validation is not performed on either file. The file names must end with
+			extensions signifying their formats, e.g. .conf or .yaml, or --format must be used.`,
+		Example: `
+			# Compare two local configuration files
+  				asconfig diff files aerospike1.conf aerospike2.conf
+			# Compare two local yaml configuration files
+				asconfig diff files --format yaml aerospike1.yaml aerospike2.yaml`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger.Debug("Running diff files command")
 			return runFileDiff(cmd, args)
@@ -96,7 +101,7 @@ func newDiffServerCmd() *cobra.Command {
 				In this mode, only one config file path is required as an argument.
 				Note: The configuration file can be in yaml or conf format.`,
 		Example: `Diff a local .conf file against a running server
-  				asconfig diff server -h 127.0.0.1 aerospike.conf`,
+  				asconfig diff server -h 127.0.0.1:3000 aerospike.conf`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger.Debug("Running server diff command")
 			return runServerDiff(cmd, args)
@@ -104,7 +109,7 @@ func newDiffServerCmd() *cobra.Command {
 	}
 
 	// Add format flag but hide it from help output as it will be automatically detected
-	cmd.Flags().StringP("format", "F", "conf", "")
+	cmd.Flags().StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
 	cmd.Flags().MarkHidden("format")
 
 	// Add Aerospike connection flags when server mode is enabled
