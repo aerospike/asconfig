@@ -41,7 +41,7 @@ var diffCmd = newDiffCmd()
 func newDiffCmd() *cobra.Command {
 	res := &cobra.Command{
 		Use:   "diff [flags] <path/to/config1> <path/to/config2>",
-		Short: "Diff yaml or conf Aerospike configuration files or a file against a running server.",
+		Short: "Diff yaml or conf Aerospike configuration files or a file against a running server's configuration.",
 		Long: `Diff is used to compare differences between Aerospike configuration files.
 				It is used on two files of the same format from any format
 				supported by the asconfig tool, e.g. yaml or Aerospike config.
@@ -56,6 +56,7 @@ func newDiffCmd() *cobra.Command {
 	}
 
 	res.Version = VERSION
+	// --format is used by both file and server diff, so it's persistent on the parent
 	res.PersistentFlags().StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
 
 	// Add server diff command
@@ -67,14 +68,12 @@ func newDiffCmd() *cobra.Command {
 func newDiffServerCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "server [flags] <path/to/config>",
-		Short: "BETA: Compare a local config file against a running Aerospike server.",
-		Long: `BETA: Compare a local configuration file against the live configuration from a running Aerospike server. In this mode,
-only one config file path is required as an argument.`,
+		Short: "BETA: Compare a local config file against a running Aerospike server's configuration.",
+		Long: `BETA: Compare a local configuration file against the configuration of a running Aerospike server. 
+				In this mode, only one config file path is required as an argument.
+				Note: The configuration file can be in yaml or conf format.`,
 		Example: `  # Compare a local .conf file against a running server
-  asconfig diff server -h 127.0.0.1 -U admin -P admin aerospike.conf
-  
-  # Compare a local .yaml file against a running server
-  asconfig diff server --format yaml -h 127.0.0.1 -U admin -P admin aerospike.yaml`,
+  asconfig diff server -h 127.0.0.1 -U admin -P admin aerospike.conf`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger.Debug("Running server diff command")
 			return runServerDiff(cmd, args)
@@ -199,7 +198,6 @@ func runServerDiff(cmd *cobra.Command, args []string) error {
 	}
 
 	logger.Debugf("Generating config from Aerospike node")
-
 	// Generate server config using existing generate functionality
 	asCommonConfig := aerospikeFlags.NewAerospikeConfig()
 
