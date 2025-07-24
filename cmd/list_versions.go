@@ -10,20 +10,20 @@ import (
 )
 
 func init() {
-	rootCmd.AddCommand(listSchemasCmd)
+	rootCmd.AddCommand(listVersionsCmd)
 }
 
-var listSchemasCmd = newListSchemasCmd()
+var listVersionsCmd = newListVersionsCmd()
 
-func newListSchemasCmd() *cobra.Command {
+func newListVersionsCmd() *cobra.Command {
 	res := &cobra.Command{
-		Use:   "list-schemas",
-		Short: "List available Aerospike schema versions.",
-		Long:  `List all available Aerospike schema versions that can be used with the diff-schemas command.`,
-		Example: `  asconfig list-schemas
-  asconfig list-schemas --table`,
+		Use:   "list-versions",
+		Short: "List available Aerospike server versions.",
+		Long:  `List all available Aerospike server versions that can be used with the diff-versions command.`,
+		Example: `  asconfig list-versions
+  asconfig list-versions --table`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			logger.Debug("Running list-schemas command")
+			logger.Debug("Running list-versions command")
 
 			// Load schema map
 			schemaMap, err := schema.NewSchemaMap()
@@ -44,7 +44,7 @@ func newListSchemasCmd() *cobra.Command {
 
 			// Display versions
 			if table {
-				cmd.Printf("Available Aerospike Schema Versions:\n")
+				cmd.Printf("Available Aerospike Server Versions:\n")
 				cmd.Printf("====================================\n")
 				for i, version := range versions {
 					cmd.Printf("%2d. %s\n", i+1, version)

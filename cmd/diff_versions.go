@@ -20,31 +20,31 @@ const (
 )
 
 var (
-	errSchemaDiffTooFewArgs  = fmt.Errorf("diff-schemas requires at least %d version arguments", schemaDiffArgMin)
-	errSchemaDiffTooManyArgs = fmt.Errorf("diff-schemas requires no more than %d version arguments", schemaDiffArgMax)
+	errSchemaDiffTooFewArgs  = fmt.Errorf("diff-versions requires at least %d version arguments", schemaDiffArgMin)
+	errSchemaDiffTooManyArgs = fmt.Errorf("diff-versions requires no more than %d version arguments", schemaDiffArgMax)
 	errInvalidSchemaVersion  = fmt.Errorf("invalid schema version")
 )
 
 func init() {
-	rootCmd.AddCommand(diffSchemasCmd)
+	rootCmd.AddCommand(diffVersionsCmd)
 }
 
-var diffSchemasCmd = newDiffSchemasCmd()
+var diffVersionsCmd = newDiffVersionsCmd()
 
-func newDiffSchemasCmd() *cobra.Command {
+func newDiffVersionsCmd() *cobra.Command {
 	res := &cobra.Command{
-		Use:   "diff-schemas [flags] <version1> <version2>",
-		Short: "Compare Aerospike configuration schemas between two versions.",
-		Long: `Diff-schemas compares the configuration schemas between two Aerospike versions,
+		Use:   "diff-versions [flags] <version1> <version2>",
+		Short: "Compare Aerospike configuration between two server versions.",
+		Long: `Diff-versions compares the configuration between two Aerospike server versions,
 				showing which configuration parameters are added, removed, or changed.
 				This helps understand what configuration options are going away or
 				staying when upgrading between Aerospike versions.
 				
 				Examples:
-				  asconfig diff-schemas 6.4.0 7.0.0
-				  asconfig diff-schemas 5.7.0 6.4.0 --verbose`,
+				  asconfig diff-versions 6.4.0 7.0.0
+				  asconfig diff-versions 5.7.0 6.4.0 --verbose`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			logger.Debug("Running diff-schemas command")
+			logger.Debug("Running diff-versions command")
 
 			if len(args) < schemaDiffArgMin {
 				return errSchemaDiffTooFewArgs

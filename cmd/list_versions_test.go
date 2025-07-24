@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestListSchemasCmd(t *testing.T) {
+func TestListVersionsCmd(t *testing.T) {
 	testCases := []struct {
 		name        string
 		flags       map[string]string
@@ -39,7 +39,7 @@ func TestListSchemasCmd(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			cmd := newListSchemasCmd()
+			cmd := newListVersionsCmd()
 
 			// Set flags
 			for key, value := range tc.flags {
