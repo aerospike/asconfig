@@ -98,6 +98,7 @@ func newDiffServerCmd() *cobra.Command {
 		Use:   "server [flags] <path/to/config>",
 		Short: "BETA: Diff a local config file against a running Aerospike server's configuration.",
 		Long: `BETA: Diff is used to compare a local configuration file against the configuration of a running Aerospike server. 
+				This is useful for spotting drift between expected and actual Aerospike server configurations.
 				In this mode, only one config file path is required as an argument.
 				Note: The configuration file can be in yaml or conf format.`,
 		Example: `Diff a local .conf file against a running server
