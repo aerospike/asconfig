@@ -452,34 +452,9 @@ func runServer(version string, serverVersion string, confPath string, auth testu
 
 	// TODO if possible, don't create new containers each time
 	var id string
-	maxRetries := 5
-	retryCount := 0
-	backoffTime := 5 * time.Second
 
-	for {
-		id, err = testutils.CreateAerospikeContainer(containerName, containerConf, containerHostConf, imagePullOptions, dockerClient)
-		if err == nil {
-			break
-		}
-
-		// Check if this is a rate limit error
-		if strings.Contains(err.Error(), "toomanyrequests") {
-			retryCount++
-			if retryCount > maxRetries {
-				t.Errorf("Failed after %d retries: %v", maxRetries, err)
-				return "", ""
-			}
-
-			// Log the retry
-			t.Logf("Docker pull rate limit reached, retrying in %v (attempt %d/%d)", backoffTime, retryCount, maxRetries)
-
-			// Sleep with exponential backoff
-			time.Sleep(backoffTime)
-			backoffTime *= 2 // exponential backoff
-			continue
-		}
-
-		// If it's not a rate limit error, just fail
+	id, err = testutils.CreateAerospikeContainer(containerName, containerConf, containerHostConf, imagePullOptions, dockerClient)
+	if err != nil {
 		t.Error(err)
 		return "", ""
 	}
