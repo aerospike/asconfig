@@ -8,6 +8,8 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
+	"time"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
@@ -70,8 +72,41 @@ func RemoveAerospikeContainer(id string, cli *client.Client) error {
 
 func CreateAerospikeContainer(name string, c *container.Config, ch *container.HostConfig, imagePullOpts image.PullOptions, cli *client.Client) (string, error) {
 	ctx := context.Background()
-	reader, err := cli.ImagePull(ctx, name, imagePullOpts)
-	if err != nil {
+
+	// Retry configuration for Docker Hub rate limiting
+	maxRetries := 10
+	baseBackoff := 10 * time.Second // Base backoff time
+	maxBackoff := 5 * time.Minute   // Maximum backoff time
+
+	var reader io.ReadCloser
+	var err error
+
+	// Retry loop for image pulling with exponential backoff
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		reader, err = cli.ImagePull(ctx, name, imagePullOpts)
+		if err == nil {
+			break
+		}
+
+		// Check if this is a rate limit error
+		if strings.Contains(err.Error(), "toomanyrequests") || strings.Contains(err.Error(), "rate limit") {
+			if attempt == maxRetries {
+				log.Printf("Failed to pull image %s after %d attempts due to rate limiting: %s", name, maxRetries, err)
+				return "", err
+			}
+
+			// Exponential backoff: 2^(attempt-1) * baseBackoff, capped at maxBackoff
+			backoffTime := time.Duration(1<<(attempt-1)) * baseBackoff
+			if backoffTime > maxBackoff {
+				backoffTime = maxBackoff
+			}
+
+			log.Printf("Docker pull rate limit reached for %s, retrying in %v (attempt %d/%d)", name, backoffTime, attempt, maxRetries)
+			time.Sleep(backoffTime)
+			continue
+		}
+
+		// If it's not a rate limit error, don't retry
 		log.Printf("Unable to pull image %s: %s", name, err)
 		return "", err
 	}

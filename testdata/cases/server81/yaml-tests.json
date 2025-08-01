@@ -1,0 +1,11 @@
+[
+    {
+        "Source":"testdata/cases/server81/server81.yaml",
+        "Destination":"testdata/cases/server81/server81-res-.conf",
+        "Expected":"testdata/cases/server81/server81.conf",
+        "Arguments":["convert","--aerospike-version","8.1.0.0","--format","yaml","--output","testdata/cases/server81/server81-res-.conf"],
+        "SkipServerTest":false,
+        "ServerErrorAllowList":null,
+        "ServerImage":"aerospike/aerospike-server-enterprise:8.1.0.0-rc3"
+    }
+]
