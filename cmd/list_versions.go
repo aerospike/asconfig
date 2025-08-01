@@ -40,7 +40,7 @@ func newListVersionsCmd() *cobra.Command {
 			sort.Strings(versions)
 
 			// Get output format
-			table, _ := cmd.Flags().GetBool("table")
+			table, _ := cmd.Flags().GetBool("verbose")
 
 			// Display versions
 			if table {
@@ -59,7 +59,7 @@ func newListVersionsCmd() *cobra.Command {
 		},
 	}
 
-	res.Flags().BoolP("table", "t", false, "Display output in table format with numbering")
+	res.Flags().BoolP("verbose", "v", false, "Display output in verbose format with numbering")
 
 	return res
 }

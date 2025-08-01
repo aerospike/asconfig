@@ -24,8 +24,8 @@ func TestListVersionsCmd(t *testing.T) {
 			},
 		},
 		{
-			name:        "table format",
-			flags:       map[string]string{"table": "true"},
+			name:        "verbose format",
+			flags:       map[string]string{"verbose": "true"},
 			expectError: false,
 			checkOutput: func(output string) bool {
 				// Table format should contain headers and numbered list
