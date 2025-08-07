@@ -1,16 +1,19 @@
 package cmd
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 
 	asConf "github.com/aerospike/aerospike-management-lib/asconfig"
 	"github.com/aerospike/aerospike-management-lib/info"
 	"github.com/aerospike/asconfig/conf"
+	"github.com/aerospike/asconfig/schema"
 	"github.com/aerospike/tools-common-go/config"
 	"github.com/aerospike/tools-common-go/flags"
 
@@ -18,18 +21,24 @@ import (
 )
 
 const (
-	diffArgMin       = 2
-	diffArgMax       = 2
-	diffServerArgMin = 1 // For server diff, we need only one local file
-	diffServerArgMax = 1
+	diffArgMin         = 2
+	diffArgMax         = 2
+	diffServerArgMin   = 1 // For server diff, we need only one local file
+	diffServerArgMax   = 1
+	diffVersionsArgMin = 2
+	diffVersionsArgMax = 2
 )
 
 var (
 	errDiffConfigsDiffer     = errors.Join(fmt.Errorf("configuration files are not equal"), ErrSilent)
 	errDiffTooFewArgs        = fmt.Errorf("diff requires atleast %d file paths as arguments", diffArgMin)
 	errDiffTooManyArgs       = fmt.Errorf("diff requires no more than %d file paths as arguments", diffArgMax)
-	errDiffServerTooFewArgs  = fmt.Errorf("diff with --server requires exactly %d file path as argument", diffServerArgMin)
-	errDiffServerTooManyArgs = fmt.Errorf("diff with --server requires no more than %d file path as argument", diffServerArgMax)
+	errDiffServerTooFewArgs  = fmt.Errorf("diff server requires exactly %d file path as argument", diffServerArgMin)
+	errDiffServerTooManyArgs = fmt.Errorf("diff server requires no more than %d file path as argument", diffServerArgMax)
+	errSchemaDiffTooFewArgs  = fmt.Errorf("diff versions requires at least %d version arguments", diffVersionsArgMin)
+	errSchemaDiffTooManyArgs = fmt.Errorf("diff versions requires no more than %d version arguments", diffVersionsArgMax)
+	errInvalidSchemaVersion  = fmt.Errorf("invalid schema version")
+	errInvalidVersionOrder   = fmt.Errorf("first argument version must be less than or equal to second argument version")
 )
 
 func init() {
@@ -64,6 +73,7 @@ func newDiffCmd() *cobra.Command {
 	// Add subcommands
 	res.AddCommand(newDiffFilesCmd())
 	res.AddCommand(newDiffServerCmd())
+	res.AddCommand(newDiffVersionsCmd())
 
 	return res
 }
@@ -117,6 +127,33 @@ func newDiffServerCmd() *cobra.Command {
 	asFlagSet := aerospikeFlags.NewFlagSet(flags.DefaultWrapHelpString)
 	cmd.Flags().AddFlagSet(asFlagSet)
 	config.BindPFlags(asFlagSet, "cluster")
+
+	return cmd
+}
+
+func newDiffVersionsCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "versions [flags] <version1> <version2>",
+		Short: "Diff Aerospike server versions.",
+		Long: `Diff compares the configuration between two Aerospike server versions,
+				showing which configuration parameters are added, removed, or changed.
+				This helps understand what configuration options are going away or
+				staying when upgrading between Aerospike versions.`,
+		Example: `
+			# Compare two Aerospike server versions
+			asconfig diff versions 7.0.0 7.2.0
+
+			# List supported Aerospike server versions
+			asconfig list-versions --verbose
+			`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			logger.Debug("Running versions diff command")
+			return runVersionsDiff(cmd, args)
+		},
+	}
+
+	cmd.Flags().BoolP("verbose", "v", false, "Show detailed information about property changes (type, default values, etc.)")
+	cmd.Flags().StringP("filter-path", "f", "", "Filter results to only show properties under the specified path (e.g., 'service', 'namespaces')")
 
 	return cmd
 }
@@ -286,6 +323,106 @@ func runServerDiff(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+// runVersionsDiff compares the configuration between two Aerospike server versions.
+func runVersionsDiff(cmd *cobra.Command, args []string) error {
+	logger.Debug("Running diff versions command")
+
+	if len(args) < diffVersionsArgMin {
+		return errSchemaDiffTooFewArgs
+	}
+
+	if len(args) > diffVersionsArgMax {
+		return errSchemaDiffTooManyArgs
+	}
+
+	version1 := args[0]
+	version2 := args[1]
+
+	// Validate version order
+	if !isVersionLessEqual(version1, version2) {
+		return errors.Join(errInvalidVersionOrder, fmt.Errorf("version %s is not less than or equal to %s", version1, version2))
+	}
+
+	logger.Debugf("Comparing schema from version %s to version %s", version1, version2)
+
+	// Load schemas
+	schemaMap, err := schema.NewSchemaMap()
+	if err != nil {
+		return fmt.Errorf("failed to load schema map: %w", err)
+	}
+
+	schema1, exists := schemaMap[version1]
+	if !exists {
+		return errors.Join(errInvalidSchemaVersion, fmt.Errorf("schema for version %s not found", version1))
+	}
+
+	schema2, exists := schemaMap[version2]
+	if !exists {
+		return errors.Join(errInvalidSchemaVersion, fmt.Errorf("schema for version %s not found", version2))
+	}
+
+	var parsedSchema1, parsedSchema2 map[string]interface{}
+	if err := json.Unmarshal([]byte(schema1), &parsedSchema1); err != nil {
+		return fmt.Errorf("failed to parse schema for version %s: %w", version1, err)
+	}
+
+	if err := json.Unmarshal([]byte(schema2), &parsedSchema2); err != nil {
+		return fmt.Errorf("failed to parse schema for version %s: %w", version2, err)
+	}
+
+	// Get flags
+	verbose, _ := cmd.Flags().GetBool("verbose")
+	filterPath, _ := cmd.Flags().GetString("filter-path")
+
+	filterSections := make(map[string]struct{})
+	if filterPath != "" {
+		sections := strings.Split(filterPath, ",")
+		for _, s := range sections {
+			filterSections[strings.TrimSpace(s)] = struct{}{}
+		}
+	}
+
+	// Compare the two JSON files
+	summary, err := compareSchemas(parsedSchema1, parsedSchema2, version1, version2)
+	if err != nil {
+		return fmt.Errorf("failed to compare schemas: %w", err)
+	}
+
+	// Output the results
+	printChangeSummary(summary, DiffOptions{
+		Verbose:        verbose,
+		FilterSections: filterSections,
+	})
+
+	return nil
+}
+
+// isVersionLessEqual compares two version strings (X.X.X) and returns true if v1 <= v2
+func isVersionLessEqual(v1, v2 string) bool {
+	parts1 := strings.Split(v1, ".")
+	parts2 := strings.Split(v2, ".")
+
+	for i := 0; i < 3; i++ {
+		num1 := 0
+		if i < len(parts1) {
+			num1, _ = strconv.Atoi(parts1[i]) // Ignore error, Atoi returns 0 for invalid input
+		}
+
+		num2 := 0
+		if i < len(parts2) {
+			num2, _ = strconv.Atoi(parts2[i]) // Ignore error
+		}
+
+		if num1 < num2 {
+			return true
+		}
+		if num1 > num2 {
+			return false
+		}
+	}
+	return true // Versions are equal
 }
 
 // diffFlatMaps reports differences between flattened config maps
