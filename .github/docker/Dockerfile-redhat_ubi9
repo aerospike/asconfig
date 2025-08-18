@@ -1,0 +1,9 @@
+FROM redhat/ubi9-minimal
+SHELL ["/bin/bash", "-euo", "pipefail", "-c"]
+
+ADD .github/scripts/entrypoint.sh /tmp/entrypoint.sh
+RUN /tmp/entrypoint.sh -i
+ADD . /opt/asconfig
+WORKDIR /opt/asconfig
+ENTRYPOINT ["/opt/asconfig/.github/scripts/entrypoint.sh"]
+CMD ["-b"]
