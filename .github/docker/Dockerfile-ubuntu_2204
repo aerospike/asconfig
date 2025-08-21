@@ -5,7 +5,7 @@ ARG DEBUG=0
 ENV DEBUG=${DEBUG}
 
 RUN apt -y update
-ADD .github/scripts/entrypoint.sh /tmp/entrypoint.sh
+ADD .github/docker/entrypoint.sh /tmp/entrypoint.sh
 
 RUN /tmp/entrypoint.sh -i
 
@@ -14,5 +14,5 @@ RUN if [[ $DEBUG -ne 0 ]]; then apt -y clean && rm -rf /var/lib/apt/lists/*; fi
 ADD . /opt/asconfig
 WORKDIR /opt/asconfig
 
-ENTRYPOINT ["/opt/asconfig/.github/scripts/entrypoint.sh"]
+ENTRYPOINT ["/opt/asconfig/.github/docker/entrypoint.sh"]
 CMD ["-b"]
