@@ -11,7 +11,7 @@ jobs:
       project: asconfig
       build-name: asconfig
       build-version: v1.0.0
-      build-script: pwd && ls -laht && git status && find . && .github/docker/entrypoint.sh -c && .github/docker/entrypoint.sh -e
+      build-script: pwd && ls -laht && find ../ && git status && .github/docker/entrypoint.sh -c && .github/docker/entrypoint.sh -e
       artifact-directory: dist
       artifact-name: my-build-artifacts
       retention-days: 7
