@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-
+env
 
 if [ -d ".git" ]; then
     GIT_DIR=$(pwd)
