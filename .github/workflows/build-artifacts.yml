@@ -6,12 +6,12 @@ on:
 
 jobs:
   build-artifacts:
-    uses: aerospike/shared-workflows/.github/workflows/reusable_execute-build.yaml@fix/external-calls
+    uses: aerospike/shared-workflows/.github/workflows/reusable_execute-build.yaml@43dc4fc1b73c2ad19d89c6b7933a8836f2118231
     with:
       project: asconfig
       build-name: asconfig
       build-version: v1.0.0
-      build-script: bash -xc 'pwd && git clone https://github.com/aerospike/asconfig && ls -laht && cd asconfig && git checkout SERVER-216 && ls -laht && .github/docker/entrypoint.sh -c && .github/docker/entrypoint.sh -e'
+      build-script: bash -xc 'pwd && ls -laht && cd asconfig && ls -laht && .github/docker/entrypoint.sh -c && .github/docker/entrypoint.sh -e'
       artifact-directory: dist
       artifact-name: my-build-artifacts
       retention-days: 7
@@ -19,6 +19,8 @@ jobs:
       artifactory-url: https://aerospike.jfrog.io # default
       artifactory-oidc-provider-name: gh-aerospike # default
       artifactory-oidc-audience: aerospike # default
+      source-ref: SERVER-216
+      source-path: /home/runner/work/asconfig/asconfig
 #  build-packages:
 #    runs-on: ubuntu-22.04
 #    steps:
