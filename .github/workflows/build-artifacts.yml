@@ -20,7 +20,7 @@ jobs:
       artifactory-oidc-provider-name: gh-aerospike # default
       artifactory-oidc-audience: aerospike # default
       source-ref: SERVER-216
-      source-path: /home/runner/work/asconfig/asconfig
+      source-path: /home/runner/work/asconfig/asconfig/asconfig
 #  build-packages:
 #    runs-on: ubuntu-22.04
 #    steps:
