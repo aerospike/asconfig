@@ -54,11 +54,11 @@ function build_image_redhat_ubi9() {
 }
 
 function build_package_ubuntu_2204() {
-  docker run -t -i -v $(pwd)/pkg/dockerbuild:/tmp/output asconfig-pkg-builder-ubuntu-2204
+  docker run -t -i -v $(pwd)../dist:/tmp/output asconfig-pkg-builder-ubuntu-2204
 }
 
 function build_package_redhat_ubi9() {
-  docker run -t -i -v $(pwd)/pkg/dockerbuild:/tmp/output asconfig-pkg-builder-redhat-ubi9
+  docker run -t -i -v $(pwd)../dist:/tmp/output asconfig-pkg-builder-redhat-ubi9
 }
 
 
@@ -96,10 +96,10 @@ shift $((OPTIND -1))
 if [ "$INSTALL" = false ] && [ "$BUILD_INTERNAL" = false ] && [ "$BUILD_CONTAINERS" = false ] && [ "$EXECUTE_BUILD" = false ];
 then
     echo """Error: Options:
-    -i (install)
-    -b (build internal)
-    -c (build containers )
-    -e (execute docker package build)
+    -i ( install )
+    -b ( build internal )
+    -c ( build containers )
+    -e ( execute docker package build )
     -d [ redhat_ubi9 | ubuntu_2204 ]""" 1>&2
     exit 1
 fi

@@ -11,7 +11,7 @@ jobs:
       project: asconfig
       build-name: asconfig
       build-version: v1.0.0
-      build-script: bash -xc 'pwd && git clone https://github.com/aerospike/asconfig && ls -laht && cd asconfig && git checkout SERVER-216 && ls -laht && .github/docker/entrypoint.sh -c && .github/docker/entrypoint.sh -e'
+      build-script: bash -xc 'pwd && git clone https://github.com/aerospike/asconfig && ls -laht && cd asconfig && git checkout SERVER-216 && ls -laht && .github/docker/entrypoint.sh -c && .github/docker/entrypoint.sh -e && ls -laht dist'
       artifact-directory: dist
       artifact-name: my-build-artifacts
       retention-days: 7
@@ -19,6 +19,8 @@ jobs:
       artifactory-url: https://aerospike.jfrog.io # default
       artifactory-oidc-provider-name: gh-aerospike # default
       artifactory-oidc-audience: aerospike # default
+
+
 #  build-packages:
 #    runs-on: ubuntu-22.04
 #    steps:
