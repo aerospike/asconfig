@@ -19,19 +19,15 @@ jobs:
       artifactory-url: https://aerospike.jfrog.io # default
       artifactory-oidc-provider-name: gh-aerospike # default
       artifactory-oidc-audience: aerospike # default
+  sign:
+    uses: aerospike/shared-workflows/.github/workflows/reusable_sign-artifacts.yaml@fix/external-calls # vn.n.n
+    with:
+      artifact-glob: dist/**/*.{deb,rpm}
+      # artifact-name: signed-artifacts  # optional, defaults to signed-artifacts
+      # retention-days: 7               # optional, defaults to 7
+      # dry-run: false                  # optional, for future compatibility
+    secrets:
+      gpg-private-key: ${{ secrets.GPG_SECRET_KEY }}
+      gpg-public-key: ${{ secrets.GPG_PUBLIC_KEY }}
+      gpg-key-pass: ${{ secrets.GPG_PASS }}
 
-
-#  build-packages:
-#    runs-on: ubuntu-22.04
-#    steps:
-#      - uses: actions/checkout@v3
-#        with:
-#          submodules: true
-#      - name: Build packages
-#        run: |
-#          .github/docker/entrypoint.sh -c
-#          .github/docker/entrypoint.sh -e
-#        env:
-#          FEATKEY_DIR: /tmp
-#          ASC_DOCKER_USER: ${{secrets.DOCKER_USER}}
-#          ASC_DOCKER_PASS: ${{secrets.DOCKER_PASS}}
