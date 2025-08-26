@@ -1,7 +1,6 @@
-FROM ubuntu:22.04
+FROM ubuntu:20.04
 SHELL ["/bin/bash", "-euo", "pipefail", "-c"]
 ENV DEBIAN_FRONTEND=noninteractive
-
 ARG DEBUG=0
 ENV DEBUG=${DEBUG}
 
