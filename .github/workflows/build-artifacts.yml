@@ -31,3 +31,15 @@ jobs:
       gpg-public-key: ${{ secrets.GPG_PUBLIC_KEY }}
       gpg-key-pass: ${{ secrets.GPG_PASS }}
 
+  upload:
+    uses: aerospike/shared-workflows/.github/workflows/reusable_upload-artifacts.yaml@fix/external-calls # vn.n.n
+    with:
+      project: asconfig
+      build-name: asconfig
+      version: ${{ github.ref_name }}
+      artifactory-url: https://aerospike.jfrog.io
+      artifactory-oidc-provider-name: gh-citrusleaf
+      artifactory-oidc-audience: citrusleaf
+      artifact-name: build-artifacts
+      retention-days: 1
+      dry-run: false
