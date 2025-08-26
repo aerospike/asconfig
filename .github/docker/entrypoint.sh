@@ -54,11 +54,13 @@ function build_image_redhat_ubi9() {
 }
 
 function build_package_ubuntu_2204() {
-  docker run -v $(pwd)../dist:/tmp/output asconfig-pkg-builder-ubuntu-2204
+  docker run -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-ubuntu-2204
+  ls -laht ../dist
 }
 
 function build_package_redhat_ubi9() {
-  docker run -v $(pwd)../dist:/tmp/output asconfig-pkg-builder-redhat-ubi9
+  docker run -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-redhat-ubi9
+  ls -laht ../dist
 }
 
 
