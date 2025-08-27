@@ -40,8 +40,8 @@ jobs:
       build-name: asconfig
       version: ${{ github.ref_name }}
       artifactory-url: https://aerospike.jfrog.io
-      artifactory-oidc-provider-name: gh-citrusleaf
-      artifactory-oidc-audience: citrusleaf
+      artifactory-oidc-provider-name: gh-aerospike
+      artifactory-oidc-audience: aerospike
       artifact-name: build-artifacts
       retention-days: 1
       dry-run: false
