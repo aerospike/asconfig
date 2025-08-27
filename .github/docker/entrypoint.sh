@@ -67,11 +67,13 @@ function build_packages(){
   # package
   cd $PKG_DIR
   make clean
-  if [[ $BUILD_DISTRO == *"ubuntu"* ]]; then
+  echo "building package for $BUILD_DISTRO"
+
+  if [[ $ENV_DISTRO == *"ubuntu"* ]]; then
     make deb
-  elif [[ $BUILD_DISTRO == *"debian"* ]]; then
+  elif [[ $ENV_DISTRO == *"debian"* ]]; then
     make deb
-  elif [[ $BUILD_DISTRO == *"redhat"* ]]; then
+  elif [[ $ENV_DISTRO == *"redhat"* ]]; then
     make rpm
   else
     make tar
