@@ -34,7 +34,7 @@ deb: prep
 		--license $(LICENSE) \
 		--url $(URL) \
 		--vendor $(VENDOR) \
-		--package $(TARGET_DIR)/asconfig-$(VERSION)-$(ARCH).deb
+		--package $(TARGET_DIR)/asconfig-$(BUILD_DISTRO)-$(VERSION)-$(ARCH).deb
 
 .PHONY: rpm
 rpm: prep
@@ -50,7 +50,7 @@ rpm: prep
 		--license $(LICENSE) \
 		--url $(URL) \
 		--vendor $(VENDOR) \
-		--package $(TARGET_DIR)/asconfig-$(VERSION)-$(ARCH).rpm
+		--package $(TARGET_DIR)/asconfig-$(VERSION)-$(BUILD_DISTRO)-$(ARCH).rpm
 
 .PHONY: tar
 tar: prep
@@ -66,7 +66,7 @@ tar: prep
 		--license $(LICENSE) \
 		--url $(URL) \
 		--vendor $(VENDOR) \
-		--package $(TARGET_DIR)/asconfig-$(VERSION)-$(ARCH).tar
+		--package $(TARGET_DIR)/asconfig-$(BUILD_DISTRO)-$(VERSION)-$(ARCH).tar
 
 .PHONY: prep
 prep:
