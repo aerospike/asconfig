@@ -257,8 +257,8 @@ if [ "$EXECUTE_BUILD" = "true" ]; then
         build_package_ubuntu22.04
         echo "building package for Ubuntu 24.04"
         build_package_ubuntu24.04
-        #echo "building package for RedHat UBI9"
-        #build_package_redhat_ubi9
+        echo "building package for RedHat UBI9"
+        build_package_redhat_ubi9
         echo "building package for Debian 11"
         build_package_debian11
         echo "building package for Debian 12"
