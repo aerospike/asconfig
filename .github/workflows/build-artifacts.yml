@@ -24,7 +24,6 @@ jobs:
     uses: aerospike/shared-workflows/.github/workflows/reusable_sign-artifacts.yaml@fix/external-sign # vn.n.n
     with:
       unsigned-artifacts: unsigned-artifacts
-      artifact-glob: dist/**/*.{deb,rpm}
       # artifact-name: signed-artifacts  # optional, defaults to signed-artifacts
       # retention-days: 7               # optional, defaults to 7
       # dry-run: false                  # optional, for future compatibility
