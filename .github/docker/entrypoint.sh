@@ -99,32 +99,32 @@ function build_debian_images() {
 }
 
 function build_package_ubuntu20.04() {
-  docker run -e BUILD_DISTRO="$BUILD_DISTRO" -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-ubuntu-2004
+  docker run -e BUILD_DISTRO="ubuntu20.04" -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-ubuntu-2004
   ls -laht ../dist
 }
 
 function build_package_ubuntu22.04() {
-  docker run -e BUILD_DISTRO="$BUILD_DISTRO" -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-ubuntu-2204
+  docker run -e BUILD_DISTRO="ubuntu22.04" -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-ubuntu-2204
   ls -laht ../dist
 }
 
 function build_package_ubuntu24.04() {
-  docker run -e BUILD_DISTRO="$BUILD_DISTRO" -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-ubuntu-2404
+  docker run -e BUILD_DISTRO="ubuntu24.04" -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-ubuntu-2404
   ls -laht ../dist
 }
 
 function build_package_ubi9() {
-  docker run -e BUILD_DISTRO="$BUILD_DISTRO" -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-redhat-ubi9
+  docker run -e BUILD_DISTRO="ubi9" -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-redhat-ubi9
   ls -laht ../dist
 }
 
 function build_package_debian11() {
-  docker run -e BUILD_DISTRO="$BUILD_DISTRO" -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-debian-11
+  docker run -e BUILD_DISTRO="debian11" -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-debian-11
   ls -laht ../dist
 }
 
 function build_package_debian12() {
-  docker run -e BUILD_DISTRO="$BUILD_DISTRO" -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-debian-12
+  docker run -e BUILD_DISTRO="debian12" -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-debian-12
   ls -laht ../dist
 }
 
