@@ -67,7 +67,15 @@ function build_packages(){
   # package
   cd $PKG_DIR
   make clean
-  make
+  if [[ $BUILD_DISTRO == *"ubuntu"* ]]; then
+    make deb
+  elif [[ $BUILD_DISTRO == *"debian"* ]]; then
+    make deb
+  elif [[ $BUILD_DISTRO == *"redhat"* ]]; then
+    make rpm
+  else
+    make tar
+  fi
 
   mkdir -p /tmp/output/$ENV_DISTRO
   cp -a $PKG_DIR/target/* /tmp/output/$ENV_DISTRO
@@ -89,32 +97,32 @@ function build_debian_images() {
 }
 
 function build_package_ubuntu20.04() {
-  docker run -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-ubuntu-2004
+  docker run -e BUILD_DISTRO="$BUILD_DISTRO" -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-ubuntu-2004
   ls -laht ../dist
 }
 
 function build_package_ubuntu22.04() {
-  docker run -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-ubuntu-2204
+  docker run -e BUILD_DISTRO="$BUILD_DISTRO" -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-ubuntu-2204
   ls -laht ../dist
 }
 
 function build_package_ubuntu24.04() {
-  docker run -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-ubuntu-2404
+  docker run -e BUILD_DISTRO="$BUILD_DISTRO" -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-ubuntu-2404
   ls -laht ../dist
 }
 
 function build_package_redhat_ubi9() {
-  docker run -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-redhat-ubi9
+  docker run -e BUILD_DISTRO="$BUILD_DISTRO" -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-redhat-ubi9
   ls -laht ../dist
 }
 
 function build_package_debian11() {
-  docker run -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-debian-11
+  docker run -e BUILD_DISTRO="$BUILD_DISTRO" -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-debian-11
   ls -laht ../dist
 }
 
 function build_package_debian12() {
-  docker run -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-debian-12
+  docker run -e BUILD_DISTRO="$BUILD_DISTRO" -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-debian-12
   ls -laht ../dist
 }
 
