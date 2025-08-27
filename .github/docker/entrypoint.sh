@@ -134,7 +134,7 @@ INSTALL=false
 BUILD_INTERNAL=false
 BUILD_CONTAINERS=false
 EXECUTE_BUILD=false
-BUILD_DISTRO=all
+BUILD_DISTRO=${BUILD_DISTRO:-"all"}
 
 while getopts "ibced:" opt; do
     case ${opt} in
