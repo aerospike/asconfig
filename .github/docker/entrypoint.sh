@@ -44,7 +44,7 @@ function install_deps_ubuntu24.04() {
   gem install fpm
 }
 
-function install_deps_redhat_ubi9() {
+function install_deps_ubi9() {
   microdnf -y install ruby rpmdevtools make git
   curl -L https://go.dev/dl/go1.24.6.linux-amd64.tar.gz -o /tmp/go1.24.6.linux-amd64.tar.gz
   mkdir -p /opt/golang && tar -zxvf /tmp/go1.24.6.linux-amd64.tar.gz -C /opt/golang
@@ -90,7 +90,7 @@ function build_ubuntu_images() {
 }
 
 function build_redhat_images() {
-  docker build -t asconfig-pkg-builder-redhat-ubi9 -f .github/docker/Dockerfile-redhat_ubi9 .
+  docker build -t asconfig-pkg-builder-redhat-ubi9 -f .github/docker/Dockerfile-ubi9 .
 }
 
 function build_debian_images() {
@@ -113,7 +113,7 @@ function build_package_ubuntu24.04() {
   ls -laht ../dist
 }
 
-function build_package_redhat_ubi9() {
+function build_package_ubi9() {
   docker run -e BUILD_DISTRO="$BUILD_DISTRO" -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-redhat-ubi9
   ls -laht ../dist
 }
@@ -176,7 +176,7 @@ elif grep -q 22.04 /etc/os-release; then
 elif grep -q 24.04 /etc/os-release; then
   ENV_DISTRO="ubuntu24.04"
 elif grep -q "platform:el9" /etc/os-release; then
-  ENV_DISTRO="redhat_ubi9"
+  ENV_DISTRO="ubi9"
 elif grep -q "bullseye" /etc/os-release; then
   ENV_DISTRO="debian11"
 elif grep -q "bookworm" /etc/os-release; then
@@ -197,9 +197,9 @@ if [ "$INSTALL" = "true" ]; then
   elif [ "$ENV_DISTRO" = "ubuntu24.04" ]; then
       echo "installing dependencies for Ubuntu 24.04"
       install_deps_ubuntu24.04
-  elif [ "$ENV_DISTRO" = "redhat_ubi9" ]; then
+  elif [ "$ENV_DISTRO" = "ubi9" ]; then
       echo "installing dependencies for RedHat UBI9"
-      install_deps_redhat_ubi9
+      install_deps_ubi9
   elif [ "$ENV_DISTRO" = "debian11" ]; then
       echo "installing dependencies for Debian 11"
       install_deps_debian11
@@ -241,9 +241,9 @@ if [ "$EXECUTE_BUILD" = "true" ]; then
     elif [ "$BUILD_DISTRO" = "ubuntu24.04" ]; then
         echo "building package for Ubuntu 24.04"
         build_package_ubuntu24.04
-    elif [ "$BUILD_DISTRO" = "redhat_ubi9" ]; then
+    elif [ "$BUILD_DISTRO" = "ubi9" ]; then
         echo "building package for RedHat UBI9"
-        build_package_redhat_ubi9
+        build_package_ubi9
     elif [ "$BUILD_DISTRO" = "debian11" ]; then
         echo "building package for Debian 11"
         build_package_debian11
@@ -258,7 +258,7 @@ if [ "$EXECUTE_BUILD" = "true" ]; then
         echo "building package for Ubuntu 24.04"
         build_package_ubuntu24.04
         echo "building package for RedHat UBI9"
-        build_package_redhat_ubi9
+        build_package_ubi9
         echo "building package for Debian 11"
         build_package_debian11
         echo "building package for Debian 12"
