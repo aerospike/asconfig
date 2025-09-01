@@ -11,7 +11,7 @@ jobs:
       project: asconfig
       build-name: asconfig
       build-version: v1.0.0
-      build-script: set -x && pwd && git submodule update --init && git checkout SERVER-216 && ls -laht && .github/docker/entrypoint.sh -c && .github/docker/entrypoint.sh -e && ls -laht ../dist
+      build-script: pwd && git clone https://github.com/aerospike/asconfig && ls -laht && cd asconfig && git submodule update --init && git checkout SERVER-216 && ls -laht && .github/docker/entrypoint.sh -c && .github/docker/entrypoint.sh -e && ls -laht ../dist
       artifact-directory: dist
       artifact-name: unsigned-artifacts
       retention-days: 7
