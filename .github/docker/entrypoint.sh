@@ -15,6 +15,7 @@ function install_deps_debian12() {
 }
 
 
+
 function install_deps_debian11() {
   apt -y install ruby-rubygems make rpm git snapd curl binutils
   curl -L https://go.dev/dl/go1.24.6.linux-amd64.tar.gz -o /tmp/go1.24.6.linux-amd64.tar.gz
