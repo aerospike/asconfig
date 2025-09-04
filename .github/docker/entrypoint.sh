@@ -74,7 +74,7 @@ function build_packages(){
     make deb
   elif [[ $ENV_DISTRO == *"debian"* ]]; then
     make deb
-  elif [[ $ENV_DISTRO == *"redhat"* ]]; then
+  elif [[ $ENV_DISTRO == *"ubi"* ]]; then
     make rpm
   else
     make tar
@@ -233,7 +233,7 @@ elif [ "$BUILD_CONTAINERS" = "true" ]; then
 fi
 
 if [ "$EXECUTE_BUILD" = "true" ]; then
-   if [ "$BUILD_DISTRO" = "ubuntu20.04" ]; then
+    if [ "$BUILD_DISTRO" = "ubuntu20.04" ]; then
         echo "building package for Ubuntu 20.04"
         build_package_ubuntu20.04
     elif [ "$BUILD_DISTRO" = "ubuntu22.04" ]; then
