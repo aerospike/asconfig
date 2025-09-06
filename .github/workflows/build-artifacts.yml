@@ -6,24 +6,31 @@ on:
 
 jobs:
   build-artifacts:
+    strategy:
+      matrix:
+        distro: [ debian11, debian12, ubuntu20.04, ubuntu22.04, ubuntu24.04, redhat-ubi9 ]
     uses: aerospike/shared-workflows/.github/workflows/reusable_execute-build.yaml@main
     with:
       project: asconfig
       build-name: asconfig
       build-version: v1.0.0
-      build-script: set -x && cd local && git checkout ${{ github.ref_name }} && git submodule update --init && ls -laht && .github/docker/entrypoint.sh -c && .github/docker/entrypoint.sh -e && ls -laht ../dist
+      build-script:  set -x && cd local && git checkout ${{ github.ref_name }} && git submodule update --init && ls -laht && .github/docker/entrypoint.sh -c -d ${{ matrix.distro }} && .github/docker/entrypoint.sh -e -d ${{ matrix.distro }} && ls -laht ../dist
       artifact-directory: dist
-      artifact-name: unsigned-artifacts
+      artifact-name: unsigned-artifacts-${{ matrix.distro }}
       retention-days: 7
       dry-run: false
       artifactory-url: https://aerospike.jfrog.io # default
       artifactory-oidc-provider-name: gh-aerospike # default
       artifactory-oidc-audience: aerospike # default
   sign-artifacts:
+    strategy:
+      matrix:
+        distro: [ debian11, debian12, ubuntu20.04, ubuntu22.04, ubuntu24.04, redhat-ubi9 ]
     needs: build-artifacts
     uses: aerospike/shared-workflows/.github/workflows/reusable_sign-artifacts.yaml@main # vn.n.n
     with:
-      unsigned-artifacts: unsigned-artifacts
+      artifact-name: signed-artifacts-${{ matrix.distro }}
+      unsigned-artifacts: unsigned-artifacts-${{ matrix.distro }}
       # artifact-name: signed-artifacts  # optional, defaults to signed-artifacts
       # retention-days: 7               # optional, defaults to 7
       # dry-run: false                  # optional, for future compatibility
@@ -33,6 +40,9 @@ jobs:
       gpg-key-pass: ${{ secrets.GPG_PASS }}
 
   upload-artifacts:
+    strategy:
+      matrix:
+        distro: [ debian11, debian12, ubuntu20.04, ubuntu22.04, ubuntu24.04, redhat-ubi9 ]
     needs: sign-artifacts
     uses: aerospike/shared-workflows/.github/workflows/reusable_deploy-artifacts.yaml@main # vn.n.n
     with:
@@ -42,6 +52,6 @@ jobs:
       artifactory-url: https://aerospike.jfrog.io
       artifactory-oidc-provider-name: gh-dev-test
       artifactory-oidc-audience: aerospike/testing
-      artifact-name: signed-artifacts
+      artifact-name: signed-artifacts-${{ matrix.distro }}
       retention-days: 1
       dry-run: false
