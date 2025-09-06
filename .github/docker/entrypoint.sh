@@ -1,135 +1,28 @@
 #!/usr/bin/env bash
 set -xeuo pipefail
 env
+VERSION=$(git rev-parse HEAD | cut -c -8)
+
+SCRIPT_DIR="$(dirname "$(realpath "$0")")"
+source $SCRIPT_DIR/build_package.sh
 
 if [ -d ".git" ]; then
     GIT_DIR=$(pwd)
     PKG_DIR=$GIT_DIR/pkg
 fi
 
-function install_deps_debian12() {
-  apt -y install ruby-rubygems make rpm git snapd curl binutils
-  curl -L https://go.dev/dl/go1.24.6.linux-amd64.tar.gz -o /tmp/go1.24.6.linux-amd64.tar.gz
-  mkdir -p /opt/golang && tar -zxvf /tmp/go1.24.6.linux-amd64.tar.gz -C /opt/golang
-  gem install fpm
+
+
+function build_container() {
+  docker build -t asadmin-pkg-builder-"$1"-"$VERSION" -f .github/docker/Dockerfile-"$1" .
 }
 
 
-
-function install_deps_debian11() {
-  apt -y install ruby-rubygems make rpm git snapd curl binutils
-  curl -L https://go.dev/dl/go1.24.6.linux-amd64.tar.gz -o /tmp/go1.24.6.linux-amd64.tar.gz
-  mkdir -p /opt/golang && tar -zxvf /tmp/go1.24.6.linux-amd64.tar.gz -C /opt/golang
-  gem install fpm
-}
-
-
-function install_deps_ubuntu20.04() {
-  apt -y install ruby make rpm git snapd curl binutils
-  curl -L https://go.dev/dl/go1.24.6.linux-amd64.tar.gz -o /tmp/go1.24.6.linux-amd64.tar.gz
-  mkdir -p /opt/golang && tar -zxvf /tmp/go1.24.6.linux-amd64.tar.gz -C /opt/golang
-  gem install fpm
-}
-
-function install_deps_ubuntu22.04() {
-  apt -y install ruby-rubygems make rpm git snapd curl binutils
-  curl -L https://go.dev/dl/go1.24.6.linux-amd64.tar.gz -o /tmp/go1.24.6.linux-amd64.tar.gz
-  mkdir -p /opt/golang && tar -zxvf /tmp/go1.24.6.linux-amd64.tar.gz -C /opt/golang
-  gem install fpm
-}
-
-function install_deps_ubuntu24.04() {
-  apt -y install ruby-rubygems make rpm git snapd curl binutils
-  curl -L https://go.dev/dl/go1.24.6.linux-amd64.tar.gz -o /tmp/go1.24.6.linux-amd64.tar.gz
-  mkdir -p /opt/golang && tar -zxvf /tmp/go1.24.6.linux-amd64.tar.gz -C /opt/golang
-  gem install fpm
-}
-
-function install_deps_ubi9() {
-  microdnf -y install ruby rpmdevtools make git
-  curl -L https://go.dev/dl/go1.24.6.linux-amd64.tar.gz -o /tmp/go1.24.6.linux-amd64.tar.gz
-  mkdir -p /opt/golang && tar -zxvf /tmp/go1.24.6.linux-amd64.tar.gz -C /opt/golang
-  gem install fpm
-}
-
-function build_packages(){
-  if [ "$ENV_DISTRO" = "" ]; then
-    echo "ENV_DISTRO is not set"
-    return
-  fi
-  export PATH=$PATH:/opt/golang/go/bin
-  GIT_DIR=$(git rev-parse --show-toplevel)
-
-  # build
-  cd "$GIT_DIR"
-  make clean
-  make
-
-  # package
-  cd $PKG_DIR
-  make clean
-  echo "building package for $BUILD_DISTRO"
-
-  if [[ $ENV_DISTRO == *"ubuntu"* ]]; then
-    make deb
-  elif [[ $ENV_DISTRO == *"debian"* ]]; then
-    make deb
-  elif [[ $ENV_DISTRO == *"ubi"* ]]; then
-    make rpm
-  else
-    make tar
-  fi
-
-  mkdir -p /tmp/output/$ENV_DISTRO
-  cp -a $PKG_DIR/target/* /tmp/output/$ENV_DISTRO
-}
-
-function build_ubuntu_images() {
-  docker build  -t asconfig-pkg-builder-ubuntu-2004 -f .github/docker/Dockerfile-ubuntu20.04 .
-  docker build  -t asconfig-pkg-builder-ubuntu-2204 -f .github/docker/Dockerfile-ubuntu22.04 .
-  docker build  -t asconfig-pkg-builder-ubuntu-2404 -f .github/docker/Dockerfile-ubuntu24.04 .
-}
-
-function build_redhat_images() {
-  docker build -t asconfig-pkg-builder-redhat-ubi9 -f .github/docker/Dockerfile-ubi9 .
-}
-
-function build_debian_images() {
-  docker build -t asconfig-pkg-builder-debian-11 -f .github/docker/Dockerfile-debian11 .
-  docker build -t asconfig-pkg-builder-debian-12 -f .github/docker/Dockerfile-debian12 .
-}
-
-function build_package_ubuntu20.04() {
-  docker run -e BUILD_DISTRO="ubuntu20.04" -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-ubuntu-2004
+function execute_build_image() {
+  export BUILD_DISTRO="$1"
+  docker run -e BUILD_DISTRO -v $(realpath ../dist):/tmp/output asadmin-pkg-builder-"$BUILD_DISTRO"-"$VERSION"
   ls -laht ../dist
 }
-
-function build_package_ubuntu22.04() {
-  docker run -e BUILD_DISTRO="ubuntu22.04" -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-ubuntu-2204
-  ls -laht ../dist
-}
-
-function build_package_ubuntu24.04() {
-  docker run -e BUILD_DISTRO="ubuntu24.04" -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-ubuntu-2404
-  ls -laht ../dist
-}
-
-function build_package_ubi9() {
-  docker run -e BUILD_DISTRO="ubi9" -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-redhat-ubi9
-  ls -laht ../dist
-}
-
-function build_package_debian11() {
-  docker run -e BUILD_DISTRO="debian11" -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-debian-11
-  ls -laht ../dist
-}
-
-function build_package_debian12() {
-  docker run -e BUILD_DISTRO="debian12" -v $(realpath ../dist):/tmp/output asconfig-pkg-builder-debian-12
-  ls -laht ../dist
-}
-
-SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 
 INSTALL=false
 BUILD_INTERNAL=false
@@ -177,7 +70,7 @@ elif grep -q 22.04 /etc/os-release; then
 elif grep -q 24.04 /etc/os-release; then
   ENV_DISTRO="ubuntu24.04"
 elif grep -q "platform:el9" /etc/os-release; then
-  ENV_DISTRO="ubi9"
+  ENV_DISTRO="redhat-ubi9"
 elif grep -q "bullseye" /etc/os-release; then
   ENV_DISTRO="debian11"
 elif grep -q "bookworm" /etc/os-release; then
@@ -198,9 +91,9 @@ if [ "$INSTALL" = "true" ]; then
   elif [ "$ENV_DISTRO" = "ubuntu24.04" ]; then
       echo "installing dependencies for Ubuntu 24.04"
       install_deps_ubuntu24.04
-  elif [ "$ENV_DISTRO" = "ubi9" ]; then
+  elif [ "$ENV_DISTRO" = "redhat-ubi9" ]; then
       echo "installing dependencies for RedHat UBI9"
-      install_deps_ubi9
+      install_deps_redhat-ubi9
   elif [ "$ENV_DISTRO" = "debian11" ]; then
       echo "installing dependencies for Debian 11"
       install_deps_debian11
@@ -214,58 +107,34 @@ if [ "$INSTALL" = "true" ]; then
 elif [ "$BUILD_INTERNAL" = "true" ]; then
   build_packages
 elif [ "$BUILD_CONTAINERS" = "true" ]; then
-  if [ -n "$BUILD_DISTRO" ]; then
-    if [ "$BUILD_DISTRO" = "ubuntu" ]; then
-      build_ubuntu_images
-    elif [ "$BUILD_DISTRO" = "redhat" ]; then
-      build_redhat_images
-    elif [ "$BUILD_DISTRO" = "debian" ]; then
-      build_debian_images
-    elif [ "$BUILD_DISTRO" = "all" ]; then
-        build_ubuntu_images
-        build_redhat_images
-        build_debian_images
-    else
-      echo "Unsupported distro: $BUILD_DISTRO"
-      exit 1
-    fi
+  if  [ "$BUILD_DISTRO" = "all" ]; then
+    build_container debian11
+    build_container debian12
+    build_container ubuntu20.04
+    build_container ubuntu22.04
+    build_container ubuntu24.04
+    build_container redhat-ubi9
+  else
+    build_container $BUILD_DISTRO
   fi
 fi
 
 if [ "$EXECUTE_BUILD" = "true" ]; then
-    if [ "$BUILD_DISTRO" = "ubuntu20.04" ]; then
-        echo "building package for Ubuntu 20.04"
-        build_package_ubuntu20.04
-    elif [ "$BUILD_DISTRO" = "ubuntu22.04" ]; then
-        echo "building package for Ubuntu 22.04"
-        build_package_ubuntu22.04
-    elif [ "$BUILD_DISTRO" = "ubuntu24.04" ]; then
-        echo "building package for Ubuntu 24.04"
-        build_package_ubuntu24.04
-    elif [ "$BUILD_DISTRO" = "ubi9" ]; then
-        echo "building package for RedHat UBI9"
-        build_package_ubi9
-    elif [ "$BUILD_DISTRO" = "debian11" ]; then
+   if [ "$BUILD_DISTRO" = "all" ]; then
         echo "building package for Debian 11"
-        build_package_debian11
-    elif [ "$BUILD_DISTRO" = "debian12" ]; then
+        execute_build_image debian11
         echo "building package for Debian 12"
-        build_package_debian12
-    elif [ "$BUILD_DISTRO" = "all" ]; then
+        execute_build_image debian12
         echo "building package for Ubuntu 20.04"
-        build_package_ubuntu20.04
+        execute_build_image ubuntu20.04
         echo "building package for Ubuntu 22.04"
-        build_package_ubuntu22.04
+        execute_build_image ubuntu22.04
         echo "building package for Ubuntu 24.04"
-        build_package_ubuntu24.04
+        execute_build_image ubuntu24.04
         echo "building package for RedHat UBI9"
-        build_package_ubi9
-        echo "building package for Debian 11"
-        build_package_debian11
-        echo "building package for Debian 12"
-        build_package_debian12
+        execute_build_image redhat-ubi9
     else
-        cat /etc/os-release
-        echo "distro not supported"
+        echo "building package for $BUILD_DISTRO"
+        execute_build_image $BUILD_DISTRO
     fi
 fi
