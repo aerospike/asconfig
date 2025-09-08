@@ -20,8 +20,8 @@ jobs:
       retention-days: 7
       dry-run: false
       artifactory-url: https://aerospike.jfrog.io # default
-      artifactory-oidc-provider-name: gh-dev-test
-      artifactory-oidc-audience: aerospike/testing
+      artifactory-oidc-provider-name: gh-aerospike
+      artifactory-oidc-audience: aerospike
   sign-artifacts:
     strategy:
       matrix:
