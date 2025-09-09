@@ -20,8 +20,8 @@ jobs:
       retention-days: 7
       dry-run: false
       artifactory-url: https://aerospike.jfrog.io # default
-      artifactory-oidc-provider-name: gh-aerospike
-      artifactory-oidc-audience: aerospike
+      artifactory-oidc-provider-name: database-gh-aerospike
+      artifactory-oidc-audience: database-gh-aerospike
   sign-artifacts:
     strategy:
       matrix:
@@ -50,8 +50,8 @@ jobs:
       build-name: asconfig
       version: ${{ github.ref_name }}
       artifactory-url: https://aerospike.jfrog.io
-      artifactory-oidc-provider-name: gh-aerospike
-      artifactory-oidc-audience: aerospike
+      artifactory-oidc-provider-name: database-gh-aerospike
+      artifactory-oidc-audience: database-gh-aerospike
       artifact-name: signed-artifacts-${{ matrix.distro }}
       retention-days: 1
       dry-run: false
