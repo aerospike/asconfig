@@ -1,5 +1,6 @@
 FROM debian:bookworm
 SHELL ["/bin/bash", "-euox", "pipefail", "-c"]
+ENV GOROOT=/opt/golang/go/
 ENV DEBIAN_FRONTEND=noninteractive
 ARG DEBUG=0
 ENV DEBUG=${DEBUG}

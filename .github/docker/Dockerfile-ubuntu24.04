@@ -1,5 +1,6 @@
 FROM ubuntu:24.04
 SHELL ["/bin/bash", "-euox", "pipefail", "-c"]
+ENV GOROOT=/opt/golang/go/
 ENV DEBIAN_FRONTEND=noninteractive
 
 ARG DEBUG=0
