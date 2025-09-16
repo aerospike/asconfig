@@ -52,7 +52,7 @@ func (o *obfuscateEntry) obfuscateLine(line []byte) ([]byte, error) {
 
 func obfuscateNamespaceCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 	chop := len(strconv.Itoa(namespacesSeen))
-	namespacesSeen = namespacesSeen + 1
+	namespacesSeen++
 	o.value = o.value[:len(o.value)-chop] + strconv.Itoa(namespacesSeen)
 
 	return line, nil
@@ -60,7 +60,7 @@ func obfuscateNamespaceCallback(o *obfuscateEntry, line []byte) ([]byte, error) 
 
 func obfuscateMountCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 	chop := len(strconv.Itoa(mountSeen))
-	mountSeen = mountSeen + 1
+	mountSeen++
 	o.value = o.value[:len(o.value)-chop] + strconv.Itoa(mountSeen)
 
 	return line, nil
@@ -68,7 +68,7 @@ func obfuscateMountCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 
 func obfuscateSetCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 	chop := len(strconv.Itoa(setSeen))
-	setSeen = setSeen + 1
+	setSeen++
 	o.value = o.value[:len(o.value)-chop] + strconv.Itoa(setSeen)
 
 	return line, nil
@@ -76,7 +76,7 @@ func obfuscateSetCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 
 func obfuscateDcCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 	chop := len(strconv.Itoa(dcSeen))
-	dcSeen = dcSeen + 1
+	dcSeen++
 	o.value = o.value[:len(o.value)-chop] + strconv.Itoa(dcSeen)
 
 	return line, nil
@@ -84,7 +84,7 @@ func obfuscateDcCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 
 func obfuscateDeviceCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 	chop := len(strconv.Itoa(deviceSeen))
-	deviceSeen = deviceSeen + 1
+	deviceSeen++
 	o.value = o.value[:len(o.value)-chop] + strconv.Itoa(deviceSeen)
 
 	return line, nil
@@ -92,7 +92,7 @@ func obfuscateDeviceCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 
 func obfuscateFilePathCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 	chop := len(strconv.Itoa(fileSeen))
-	fileSeen = fileSeen + 1
+	fileSeen++
 	o.value = o.value[:len(o.value)-chop] + strconv.Itoa(fileSeen)
 
 	return line, nil
@@ -100,7 +100,7 @@ func obfuscateFilePathCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 
 func obfuscateTLSClusterName(o *obfuscateEntry, line []byte) ([]byte, error) {
 	chop := len(strconv.Itoa(tlsSeen))
-	tlsSeen = tlsSeen + 1
+	tlsSeen++
 	o.value = o.value[:len(o.value)-chop] + strconv.Itoa(tlsSeen)
 
 	return line, nil

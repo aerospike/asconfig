@@ -26,6 +26,8 @@ func (cm ConfigMarshaller) MarshalText() (text []byte, err error) {
 	case asConf.YAML:
 		m := cm.ToMap()
 		text, err = yaml.Marshal(m)
+	case asConf.Invalid:
+		err = fmt.Errorf("%w %s", asConf.ErrInvalidFormat, cm.Format)
 	default:
 		err = fmt.Errorf("%w %s", asConf.ErrInvalidFormat, cm.Format)
 	}

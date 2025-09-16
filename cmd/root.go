@@ -18,8 +18,8 @@ import (
 	"github.com/aerospike/asconfig/schema"
 )
 
-// rootCmd represents the base command when called without any subcommands.
-var rootCmd = newRootCmd()
+// mainCmd represents the base command when called without any subcommands.
+var mainCmd = newRootCmd()
 
 var (
 	VERSION            = "development" // Replaced at compile time
@@ -84,7 +84,19 @@ func newRootCmd() *cobra.Command {
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	err := rootCmd.Execute()
+	// Initialize global loggers and schema
+	if err := initializeGlobals(); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to initialize: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Register subcommands
+	mainCmd.AddCommand(GetConvertCmd())
+	mainCmd.AddCommand(GetDiffCmd())
+	mainCmd.AddCommand(GetGenerateCmd())
+	mainCmd.AddCommand(GetValidateCmd())
+
+	err := mainCmd.Execute()
 	if err != nil {
 		if !errors.Is(err, ErrSilent) {
 			// handle wrapped errors
@@ -102,19 +114,28 @@ func Execute() {
 var logger *logrus.Logger
 var mgmtLibLogger logr.Logger
 
-func init() {
+// initializeGlobals initializes global loggers and schema.
+func initializeGlobals() error {
 	logger = logrus.New()
 
-	fmt := logrus.TextFormatter{}
-	fmt.FullTimestamp = true
+	formatter := logrus.TextFormatter{}
+	formatter.FullTimestamp = true
 
-	logger.SetFormatter(&fmt)
+	logger.SetFormatter(&formatter)
 
 	schemaMap, err := schema.NewSchemaMap()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	mgmtLibLogger = logrusr.New(logger)
 	asconfig.InitFromMap(mgmtLibLogger, schemaMap)
+	return nil
+}
+
+// initializeGlobalsForTesting initializes globals for testing, panicking on error.
+func initializeGlobalsForTesting() {
+	if err := initializeGlobals(); err != nil {
+		panic(fmt.Sprintf("Failed to initialize globals for testing: %v", err))
+	}
 }

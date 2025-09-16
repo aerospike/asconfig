@@ -40,7 +40,7 @@ func TestPersistentPreRunRootFlags(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.flags[0], func(t *testing.T) {
-			cmd.ParseFlags(tc.flags)
+			_ = cmd.ParseFlags(tc.flags)
 
 			err := cmd.PersistentPreRunE(cmd, tc.arguments)
 			for _, expectedErr := range tc.expectedErrors {

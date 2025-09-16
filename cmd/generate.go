@@ -15,12 +15,16 @@ import (
 )
 
 var generateArgMax = 1
+var (
+	errUnableToGenerateConfigFile       = errors.New("unable to generate config file")
+	errUnableToParseGeneratedConfFile   = errors.New("unable to parse the generated conf file")
+	errUnableToMarshalGeneratedConfFile = errors.New("unable to marshal the generated conf file")
+)
 
-func init() {
-	rootCmd.AddCommand(generateCmd)
+// GetGenerateCmd returns the generate command.
+func GetGenerateCmd() *cobra.Command {
+	return newGenerateCmd()
 }
-
-var generateCmd = newGenerateCmd()
 
 func newGenerateCmd() *cobra.Command {
 	asCommonFlags := flags.NewDefaultAerospikeFlags()
@@ -55,7 +59,7 @@ func newGenerateCmd() *cobra.Command {
 
 			asPolicy, err := asCommonConfig.NewClientPolicy()
 			if err != nil {
-				return errors.Join(fmt.Errorf("unable to create client policy"), err)
+				return fmt.Errorf("%w: %w", errUnableToCreateClientPolicy, err)
 			}
 
 			logger.Infof("Retrieving Aerospike configuration from node %s", &asCommonFlags.Seeds)
@@ -65,19 +69,19 @@ func newGenerateCmd() *cobra.Command {
 
 			generatedConf, err := asconfig.GenerateConf(mgmtLibLogger, asinfo, true)
 			if err != nil {
-				return errors.Join(fmt.Errorf("unable to generate config file"), err)
+				return fmt.Errorf("%w: %w", errUnableToGenerateConfigFile, err)
 			}
 
 			asconfig, err := asconfig.NewMapAsConfig(mgmtLibLogger, generatedConf.Conf)
 			if err != nil {
-				return errors.Join(fmt.Errorf("unable to parse the generated conf file"), err)
+				return fmt.Errorf("%w: %w", errUnableToParseGeneratedConfFile, err)
 			}
 
 			marshaller := conf.NewConfigMarshaller(asconfig, outFormat)
 
 			fdata, err := marshaller.MarshalText()
 			if err != nil {
-				return errors.Join(fmt.Errorf("unable to marshal the generated conf file"), err)
+				return fmt.Errorf("%w: %w", errUnableToMarshalGeneratedConfFile, err)
 			}
 
 			mdata := map[string]string{

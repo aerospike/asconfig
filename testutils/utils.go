@@ -116,7 +116,11 @@ func CreateAerospikeContainer(name string, c *container.Config, ch *container.Ho
 
 	defer reader.Close()
 
-	io.Copy(os.Stdout, reader)
+	_, err = io.Copy(os.Stdout, reader)
+	if err != nil {
+		log.Printf("Unable to read image pull response for %s: %s", name, err)
+		return "", err
+	}
 
 	platform := &v1.Platform{
 		Architecture: imagePullOpts.Platform,

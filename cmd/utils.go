@@ -19,6 +19,10 @@ const (
 	metaKeyAsadmVersion     = "asadm-version"
 )
 
+var (
+	errMetadataDoesNotContain = errors.New("metadata does not contain key")
+)
+
 // LoggingEnum is a map of valid logging levels - collated from schema.
 var LoggingEnum = map[string]bool{
 	"critical": true,
@@ -108,7 +112,7 @@ func getMetaDataItem(src []byte, key string) (string, error) {
 	}
 
 	if val == "" {
-		return "", fmt.Errorf("metadata does not contain %s", key)
+		return "", fmt.Errorf("%w: %s", errMetadataDoesNotContain, key)
 	}
 
 	return val, nil
@@ -144,12 +148,12 @@ func getConfFileFormat(path string, cmd *cobra.Command) (asConf.Format, error) {
 		fmtStr = ext
 	}
 
-	fmt, err := ParseFmtString(fmtStr)
+	asFormat, err := ParseFmtString(fmtStr)
 	if err != nil {
 		return asConf.Invalid, err
 	}
 
-	return fmt, nil
+	return asFormat, nil
 }
 
 var ErrSilent = errors.New("SILENT")

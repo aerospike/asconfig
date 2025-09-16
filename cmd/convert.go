@@ -29,11 +29,10 @@ var (
 	errMissingFormat               = fmt.Errorf("missing format flag")
 )
 
-func init() {
-	rootCmd.AddCommand(convertCmd)
+// GetConvertCmd returns the convert command.
+func GetConvertCmd() *cobra.Command {
+	return newConvertCmd()
 }
-
-var convertCmd = newConvertCmd()
 
 func newConvertCmd() *cobra.Command {
 	var cfgData []byte
@@ -100,6 +99,8 @@ func newConvertCmd() *cobra.Command {
 				outFmt = asConf.YAML
 			case asConf.YAML:
 				outFmt = asConf.AeroConfig
+			case asConf.Invalid:
+				return fmt.Errorf("%w: %s", errInvalidFormat, srcFormat)
 			default:
 				return fmt.Errorf("%w: %s", errInvalidFormat, srcFormat)
 			}
@@ -225,14 +226,19 @@ func newConvertCmd() *cobra.Command {
 			}
 
 			metaData := map[string]string{}
-			metadata.Unmarshal(cfgData, metaData)
+			if err := metadata.Unmarshal(cfgData, metaData); err != nil {
+				return err
+			}
 
 			// if the aerospike server version is in the cfg file's
 			// metadata, don't mark --aerospike-version as required
 			var aeroVersionRequired bool
 			if _, ok := metaData[metaKeyAerospikeVersion]; !ok {
 				if !force {
-					cmd.MarkFlagRequired("aerospike-version")
+					if err := cmd.MarkFlagRequired("aerospike-version"); err != nil {
+						logger.Errorf("Unable to mark aerospike-version flag required: %v", err)
+						return err
+					}
 					aeroVersionRequired = true
 				}
 			}

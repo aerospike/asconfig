@@ -78,7 +78,8 @@ var testDiffArgs = []runTestDiff{
 }
 
 func TestRunEDiff(t *testing.T) {
-	cmd := diffCmd
+	initializeGlobalsForTesting()
+	cmd := GetDiffCmd()
 
 	for i, test := range testDiffArgs {
 		cmd.ParseFlags(test.flags)
@@ -90,6 +91,7 @@ func TestRunEDiff(t *testing.T) {
 }
 
 func TestRunFileDiff(t *testing.T) {
+	initializeGlobalsForTesting()
 	cmd := newDiffCmd()
 
 	// Test valid file diff cases
@@ -129,6 +131,7 @@ func TestRunFileDiff(t *testing.T) {
 }
 
 func TestRunServerDiff(t *testing.T) {
+	initializeGlobalsForTesting()
 	cmd := newDiffCmd()
 
 	// Test server diff argument validation

@@ -19,11 +19,10 @@ var (
 	errValidateTooManyArguments = fmt.Errorf("expected a maximum of %d arguments", convertArgMax)
 )
 
-func init() {
-	rootCmd.AddCommand(validateCmd)
+// GetValidateCmd returns the validate command.
+func GetValidateCmd() *cobra.Command {
+	return newValidateCmd()
 }
-
-var validateCmd = newValidateCmd()
 
 func newValidateCmd() *cobra.Command {
 	res := &cobra.Command{
@@ -70,11 +69,15 @@ func newValidateCmd() *cobra.Command {
 			// if the Aerospike server version was not in the file
 			// metadata, require that it is passed as an argument
 			if version == "" {
-				cmd.MarkFlagRequired("aerospike-version")
+				err := cmd.MarkFlagRequired("aerospike-version")
+				if err != nil {
+					return err
+				}
 			}
 
 			versionArg, err := cmd.Flags().GetString("aerospike-version")
 			if err != nil {
+				logger.Errorf("Unable to get aerospike-version flag: %v", err)
 				return err
 			}
 
@@ -95,6 +98,9 @@ func newValidateCmd() *cobra.Command {
 			verrs, err := conf.NewConfigValidator(asconfig, mgmtLibLogger, version).Validate()
 			// verrs is an empty slice if err is not nil but no
 			// validation errors were found
+			if err != nil {
+				return err
+			}
 			if verrs != nil && len(verrs.Errors) > 0 {
 				cmd.Print(verrs.Error())
 				return errors.Join(conf.ErrConfigValidation, ErrSilent)

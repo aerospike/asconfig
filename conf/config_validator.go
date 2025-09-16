@@ -14,6 +14,12 @@ import (
 
 var (
 	ErrConfigValidation = fmt.Errorf("error while validating config")
+	ErrContextNotSlice  = errors.New("context is not a slice in json config")
+	ErrIndexOutOfBounds = errors.New("index out of bounds json config")
+	ErrContextNotMap    = errors.New("context is not a map in json config")
+	ErrNameNotFound     = errors.New("name not found in json config")
+	ErrNameNotString    = errors.New("name is not a string in json config")
+	ErrContextNotFound  = errors.New("context not found in json config")
 )
 
 type ConfigValidator struct {
@@ -159,29 +165,29 @@ func jsonToConfigContext(jsonConfig any, context string) (string, error) {
 		// if key is an index, then context should be a slice
 		jsonSlice, ok := jsonConfig.([]any)
 		if !ok {
-			return "", fmt.Errorf("context is not a slice in json config at: %s", context)
+			return "", fmt.Errorf("%w at: %s", ErrContextNotSlice, context)
 		}
 
 		// check if index is out of bounds
 		if len(jsonSlice) <= index {
-			return "", fmt.Errorf("index out of bounds json config at: %s", context)
+			return "", fmt.Errorf("%w at: %s", ErrIndexOutOfBounds, context)
 		}
 
 		// the indexed object should be a map
 		indexedMap, ok := jsonSlice[index].(map[string]any)
 		if !ok {
-			return "", fmt.Errorf("context is not a map in json config at: %s", context)
+			return "", fmt.Errorf("%w at: %s", ErrContextNotMap, context)
 		}
 
 		// get the name field from the indexed object
 		name, ok := indexedMap["name"]
 		if !ok {
-			return "", fmt.Errorf("name not found in json config at: %s", context)
+			return "", fmt.Errorf("%w at: %s", ErrNameNotFound, context)
 		}
 
 		// name should be a string
 		if nameStr, ok := name.(string); !ok {
-			return "", fmt.Errorf("name is not a string in json config at: %v", context)
+			return "", fmt.Errorf("%w at: %v", ErrNameNotString, context)
 		} else {
 			// set res to the name instead of the index
 			res = nameStr
@@ -193,13 +199,13 @@ func jsonToConfigContext(jsonConfig any, context string) (string, error) {
 		// if key is not an index, then context should be a map
 		jsonMap, ok := jsonConfig.(map[string]any)
 		if !ok {
-			return "", fmt.Errorf("context is not a map in json config at: %s", context)
+			return "", fmt.Errorf("%w at: %s", ErrContextNotMap, context)
 		}
 
 		// set jsonConfig to the object at key
 		jsonConfig, ok = jsonMap[key]
 		if !ok {
-			return "", fmt.Errorf("context not found in json config at: %s", key)
+			return "", fmt.Errorf("%w at: %s", ErrContextNotFound, key)
 		}
 
 		// set res to the context key
