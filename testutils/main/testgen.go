@@ -19,7 +19,7 @@ import (
 	"github.com/aerospike/asconfig/testutils"
 )
 
-// global flags
+// global flags.
 var obfuscate *bool
 
 type versions struct {
@@ -291,6 +291,7 @@ var tlsSeen int = 1
 
 func processFileData(in io.Reader) (io.Reader, error) {
 	processedData := bytes.Buffer{}
+
 	scanner := bufio.NewScanner(in)
 	for scanner.Scan() {
 		tmp := scanner.Bytes()
@@ -309,6 +310,7 @@ func processFileData(in io.Reader) (io.Reader, error) {
 		if *obfuscate {
 			for _, obfs := range obfuscateThese {
 				var err error
+
 				line, err = obfs.obfuscateLine(line)
 				if err != nil {
 					return nil, err
@@ -380,10 +382,12 @@ func main() {
 	}
 
 	copiedSrcPath := filepath.Join(testCasePath, filepath.Base(inputPath))
+
 	w, err := os.Create(copiedSrcPath)
 	if err != nil {
 		log.Fatalf("failed to create %s", copiedSrcPath)
 	}
+
 	defer w.Close()
 
 	_, err = w.ReadFrom(processedFile)
@@ -412,6 +416,7 @@ func main() {
 	}
 
 	cmd := exec.Command("asconfig", args...)
+
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Fatalf("command failed to run %v, %+v, out: %s", cmd, err, string(out))
@@ -452,6 +457,7 @@ func main() {
 	}
 
 	yamlTestPath := filepath.Join(testCasePath, "yaml-tests.json")
+
 	err = os.WriteFile(yamlTestPath, data, 0655)
 	if err != nil {
 		log.Fatalf("failed to write to %s", yamlTestPath)
@@ -485,6 +491,7 @@ func main() {
 	}
 
 	confTestPath := filepath.Join(testCasePath, "conf-tests.json")
+
 	err = os.WriteFile(confTestPath, data, 0655)
 	if err != nil {
 		log.Fatalf("failed to write to %s", confTestPath)

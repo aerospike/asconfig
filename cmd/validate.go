@@ -6,9 +6,9 @@ import (
 	"os"
 
 	asConf "github.com/aerospike/aerospike-management-lib/asconfig"
-	"github.com/aerospike/asconfig/conf"
-
 	"github.com/spf13/cobra"
+
+	"github.com/aerospike/asconfig/conf"
 )
 
 const (

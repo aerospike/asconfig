@@ -8,9 +8,10 @@ import (
 	"strings"
 
 	asConf "github.com/aerospike/aerospike-management-lib/asconfig"
+	"github.com/spf13/cobra"
+
 	"github.com/aerospike/asconfig/conf"
 	"github.com/aerospike/asconfig/conf/metadata"
-	"github.com/spf13/cobra"
 )
 
 const (
@@ -36,6 +37,7 @@ var convertCmd = newConvertCmd()
 
 func newConvertCmd() *cobra.Command {
 	var cfgData []byte
+
 	res := &cobra.Command{
 		Use:   "convert [flags] <path/to/config_file>",
 		Short: "Convert between yaml and Aerospike config format.",
@@ -183,9 +185,8 @@ func newConvertCmd() *cobra.Command {
 			}
 
 			logger.Debugf("Writing converted data to: %s", outputPath)
-			_, err = outFile.Write([]byte(out))
+			_, err = outFile.Write(out)
 			return err
-
 		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > convertArgMax {

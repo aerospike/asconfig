@@ -35,11 +35,13 @@ func TestPersistentPreRunRootFlags(t *testing.T) {
 			},
 		},
 	}
+
 	cmd := newRootCmd()
 
 	for _, tc := range testCases {
 		t.Run(tc.flags[0], func(t *testing.T) {
 			cmd.ParseFlags(tc.flags)
+
 			err := cmd.PersistentPreRunE(cmd, tc.arguments)
 			for _, expectedErr := range tc.expectedErrors {
 				if !errors.Is(err, expectedErr) {
@@ -131,8 +133,8 @@ func (suite *RootTest) TestPersistentPreRunRootInitConfig() {
 			defer os.Remove(tc.configFile)
 
 			rootCmd.SetArgs([]string{"sub", "--config-file", tc.configFile})
-			err = rootCmd.Execute()
 
+			err = rootCmd.Execute()
 			if err != nil {
 				suite.FailNow("unexpected error", err)
 			}
@@ -147,7 +149,7 @@ func (suite *RootTest) TestPersistentPreRunRootInitConfig() {
 
 			bool1, err := flagSet1.GetBool("bool1")
 			suite.NoError(err)
-			suite.Equal(true, bool1)
+			suite.True(bool1)
 
 			str2, err := flagSet2.GetString("str2")
 			suite.NoError(err)
@@ -159,8 +161,7 @@ func (suite *RootTest) TestPersistentPreRunRootInitConfig() {
 
 			bool2, err := flagSet2.GetBool("bool2")
 			suite.NoError(err)
-			suite.Equal(false, bool2)
-
+			suite.False(bool2)
 		})
 	}
 }

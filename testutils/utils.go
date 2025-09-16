@@ -35,8 +35,8 @@ type TestData struct {
 
 func GetAerospikeContainerID(name string) ([]byte, error) {
 	cmd := fmt.Sprintf("docker ps -a | grep '%s' | awk 'NF>1{print $NF}'", name)
-	output, err := exec.Command("bash", "-c", cmd).Output()
 
+	output, err := exec.Command("bash", "-c", cmd).Output()
 	if err != nil {
 		return nil, err
 	}
@@ -79,6 +79,7 @@ func CreateAerospikeContainer(name string, c *container.Config, ch *container.Ho
 	maxBackoff := 5 * time.Minute   // Maximum backoff time
 
 	var reader io.ReadCloser
+
 	var err error
 
 	// Retry loop for image pulling with exponential backoff
@@ -103,15 +104,18 @@ func CreateAerospikeContainer(name string, c *container.Config, ch *container.Ho
 
 			log.Printf("Docker pull rate limit reached for %s, retrying in %v (attempt %d/%d)", name, backoffTime, attempt, maxRetries)
 			time.Sleep(backoffTime)
+
 			continue
 		}
 
 		// If it's not a rate limit error, don't retry
 		log.Printf("Unable to pull image %s: %s", name, err)
+
 		return "", err
 	}
 
 	defer reader.Close()
+
 	io.Copy(os.Stdout, reader)
 
 	platform := &v1.Platform{
@@ -139,7 +143,6 @@ func StartAerospikeContainer(id string, cli *client.Client) error {
 }
 
 func IndexOf(l []string, s string) int {
-
 	for i, e := range l {
 		if e == s {
 			return i

@@ -6,20 +6,19 @@ import (
 	"os"
 	"strings"
 
-	"github.com/aerospike/asconfig/log"
+	"github.com/aerospike/aerospike-management-lib/asconfig"
 	"github.com/aerospike/tools-common-go/config"
 	"github.com/aerospike/tools-common-go/flags"
-
-	"github.com/aerospike/asconfig/schema"
-
-	"github.com/aerospike/aerospike-management-lib/asconfig"
 	"github.com/bombsimon/logrusr/v4"
 	"github.com/go-logr/logr"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+
+	"github.com/aerospike/asconfig/log"
+	"github.com/aerospike/asconfig/schema"
 )
 
-// rootCmd represents the base command when called without any subcommands
+// rootCmd represents the base command when called without any subcommands.
 var rootCmd = newRootCmd()
 
 var (
@@ -75,6 +74,7 @@ func newRootCmd() *cobra.Command {
 	rootCmd.SetFlagErrorFunc(func(cmd *cobra.Command, err error) error {
 		logger.Error(err)
 		cmd.Println(cmd.UsageString())
+
 		return errors.Join(err, ErrSilent)
 	})
 
@@ -94,6 +94,7 @@ func Execute() {
 				logger.Error(err)
 			}
 		}
+
 		os.Exit(1)
 	}
 }

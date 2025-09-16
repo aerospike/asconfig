@@ -3,9 +3,8 @@ package conf
 import (
 	"fmt"
 
-	"gopkg.in/yaml.v3"
-
 	asConf "github.com/aerospike/aerospike-management-lib/asconfig"
+	"gopkg.in/yaml.v3"
 )
 
 type ConfigMarshaller struct {
@@ -21,7 +20,6 @@ func NewConfigMarshaller(conf ConfHandler, format asConf.Format) ConfigMarshalle
 }
 
 func (cm ConfigMarshaller) MarshalText() (text []byte, err error) {
-
 	switch cm.Format {
 	case asConf.AeroConfig:
 		text = []byte(cm.ToConfFile())

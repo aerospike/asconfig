@@ -10,11 +10,11 @@ import (
 
 	asConf "github.com/aerospike/aerospike-management-lib/asconfig"
 	"github.com/aerospike/aerospike-management-lib/info"
-	"github.com/aerospike/asconfig/conf"
 	"github.com/aerospike/tools-common-go/config"
 	"github.com/aerospike/tools-common-go/flags"
-
 	"github.com/spf13/cobra"
+
+	"github.com/aerospike/asconfig/conf"
 )
 
 const (
@@ -25,7 +25,7 @@ const (
 )
 
 var (
-	errDiffConfigsDiffer     = errors.Join(fmt.Errorf("configuration files are not equal"), ErrSilent)
+	errDiffConfigsDiffer     = errors.Join(errors.New("configuration files are not equal"), ErrSilent)
 	errDiffTooFewArgs        = fmt.Errorf("diff requires atleast %d file paths as arguments", diffArgMin)
 	errDiffTooManyArgs       = fmt.Errorf("diff requires no more than %d file paths as arguments", diffArgMax)
 	errDiffServerTooFewArgs  = fmt.Errorf("diff with --server requires exactly %d file path as argument", diffServerArgMin)
@@ -68,7 +68,7 @@ func newDiffCmd() *cobra.Command {
 	return res
 }
 
-// newDiffFilesCmd creates the 'diff files' subcommand (the legacy default)
+// newDiffFilesCmd creates the 'diff files' subcommand (the legacy default).
 func newDiffFilesCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "files [flags] <path/to/config1> <path/to/config2>",
@@ -90,6 +90,7 @@ func newDiffFilesCmd() *cobra.Command {
 	}
 	cmd.Version = VERSION
 	cmd.Flags().StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
+
 	return cmd
 }
 
@@ -121,7 +122,7 @@ func newDiffServerCmd() *cobra.Command {
 	return cmd
 }
 
-// runFileDiff handles the original file-to-file diff functionality
+// runFileDiff handles the original file-to-file diff functionality.
 func runFileDiff(cmd *cobra.Command, args []string) error {
 	if len(args) < diffArgMin {
 		return errDiffTooFewArgs
@@ -190,13 +191,14 @@ func runFileDiff(cmd *cobra.Command, args []string) error {
 	if len(diffs) > 0 {
 		fmt.Printf("Differences shown from %s to %s, '<' are from file1, '>' are from file2.\n", path1, path2)
 		fmt.Println(strings.Join(diffs, ""))
+
 		return errDiffConfigsDiffer
 	}
 
 	return nil
 }
 
-// runServerDiff handles comparing a local file against a running server
+// runServerDiff handles comparing a local file against a running server.
 func runServerDiff(cmd *cobra.Command, args []string) error {
 	if len(args) < diffServerArgMin {
 		return errDiffServerTooFewArgs
@@ -259,6 +261,7 @@ func runServerDiff(cmd *cobra.Command, args []string) error {
 
 	// Marshal server config to bytes in the same format as local file
 	serverConfigMarshaller := conf.NewConfigMarshaller(serverConfHandler, localFormat)
+
 	serverConfigBytes, err := serverConfigMarshaller.MarshalText()
 	if err != nil {
 		return errors.Join(fmt.Errorf("unable to marshal server config"), err)
@@ -282,6 +285,7 @@ func runServerDiff(cmd *cobra.Command, args []string) error {
 	if len(diffs) > 0 {
 		fmt.Printf("Differences shown from %s to server, '<' are from local file, '>' are from server.\n", localPath)
 		fmt.Println(strings.Join(diffs, ""))
+
 		return errDiffConfigsDiffer
 	}
 
@@ -290,7 +294,7 @@ func runServerDiff(cmd *cobra.Command, args []string) error {
 
 // diffFlatMaps reports differences between flattened config maps
 // this only works for maps 1 layer deep as produced by the management
-// lib's flattenConf function
+// lib's flattenConf function.
 func diffFlatMaps(m1 map[string]any, m2 map[string]any) []string {
 	var res []string
 
@@ -307,6 +311,7 @@ func diffFlatMaps(m1 map[string]any, m2 map[string]any) []string {
 	for k := range allKeys {
 		keysList = append(keysList, k)
 	}
+
 	sort.Strings(keysList)
 
 	for _, k := range keysList {

@@ -7,10 +7,11 @@ import (
 
 	"github.com/aerospike/aerospike-management-lib/asconfig"
 	"github.com/aerospike/aerospike-management-lib/info"
-	"github.com/aerospike/asconfig/conf"
 	"github.com/aerospike/tools-common-go/config"
 	"github.com/aerospike/tools-common-go/flags"
 	"github.com/spf13/cobra"
+
+	"github.com/aerospike/asconfig/conf"
 )
 
 var generateArgMax = 1

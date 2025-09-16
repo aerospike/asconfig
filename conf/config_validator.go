@@ -33,10 +33,10 @@ func NewConfigValidator(confHandler ConfHandler, mgmtLogger logr.Logger, version
 // Validate validates the parsed configuration against the schema for the given versions.
 // ValidationErrors is not nil if any errors occur during validation.
 func (cv *ConfigValidator) Validate() (*ValidationErrors, error) {
-
 	valid, tempVerrs, err := cv.IsValid(cv.mgmtLogger, cv.version)
 
 	verrs := ValidationErrors{}
+
 	for _, v := range tempVerrs {
 		verr := ValidationErr{
 			ValidationErr: *v,
@@ -45,7 +45,6 @@ func (cv *ConfigValidator) Validate() (*ValidationErrors, error) {
 	}
 
 	if !valid || err != nil || len(verrs.Errors) > 0 {
-
 		config := cv.ToMap()
 
 		jsonConfigStr, err := json.Marshal(config)
@@ -60,6 +59,7 @@ func (cv *ConfigValidator) Validate() (*ValidationErrors, error) {
 		// of the field that is causing the error from the json config
 		for i, verr := range verrs.Errors {
 			context, _ := strings.CutPrefix(verr.Context, "(root).")
+
 			context, err := jsonToConfigContext(jsonConfig, context)
 			if err != nil {
 				// if we can't associate the error with its
@@ -84,7 +84,7 @@ type VErrSlice []ValidationErr
 
 func (a VErrSlice) Len() int           { return len(a) }
 func (a VErrSlice) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a VErrSlice) Less(i, j int) bool { return strings.Compare(a[i].Error(), a[j].Error()) == -1 }
+func (a VErrSlice) Less(i, j int) bool { return a[i].Error() < a[j].Error() }
 
 // Outputs a human readable string of validation error details.
 // error is not nil if validation, or any other type of error occurs.
@@ -120,7 +120,6 @@ func (o ValidationErrors) Error() string {
 
 		errList := errorsByContext[ctx]
 		for _, err := range errList {
-
 			// filter "Must validate one and only one schema " errors
 			// I have never seen a useful one and they seem to always be
 			// accompanied by another more useful error that will be displayed
