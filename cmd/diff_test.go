@@ -79,7 +79,7 @@ var testDiffArgs = []runTestDiff{
 
 func TestRunEDiff(t *testing.T) {
 	initializeGlobalsForTesting()
-	cmd := GetDiffCmd()
+	cmd := newDiffCmd()
 
 	for i, test := range testDiffArgs {
 		cmd.ParseFlags(test.flags)

@@ -29,11 +29,6 @@ var (
 	errMissingFormat               = fmt.Errorf("missing format flag")
 )
 
-// GetConvertCmd returns the convert command.
-func GetConvertCmd() *cobra.Command {
-	return newConvertCmd()
-}
-
 func newConvertCmd() *cobra.Command {
 	var cfgData []byte
 

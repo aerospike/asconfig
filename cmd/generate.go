@@ -21,11 +21,6 @@ var (
 	errUnableToMarshalGeneratedConfFile = errors.New("unable to marshal the generated conf file")
 )
 
-// GetGenerateCmd returns the generate command.
-func GetGenerateCmd() *cobra.Command {
-	return newGenerateCmd()
-}
-
 func newGenerateCmd() *cobra.Command {
 	asCommonFlags := flags.NewDefaultAerospikeFlags()
 	disclaimer := []byte(`#

@@ -66,7 +66,7 @@ func TestRunEValidate(t *testing.T) {
 
 	for i, test := range testValidateArgs {
 		// Create a fresh command instance for each test case
-		cmd := GetValidateCmd()
+		cmd := newValidateCmd()
 		
 		cmd.ParseFlags(test.flags)
 		err := cmd.RunE(cmd, test.arguments)

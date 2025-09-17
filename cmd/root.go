@@ -91,10 +91,10 @@ func Execute() {
 	}
 
 	// Register subcommands
-	mainCmd.AddCommand(GetConvertCmd())
-	mainCmd.AddCommand(GetDiffCmd())
-	mainCmd.AddCommand(GetGenerateCmd())
-	mainCmd.AddCommand(GetValidateCmd())
+	mainCmd.AddCommand(newConvertCmd())
+	mainCmd.AddCommand(newDiffCmd())
+	mainCmd.AddCommand(newGenerateCmd())
+	mainCmd.AddCommand(newValidateCmd())
 
 	err := mainCmd.Execute()
 	if err != nil {
@@ -130,12 +130,6 @@ func initializeGlobals() error {
 
 	mgmtLibLogger = logrusr.New(logger)
 	asconfig.InitFromMap(mgmtLibLogger, schemaMap)
-	return nil
-}
 
-// initializeGlobalsForTesting initializes globals for testing, panicking on error.
-func initializeGlobalsForTesting() {
-	if err := initializeGlobals(); err != nil {
-		panic(fmt.Sprintf("Failed to initialize globals for testing: %v", err))
-	}
+	return nil
 }

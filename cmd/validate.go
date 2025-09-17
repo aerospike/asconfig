@@ -19,11 +19,6 @@ var (
 	errValidateTooManyArguments = fmt.Errorf("expected a maximum of %d arguments", convertArgMax)
 )
 
-// GetValidateCmd returns the validate command.
-func GetValidateCmd() *cobra.Command {
-	return newValidateCmd()
-}
-
 func newValidateCmd() *cobra.Command {
 	res := &cobra.Command{
 		Use:   "validate [flags] <path/to/config_file>",

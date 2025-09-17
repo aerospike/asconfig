@@ -36,6 +36,8 @@ func TestPersistentPreRunRootFlags(t *testing.T) {
 		},
 	}
 
+	initializeGlobalsForTesting()
+
 	cmd := newRootCmd()
 
 	for _, tc := range testCases {
@@ -168,4 +170,11 @@ func (suite *RootTest) TestPersistentPreRunRootInitConfig() {
 
 func TestRunTestSuite(t *testing.T) {
 	suite.Run(t, new(RootTest))
+}
+
+// initializeGlobalsForTesting initializes globals for testing, panicking on error.
+func initializeGlobalsForTesting() {
+	if err := initializeGlobals(); err != nil {
+		panic("Failed to initialize globals for testing: " + err.Error())
+	}
 }

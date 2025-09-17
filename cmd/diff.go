@@ -39,10 +39,6 @@ var (
 )
 
 // GetDiffCmd returns the diff command.
-func GetDiffCmd() *cobra.Command {
-	return newDiffCmd()
-}
-
 func newDiffCmd() *cobra.Command {
 	res := &cobra.Command{
 		Use:   "diff",
@@ -117,6 +113,7 @@ func newDiffServerCmd() *cobra.Command {
 
 	// Add format flag but hide it from help output as it will be automatically detected
 	cmd.Flags().StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
+
 	if err := cmd.Flags().MarkHidden("format"); err != nil {
 		logger.Errorf("Unable to hide format flag: %v", err)
 		// this is appropriate since this function returns a *cobra.Command
