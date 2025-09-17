@@ -25,21 +25,21 @@ var preTestsConvert = []preTestConvert{
 		flags:     []string{"-a", ""},
 		arguments: []string{"./bad_file.yaml", "too_many"},
 		expectedErrors: []error{
-			errTooManyArguments,
+			ErrTooManyArguments,
 		},
 	},
 	{
 		flags:     []string{},
 		arguments: []string{"./bad_file.yaml"},
 		expectedErrors: []error{
-			errFileNotExist,
+			ErrFileNotExist,
 		},
 	},
 	{
 		flags:     []string{},
 		arguments: []string{"./convert_test.go"},
 		expectedErrors: []error{
-			errMissingAerospikeVersion,
+			ErrMissingAerospikeVersion,
 		},
 	},
 	{
