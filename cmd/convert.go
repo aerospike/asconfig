@@ -301,7 +301,7 @@ func handleAerospikeVersionValidation(cmd *cobra.Command, metaData map[string]st
 		}
 
 		if av == "" {
-			return errors.Join(errMissingAerospikeVersion, errFlag)
+			return errMissingAerospikeVersion
 		}
 
 		supported, errSupported := asConf.IsSupportedVersion(av)
