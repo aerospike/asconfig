@@ -16,7 +16,7 @@ const (
 )
 
 var (
-	errValidateTooManyArguments = fmt.Errorf("expected a maximum of %d arguments", convertArgMax)
+	ErrValidateTooManyArguments = fmt.Errorf("expected a maximum of %d arguments", convertArgMax)
 )
 
 func newValidateCmd() *cobra.Command {
@@ -50,7 +50,7 @@ func runValidateCommand(cmd *cobra.Command, args []string) error {
 	logger.Debug("Running validate command")
 
 	if len(args) > validateArgMax {
-		return errValidateTooManyArguments
+		return ErrValidateTooManyArguments
 	}
 
 	// read stdin by default
@@ -75,7 +75,7 @@ func runValidateCommand(cmd *cobra.Command, args []string) error {
 
 	version, err := getMetaDataItemOptional(fdata, metaKeyAerospikeVersion)
 	if err != nil {
-		return errors.Join(errMissingAerospikeVersion, err)
+		return errors.Join(ErrMissingAerospikeVersion, err)
 	}
 
 	// if the Aerospike server version was not in the file

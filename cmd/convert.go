@@ -20,13 +20,13 @@ const (
 )
 
 var (
-	errTooManyArguments            = fmt.Errorf("expected a maximum of %d arguments", convertArgMax)
-	errFileNotExist                = errors.New("file does not exist")
-	errMissingAerospikeVersion     = errors.New("missing required flag '--aerospike-version'")
-	errInvalidAerospikeVersion     = errors.New("aerospike version must be in the form <a>.<b>.<c>")
-	errUnsupportedAerospikeVersion = errors.New("aerospike version unsupported")
-	errInvalidFormat               = errors.New("invalid format flag")
-	errMissingFormat               = errors.New("missing format flag")
+	ErrTooManyArguments            = fmt.Errorf("expected a maximum of %d arguments", convertArgMax)
+	ErrFileNotExist                = errors.New("file does not exist")
+	ErrMissingAerospikeVersion     = errors.New("missing required flag '--aerospike-version'")
+	ErrInvalidAerospikeVersion     = errors.New("aerospike version must be in the form <a>.<b>.<c>")
+	ErrUnsupportedAerospikeVersion = errors.New("aerospike version unsupported")
+	ErrInvalidFormat               = errors.New("invalid format flag")
+	ErrMissingFormat               = errors.New("missing format flag")
 )
 
 func newConvertCmd() *cobra.Command {
@@ -118,7 +118,7 @@ func convertConfig(cmd *cobra.Command, args []string, cfgData []byte) error {
 	if asVersion == "" {
 		asVersion, err = getMetaDataItem(cfgData, metaKeyAerospikeVersion)
 		if err != nil && !force {
-			return errors.Join(errMissingAerospikeVersion, err)
+			return errors.Join(ErrMissingAerospikeVersion, err)
 		}
 	}
 
@@ -140,9 +140,9 @@ func determineOutputFormat(srcFormat asConf.Format) (asConf.Format, error) {
 	case asConf.YAML:
 		return asConf.AeroConfig, nil
 	case asConf.Invalid:
-		return asConf.Invalid, fmt.Errorf("%w: %s", errInvalidFormat, srcFormat)
+		return asConf.Invalid, fmt.Errorf("%w: %s", ErrInvalidFormat, srcFormat)
 	default:
-		return asConf.Invalid, fmt.Errorf("%w: %s", errInvalidFormat, srcFormat)
+		return asConf.Invalid, fmt.Errorf("%w: %s", ErrInvalidFormat, srcFormat)
 	}
 }
 
@@ -244,9 +244,9 @@ func determineOutputPath(outputPath, srcPath string, outFmt asConf.Format) (stri
 		case asConf.AeroConfig:
 			outputPath += ".conf"
 		case asConf.Invalid:
-			return "", fmt.Errorf("output format unrecognized %w", errInvalidFormat)
+			return "", fmt.Errorf("output format unrecognized %w", ErrInvalidFormat)
 		default:
-			return "", fmt.Errorf("output format unrecognized %w", errInvalidFormat)
+			return "", fmt.Errorf("output format unrecognized %w", ErrInvalidFormat)
 		}
 	}
 
@@ -256,13 +256,13 @@ func determineOutputPath(outputPath, srcPath string, outFmt asConf.Format) (stri
 // validateConvertPreRun handles pre-run validation logic.
 func validateConvertPreRun(cmd *cobra.Command, args []string, cfgData *[]byte) error {
 	if len(args) > convertArgMax {
-		return errTooManyArguments
+		return ErrTooManyArguments
 	}
 
 	if len(args) > 0 {
 		source := args[0]
 		if _, err := os.Stat(source); errors.Is(err, os.ErrNotExist) {
-			return errors.Join(errFileNotExist, err)
+			return errors.Join(ErrFileNotExist, err)
 		}
 	}
 
@@ -303,18 +303,18 @@ func handleAerospikeVersionValidation(cmd *cobra.Command, metaData map[string]st
 		}
 
 		if av == "" {
-			return errMissingAerospikeVersion
+			return ErrMissingAerospikeVersion
 		}
 
 		supported, errSupported := asConf.IsSupportedVersion(av)
 		if errSupported != nil {
-			return errors.Join(errInvalidAerospikeVersion, errSupported)
+			return errors.Join(ErrInvalidAerospikeVersion, errSupported)
 		}
 
 		// TODO include valid versions in the error message
 		// asconfig lib needs a getSupportedVersions func
 		if !supported {
-			return errUnsupportedAerospikeVersion
+			return ErrUnsupportedAerospikeVersion
 		}
 	}
 
@@ -350,12 +350,12 @@ func validateAerospikeVersion(cmd *cobra.Command, args []string, force bool, cfg
 
 	formatString, err := cmd.Flags().GetString("format")
 	if err != nil {
-		return errors.Join(errMissingFormat, err)
+		return errors.Join(ErrMissingFormat, err)
 	}
 
 	_, err = ParseFmtString(formatString)
 	if err != nil && formatString != "" {
-		return errors.Join(errInvalidFormat, err)
+		return errors.Join(ErrInvalidFormat, err)
 	}
 
 	return nil

@@ -42,7 +42,7 @@ func newGenerateCmd() *cobra.Command {
 		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > generateArgMax {
-				return errTooManyArguments
+				return ErrTooManyArguments
 			}
 
 			// validate flags
@@ -53,12 +53,12 @@ func newGenerateCmd() *cobra.Command {
 
 			formatString, err := cmd.Flags().GetString("format")
 			if err != nil {
-				return errors.Join(errMissingFormat, err)
+				return errors.Join(ErrMissingFormat, err)
 			}
 
 			_, err = ParseFmtString(formatString)
 			if err != nil && formatString != "" {
-				return errors.Join(errInvalidFormat, err)
+				return errors.Join(ErrInvalidFormat, err)
 			}
 
 			return nil
