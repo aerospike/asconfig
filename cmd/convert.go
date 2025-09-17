@@ -273,6 +273,47 @@ func validateConvertPreRun(cmd *cobra.Command, args []string, cfgData *[]byte) e
 	return validateAerospikeVersion(cmd, args, force, cfgData)
 }
 
+// handleAerospikeVersionValidation handles the aerospike version validation logic.
+func handleAerospikeVersionValidation(cmd *cobra.Command, metaData map[string]string, force bool) error {
+	// if the aerospike server version is in the cfg file's metadata, don't mark --aerospike-version as required
+	var aeroVersionRequired bool
+
+	if _, ok := metaData[metaKeyAerospikeVersion]; !ok {
+		if !force {
+			if err := cmd.MarkFlagRequired("aerospike-version"); err != nil {
+				logger.Errorf("Unable to mark aerospike-version flag required: %v", err)
+				return err
+			}
+
+			aeroVersionRequired = true
+		}
+	}
+
+	if aeroVersionRequired {
+		av, errFlag := cmd.Flags().GetString("aerospike-version")
+		if errFlag != nil {
+			return errFlag
+		}
+
+		if av == "" {
+			return errors.Join(errMissingAerospikeVersion, errFlag)
+		}
+
+		supported, errSupported := asConf.IsSupportedVersion(av)
+		if errSupported != nil {
+			return errors.Join(errInvalidAerospikeVersion, errSupported)
+		}
+
+		// TODO include valid versions in the error message
+		// asconfig lib needs a getSupportedVersions func
+		if !supported {
+			return errUnsupportedAerospikeVersion
+		}
+	}
+
+	return nil
+}
+
 // validateAerospikeVersion handles aerospike version validation.
 func validateAerospikeVersion(cmd *cobra.Command, args []string, force bool, cfgData *[]byte) error {
 	// read stdin by default
@@ -295,40 +336,9 @@ func validateAerospikeVersion(cmd *cobra.Command, args []string, force bool, cfg
 		return errUnmarshal
 	}
 
-	// if the aerospike server version is in the cfg file's metadata, don't mark --aerospike-version as required
-	var aeroVersionRequired bool
-
-	if _, ok := metaData[metaKeyAerospikeVersion]; !ok {
-		if !force {
-			if err = cmd.MarkFlagRequired("aerospike-version"); err != nil {
-				logger.Errorf("Unable to mark aerospike-version flag required: %v", err)
-				return err
-			}
-
-			aeroVersionRequired = true
-		}
-	}
-
-	if aeroVersionRequired {
-		av, errFlag := cmd.Flags().GetString("aerospike-version")
-		if errFlag != nil {
-			return errFlag
-		}
-
-		if av == "" {
-			return errors.Join(errMissingAerospikeVersion, err)
-		}
-
-		supported, errSupported := asConf.IsSupportedVersion(av)
-		if errSupported != nil {
-			return errors.Join(errInvalidAerospikeVersion, errSupported)
-		}
-
-		// TODO include valid versions in the error message
-		// asconfig lib needs a getSupportedVersions func
-		if !supported {
-			return errUnsupportedAerospikeVersion
-		}
+	// handle aerospike version validation
+	if errHandle := handleAerospikeVersionValidation(cmd, metaData, force); errHandle != nil {
+		return errHandle
 	}
 
 	formatString, err := cmd.Flags().GetString("format")
