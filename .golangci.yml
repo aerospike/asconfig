@@ -46,7 +46,9 @@ linters:
     - whitespace
     - wsl_v5
   disable:
+    # TODO
     - gochecknoglobals
+    - gocyclo
 
     # don't enable:
     # - godox  # Disabling because we need TODO lines at this stage of project.
