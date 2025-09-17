@@ -62,12 +62,12 @@ var testValidateArgs = []runTestValidate{
 }
 
 func TestRunEValidate(t *testing.T) {
-	initializeGlobalsForTesting()
+	InitializeGlobalsForTesting()
 
 	for i, test := range testValidateArgs {
 		// Create a fresh command instance for each test case
 		cmd := newValidateCmd()
-		
+
 		cmd.ParseFlags(test.flags)
 		err := cmd.RunE(cmd, test.arguments)
 		if test.expectError == (err == nil) {

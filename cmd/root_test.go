@@ -1,10 +1,13 @@
-package cmd
+//go:build unit
+
+package cmd_test
 
 import (
 	"errors"
 	"os"
 	"testing"
 
+	"github.com/aerospike/asconfig/cmd"
 	"github.com/aerospike/tools-common-go/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -31,20 +34,20 @@ func TestPersistentPreRunRootFlags(t *testing.T) {
 			flags:     []string{"--log-level", "bad_level"},
 			arguments: []string{},
 			expectedErrors: []error{
-				errInvalidLogLevel,
+				cmd.ErrInvalidLogLevel,
 			},
 		},
 	}
 
-	initializeGlobalsForTesting()
+	cmd.InitializeGlobalsForTesting()
 
-	cmd := newRootCmd()
+	rootCmd := cmd.NewRootCmd()
 
 	for _, tc := range testCases {
 		t.Run(tc.flags[0], func(t *testing.T) {
-			_ = cmd.ParseFlags(tc.flags)
+			_ = rootCmd.ParseFlags(tc.flags)
 
-			err := cmd.PersistentPreRunE(cmd, tc.arguments)
+			err := rootCmd.PersistentPreRunE(rootCmd, tc.arguments)
 			for _, expectedErr := range tc.expectedErrors {
 				if !errors.Is(err, expectedErr) {
 					t.Errorf("%v\n actual err: %v\n is not expected err: %v", tc.flags, err, expectedErr)
@@ -98,7 +101,7 @@ func (testsuite *RootTest) TestPersistentPreRunRootInitConfig() {
 	}
 
 	createCmd := func() (*cobra.Command, *pflag.FlagSet, *pflag.FlagSet) {
-		rootCmd := newRootCmd()
+		rootCmd := cmd.NewRootCmd()
 		subCmd := &cobra.Command{
 			Use: "sub",
 			Run: func(_ *cobra.Command, _ []string) {},
@@ -127,7 +130,7 @@ func (testsuite *RootTest) TestPersistentPreRunRootInitConfig() {
 
 			rootCmd, flagSet1, flagSet2 := createCmd()
 
-			err := os.WriteFile(tc.configFile, []byte(tc.configFileTxt), outputFilePermissions)
+			err := os.WriteFile(tc.configFile, []byte(tc.configFileTxt), cmd.OutputFilePermissions)
 			if err != nil {
 				t.Fatalf("unable to write %s: %v", tc.configFile, err)
 			}
@@ -170,11 +173,4 @@ func (testsuite *RootTest) TestPersistentPreRunRootInitConfig() {
 
 func TestRunTestSuite(t *testing.T) {
 	suite.Run(t, new(RootTest))
-}
-
-// initializeGlobalsForTesting initializes globals for testing, panicking on error.
-func initializeGlobalsForTesting() {
-	if err := initializeGlobals(); err != nil {
-		panic("Failed to initialize globals for testing: " + err.Error())
-	}
 }

@@ -205,7 +205,7 @@ func writeConvertedOutput(cmd *cobra.Command, srcPath string, outFmt asConf.Form
 	if outputPath == os.Stdout.Name() {
 		outFile = os.Stdout
 	} else {
-		outFile, err = os.OpenFile(outputPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, outputFilePermissions)
+		outFile, err = os.OpenFile(outputPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, OutputFilePermissions)
 		if err != nil {
 			return err
 		}

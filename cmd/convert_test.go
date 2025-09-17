@@ -64,7 +64,7 @@ var preTestsConvert = []preTestConvert{
 }
 
 func TestPreRunConvert(t *testing.T) {
-	initializeGlobalsForTesting()
+	InitializeGlobalsForTesting()
 	cmd := newConvertCmd()
 
 	for _, test := range preTestsConvert {

@@ -9,6 +9,8 @@ import (
 	"flag"
 	"fmt"
 	"io"
+
+	//nolint:depguard // log is used for logging in test files
 	"log"
 	"os"
 	"os/exec"

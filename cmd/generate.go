@@ -16,9 +16,9 @@ import (
 
 var generateArgMax = 1
 var (
-	errUnableToGenerateConfigFile       = errors.New("unable to generate config file")
-	errUnableToParseGeneratedConfFile   = errors.New("unable to parse the generated conf file")
-	errUnableToMarshalGeneratedConfFile = errors.New("unable to marshal the generated conf file")
+	ErrUnableToGenerateConfigFile       = errors.New("unable to generate config file")
+	ErrUnableToParseGeneratedConfFile   = errors.New("unable to parse the generated conf file")
+	ErrUnableToMarshalGeneratedConfFile = errors.New("unable to marshal the generated conf file")
 )
 
 func newGenerateCmd() *cobra.Command {
@@ -98,7 +98,7 @@ func runGenerateCommand(cmd *cobra.Command, aerospikeFlags *flags.AerospikeFlags
 
 	asPolicy, err := asCommonConfig.NewClientPolicy()
 	if err != nil {
-		return fmt.Errorf("%w: %w", errUnableToCreateClientPolicy, err)
+		return fmt.Errorf("%w: %w", ErrUnableToCreateClientPolicy, err)
 	}
 
 	logger.Infof("Retrieving Aerospike configuration from node %s", &aerospikeFlags.Seeds)
@@ -108,19 +108,19 @@ func runGenerateCommand(cmd *cobra.Command, aerospikeFlags *flags.AerospikeFlags
 
 	generatedConf, err := asconfig.GenerateConf(mgmtLibLogger, asinfo, true)
 	if err != nil {
-		return fmt.Errorf("%w: %w", errUnableToGenerateConfigFile, err)
+		return fmt.Errorf("%w: %w", ErrUnableToGenerateConfigFile, err)
 	}
 
 	aerospikeConfig, err := asconfig.NewMapAsConfig(mgmtLibLogger, generatedConf.Conf)
 	if err != nil {
-		return fmt.Errorf("%w: %w", errUnableToParseGeneratedConfFile, err)
+		return fmt.Errorf("%w: %w", ErrUnableToParseGeneratedConfFile, err)
 	}
 
 	marshaller := conf.NewConfigMarshaller(aerospikeConfig, outFormat)
 
 	fdata, err := marshaller.MarshalText()
 	if err != nil {
-		return fmt.Errorf("%w: %w", errUnableToMarshalGeneratedConfFile, err)
+		return fmt.Errorf("%w: %w", ErrUnableToMarshalGeneratedConfFile, err)
 	}
 
 	mdata := map[string]string{
@@ -139,7 +139,7 @@ func runGenerateCommand(cmd *cobra.Command, aerospikeFlags *flags.AerospikeFlags
 	if outputPath == os.Stdout.Name() {
 		outFile = os.Stdout
 	} else {
-		outFile, err = os.OpenFile(outputPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, outputFilePermissions)
+		outFile, err = os.OpenFile(outputPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, OutputFilePermissions)
 		if err != nil {
 			return err
 		}

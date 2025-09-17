@@ -19,17 +19,18 @@ import (
 )
 
 // mainCmd represents the base command when called without any subcommands.
-var mainCmd = newRootCmd()
+var mainCmd = NewRootCmd()
 
 var (
 	VERSION            = "development" // Replaced at compile time
-	errInvalidLogLevel = errors.New("invalid log-level flag")
+	ErrInvalidLogLevel = errors.New("invalid log-level flag")
 	aerospikeFlags     = flags.NewDefaultAerospikeFlags()
 	cfFileFlags        = flags.NewConfFileFlags()
 )
 
-// newRootCmd is the root command constructor. It is useful for producing copies of rootCmd for testing.
-func newRootCmd() *cobra.Command {
+// NewRootCmd creates and returns the root cobra command.
+// It is useful for producing copies of rootCmd for testing.
+func NewRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "asconfig",
 		Short: "Manage Aerospike configuration",
@@ -49,7 +50,7 @@ func newRootCmd() *cobra.Command {
 
 			lvlCode, err := logrus.ParseLevel(lvl)
 			if err != nil {
-				multiErr = errors.Join(multiErr, errInvalidLogLevel, err)
+				multiErr = errors.Join(multiErr, ErrInvalidLogLevel, err)
 			}
 
 			logger.SetLevel(lvlCode)
@@ -85,7 +86,7 @@ func newRootCmd() *cobra.Command {
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() error {
 	// Initialize global loggers and schema
-	if err := initializeGlobals(); err != nil {
+	if err := InitializeGlobals(); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to initialize: %v\n", err)
 		return err
 	}
@@ -116,8 +117,8 @@ func Execute() error {
 var logger *logrus.Logger
 var mgmtLibLogger logr.Logger
 
-// initializeGlobals initializes global loggers and schema.
-func initializeGlobals() error {
+// InitializeGlobals initializes global loggers and schema.
+func InitializeGlobals() error {
 	logger = logrus.New()
 
 	formatter := logrus.TextFormatter{}
@@ -134,4 +135,12 @@ func initializeGlobals() error {
 	asconfig.InitFromMap(mgmtLibLogger, schemaMap)
 
 	return nil
+}
+
+// InitializeGlobalsForTesting initializes globals for testing, panicking on error.
+// This is a test helper function.
+func InitializeGlobalsForTesting() {
+	if err := InitializeGlobals(); err != nil {
+		panic("Failed to initialize globals for testing: " + err.Error())
+	}
 }

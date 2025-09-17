@@ -8,7 +8,7 @@ import (
 )
 
 func TestRunEGenerate(t *testing.T) {
-	initializeGlobalsForTesting()
+	InitializeGlobalsForTesting()
 	type runTestGen struct {
 		flags       []string
 		arguments   []string

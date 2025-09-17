@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	outputFilePermissions   = 0o600
+	// OutputFilePermissions defines the default file permissions for output files.
+	OutputFilePermissions   = 0o600
 	metaKeyAerospikeVersion = "aerospike-server-version"
 	metaKeyAsconfigVersion  = "asconfig-version"
 	metaKeyAsadmVersion     = "asadm-version"

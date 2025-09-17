@@ -51,18 +51,27 @@ var testDiffArgs = []runTestDiff{
 		expectError: true,
 	},
 	{
-		flags:       []string{},
-		arguments:   []string{"../testdata/sources/all_flash_cluster_cr.yaml", "../testdata/sources/all_flash_cluster_cr.yaml"},
+		flags: []string{},
+		arguments: []string{
+			"../testdata/sources/all_flash_cluster_cr.yaml",
+			"../testdata/sources/all_flash_cluster_cr.yaml",
+		},
 		expectError: false,
 	},
 	{
-		flags:       []string{"--log-level", "debug"},
-		arguments:   []string{"../testdata/expected/all_flash_cluster_cr.conf", "../testdata/expected/all_flash_cluster_cr.conf"},
+		flags: []string{"--log-level", "debug"},
+		arguments: []string{
+			"../testdata/expected/all_flash_cluster_cr.conf",
+			"../testdata/expected/all_flash_cluster_cr.conf",
+		},
 		expectError: false,
 	},
 	{
-		flags:       []string{"--log-level", "debug"},
-		arguments:   []string{"../testdata/expected/all_flash_cluster_cr.conf", "../testdata/expected/all_flash_cluster_cr_info_cap.conf"},
+		flags: []string{"--log-level", "debug"},
+		arguments: []string{
+			"../testdata/expected/all_flash_cluster_cr.conf",
+			"../testdata/expected/all_flash_cluster_cr_info_cap.conf",
+		},
 		expectError: false,
 	},
 	{
@@ -78,7 +87,7 @@ var testDiffArgs = []runTestDiff{
 }
 
 func TestRunEDiff(t *testing.T) {
-	initializeGlobalsForTesting()
+	InitializeGlobalsForTesting()
 	cmd := newDiffCmd()
 
 	for i, test := range testDiffArgs {
@@ -91,7 +100,7 @@ func TestRunEDiff(t *testing.T) {
 }
 
 func TestRunFileDiff(t *testing.T) {
-	initializeGlobalsForTesting()
+	InitializeGlobalsForTesting()
 	cmd := newDiffCmd()
 
 	// Test valid file diff cases
@@ -101,7 +110,10 @@ func TestRunFileDiff(t *testing.T) {
 		description string
 	}{
 		{
-			args:        []string{"../testdata/sources/all_flash_cluster_cr.yaml", "../testdata/sources/all_flash_cluster_cr.yaml"},
+			args: []string{
+				"../testdata/sources/all_flash_cluster_cr.yaml",
+				"../testdata/sources/all_flash_cluster_cr.yaml",
+			},
 			expectError: false,
 			description: "identical YAML files",
 		},
@@ -125,13 +137,19 @@ func TestRunFileDiff(t *testing.T) {
 	for i, test := range validCases {
 		err := runFileDiff(cmd, test.args)
 		if test.expectError == (err == nil) {
-			t.Fatalf("runFileDiff case %d (%s): expectError: %v does not match err: %v", i, test.description, test.expectError, err)
+			t.Fatalf(
+				"runFileDiff case %d (%s): expectError: %v does not match err: %v",
+				i,
+				test.description,
+				test.expectError,
+				err,
+			)
 		}
 	}
 }
 
 func TestRunServerDiff(t *testing.T) {
-	initializeGlobalsForTesting()
+	InitializeGlobalsForTesting()
 	cmd := newDiffCmd()
 
 	// Test server diff argument validation
@@ -165,7 +183,13 @@ func TestRunServerDiff(t *testing.T) {
 	for i, test := range validationCases {
 		err := runServerDiff(cmd, test.args)
 		if test.expectError == (err == nil) {
-			t.Fatalf("runServerDiff case %d (%s): expectError: %v does not match err: %v", i, test.description, test.expectError, err)
+			t.Fatalf(
+				"runServerDiff case %d (%s): expectError: %v does not match err: %v",
+				i,
+				test.description,
+				test.expectError,
+				err,
+			)
 		}
 	}
 }
@@ -316,7 +340,7 @@ func TestDiffFlatMaps(t *testing.T) {
 }
 
 func TestServerDiffArgValidation(t *testing.T) {
-	rootCmd := newRootCmd()
+	rootCmd := NewRootCmd()
 	rootCmd.AddCommand(newDiffCmd())
 
 	testCases := []struct {
@@ -366,7 +390,7 @@ func TestServerDiffArgValidation(t *testing.T) {
 }
 
 func TestDiffFilesAndLegacyCommands(t *testing.T) {
-	rootCmd := newRootCmd()
+	rootCmd := NewRootCmd()
 	rootCmd.AddCommand(newDiffCmd())
 
 	testCases := []struct {
