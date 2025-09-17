@@ -156,16 +156,13 @@ func getConfFileFormat(path string, cmd *cobra.Command) (asConf.Format, error) {
 
 var ErrSilent = errors.New("SILENT")
 
-func ParseFmtString(in string) (f asConf.Format, err error) {
+func ParseFmtString(in string) (asConf.Format, error) {
 	switch strings.ToLower(in) {
 	case "yaml", "yml":
-		f = asConf.YAML
+		return asConf.YAML, nil
 	case "asconfig", "conf", "asconf":
-		f = asConf.AeroConfig
+		return asConf.AeroConfig, nil
 	default:
-		f = asConf.Invalid
-		err = fmt.Errorf("%w: %s", asConf.ErrInvalidFormat, in)
+		return asConf.Invalid, fmt.Errorf("%w: %s", asConf.ErrInvalidFormat, in)
 	}
-
-	return f, err
 }

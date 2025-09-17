@@ -35,8 +35,8 @@ const (
 var obfuscate *bool
 
 type versions struct {
-	TestedVersion         string
-	OriginallyUsedVersion string
+	TestedVersion         string `json:"testedVersion"`
+	OriginallyUsedVersion string `json:"originallyUsedVersion"`
 }
 
 type obfuscateCallback func(*obfuscateEntry, []byte) ([]byte, error)

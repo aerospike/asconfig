@@ -80,7 +80,7 @@ func (cv *ConfigValidator) Validate() (*ValidationErrors, error) {
 		return &verrs, errors.Join(ErrConfigValidation, err)
 	}
 
-	return nil, nil
+	return &ValidationErrors{}, nil
 }
 
 type ValidationError struct {

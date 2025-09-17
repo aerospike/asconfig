@@ -24,19 +24,19 @@ const (
 )
 
 type DockerAuth struct {
-	Username string
-	Password string
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 type TestData struct {
-	Source               string
-	Destination          string
-	Expected             string
-	Arguments            []string
-	SkipServerTest       bool
-	ServerErrorAllowList []string
-	ServerImage          string
-	DockerAuth           DockerAuth
+	Source               string     `json:"source"`
+	Destination          string     `json:"destination"`
+	Expected             string     `json:"expected"`
+	Arguments            []string   `json:"arguments"`
+	SkipServerTest       bool       `json:"skipServerTest"`
+	ServerErrorAllowList []string   `json:"serverErrorAllowList"`
+	ServerImage          string     `json:"serverImage"`
+	DockerAuth           DockerAuth `json:"dockerAuth"`
 }
 
 func GetAerospikeContainerID(name string) ([]byte, error) {
