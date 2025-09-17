@@ -4,7 +4,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// log levels are the same as logrus.
+// GetLogLevels - log levels are the same as logrus.
 func GetLogLevels() (levels []string) {
 	levels = make([]string, len(logrus.AllLevels))
 
@@ -13,5 +13,5 @@ func GetLogLevels() (levels []string) {
 		levels[i] = string(text)
 	}
 
-	return
+	return levels
 }

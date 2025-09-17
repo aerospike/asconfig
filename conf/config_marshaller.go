@@ -32,5 +32,5 @@ func (cm ConfigMarshaller) MarshalText() (text []byte, err error) {
 		err = fmt.Errorf("%w %s", asConf.ErrInvalidFormat, cm.Format)
 	}
 
-	return
+	return text, err
 }

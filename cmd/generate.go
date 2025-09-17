@@ -34,8 +34,10 @@ func newGenerateCmd() *cobra.Command {
 	res := &cobra.Command{
 		Use:   "generate [flags]",
 		Short: "BETA: Generate a configuration file from a running Aerospike node.",
-		Long:  `BETA: Generate a configuration file from a running Aerospike node. This can be useful if you have changed the configuration of a node dynamically (e.g. xdr) and would like to persist the changes.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Long: `BETA: Generate a configuration file from a running Aerospike node. ` +
+			`This can be useful if you have changed the configuration of a node dynamically ` +
+			`(e.g. xdr) and would like to persist the changes.`,
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			logger.Debug("Running generate command")
 
 			outputPath, err := cmd.Flags().GetString("output")
@@ -95,11 +97,10 @@ func newGenerateCmd() *cobra.Command {
 			if outputPath == os.Stdout.Name() {
 				outFile = os.Stdout
 			} else {
-				outFile, err = os.OpenFile(outputPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+				outFile, err = os.OpenFile(outputPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, outputFilePermissions)
 				if err != nil {
 					return err
 				}
-
 				defer outFile.Close()
 			}
 
@@ -107,7 +108,8 @@ func newGenerateCmd() *cobra.Command {
 			_, err = outFile.Write(fdata)
 
 			logger.Warning(
-				"Community Edition is not supported. Generated static configuration does not save logging.syslog, mod-lua, service.user and service.group",
+				"Community Edition is not supported. Generated static configuration does not save " +
+					"logging.syslog, mod-lua, service.user and service.group",
 			)
 			logger.Warning(
 				"This feature is currently in beta. Use at your own risk and please report any issue to support.",
@@ -145,8 +147,10 @@ func newGenerateCmd() *cobra.Command {
 	res.Flags().AddFlagSet(asFlagSet)
 	config.BindPFlags(asFlagSet, "cluster")
 
-	res.Flags().StringP("output", "o", os.Stdout.Name(), flags.DefaultWrapHelpString("File path to write output to"))
-	res.Flags().StringP("format", "F", "conf", flags.DefaultWrapHelpString("The format of the destination file(s). Valid options are: yaml, yml, and conf."))
+	res.Flags().StringP("output", "o", os.Stdout.Name(),
+		flags.DefaultWrapHelpString("File path to write output to"))
+	res.Flags().StringP("format", "F", "conf",
+		flags.DefaultWrapHelpString("The format of the destination file(s). Valid options are: yaml, yml, and conf."))
 
 	return res
 }

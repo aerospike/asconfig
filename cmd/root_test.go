@@ -82,7 +82,7 @@ type RootTest struct {
 	suite.Suite
 }
 
-func (suite *RootTest) TestPersistentPreRunRootInitConfig() {
+func (testsuite *RootTest) TestPersistentPreRunRootInitConfig() {
 	testCases := []struct {
 		configFile    string
 		configFileTxt string
@@ -101,7 +101,7 @@ func (suite *RootTest) TestPersistentPreRunRootInitConfig() {
 		rootCmd := newRootCmd()
 		subCmd := &cobra.Command{
 			Use: "sub",
-			Run: func(cmd *cobra.Command, args []string) {},
+			Run: func(_ *cobra.Command, _ []string) {},
 		}
 		flagSet1 := &pflag.FlagSet{}
 		flagSet2 := &pflag.FlagSet{}
@@ -122,12 +122,12 @@ func (suite *RootTest) TestPersistentPreRunRootInitConfig() {
 	}
 
 	for _, tc := range testCases {
-		suite.T().Run(tc.configFile, func(t *testing.T) {
+		testsuite.T().Run(tc.configFile, func(t *testing.T) {
 			config.Reset()
 
 			rootCmd, flagSet1, flagSet2 := createCmd()
 
-			err := os.WriteFile(tc.configFile, []byte(tc.configFileTxt), 0600)
+			err := os.WriteFile(tc.configFile, []byte(tc.configFileTxt), outputFilePermissions)
 			if err != nil {
 				t.Fatalf("unable to write %s: %v", tc.configFile, err)
 			}
@@ -138,32 +138,32 @@ func (suite *RootTest) TestPersistentPreRunRootInitConfig() {
 
 			err = rootCmd.Execute()
 			if err != nil {
-				suite.FailNow("unexpected error", err)
+				testsuite.FailNow("unexpected error", err)
 			}
 
 			str1, err := flagSet1.GetString("str1")
-			suite.NoError(err)
-			suite.Equal("localhost:3000", str1)
+			testsuite.NoError(err)
+			testsuite.Equal("localhost:3000", str1)
 
 			int1, err := flagSet1.GetInt("int1")
-			suite.NoError(err)
-			suite.Equal(3000, int1)
+			testsuite.NoError(err)
+			testsuite.Equal(3000, int1)
 
 			bool1, err := flagSet1.GetBool("bool1")
-			suite.NoError(err)
-			suite.True(bool1)
+			testsuite.NoError(err)
+			testsuite.True(bool1)
 
 			str2, err := flagSet2.GetString("str2")
-			suite.NoError(err)
-			suite.Equal("localhost:4000", str2)
+			testsuite.NoError(err)
+			testsuite.Equal("localhost:4000", str2)
 
 			int2, err := flagSet2.GetInt("int2")
-			suite.NoError(err)
-			suite.Equal(4000, int2)
+			testsuite.NoError(err)
+			testsuite.Equal(4000, int2)
 
 			bool2, err := flagSet2.GetBool("bool2")
-			suite.NoError(err)
-			suite.False(bool2)
+			testsuite.NoError(err)
+			testsuite.False(bool2)
 		})
 	}
 }

@@ -38,6 +38,10 @@ const (
 	destinationPath  = "testdata/destinations"
 	coveragePath     = "testdata/coverage/integration"
 	binPath          = "testdata/bin"
+	
+	// File permissions
+	directoryPermissions = 0o777
+	tempFilePermissions  = 0o644
 	extraTestPath    = "testdata/cases"
 	tmpServerLogPath = "testdata/tmp_server.log"
 )
@@ -46,14 +50,14 @@ var featKeyDir string
 
 func TestMain(m *testing.M) {
 	if _, err := os.Stat(destinationPath); errors.Is(err, os.ErrNotExist) {
-		err := os.Mkdir(destinationPath, 0777)
+		err := os.Mkdir(destinationPath, directoryPermissions)
 		if err != nil {
 			panic(err)
 		}
 	}
 
 	if _, err := os.Stat(coveragePath); errors.Is(err, os.ErrNotExist) {
-		err := os.Mkdir(coveragePath, 0777)
+		err := os.Mkdir(coveragePath, directoryPermissions)
 		if err != nil {
 			panic(err)
 		}
@@ -292,7 +296,7 @@ func TestYamlToConf(t *testing.T) {
 		// if asconfig wrote to stdout, write a temp file for the server to use
 		if confPath == os.Stdout.Name() {
 			confPath = filepath.Join(destinationPath, fmt.Sprintf("tmp_stdout_%d.conf", i))
-			os.WriteFile(confPath, actual, 0644)
+			os.WriteFile(confPath, actual, tempFilePermissions)
 		}
 
 		if _, err := diff(confPath, tf.Expected); err != nil {
@@ -677,7 +681,7 @@ func TestConfToYaml(t *testing.T) {
 		// if asconfig wrote to stdout, write a temp file for the server to use
 		if confPath == os.Stdout.Name() {
 			confPath = filepath.Join(destinationPath, "tmp.yaml")
-			os.WriteFile(confPath, actual, 0644)
+			os.WriteFile(confPath, actual, tempFilePermissions)
 		}
 
 		// verify that the generated yaml matches the expected yaml

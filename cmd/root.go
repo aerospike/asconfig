@@ -23,7 +23,7 @@ var mainCmd = newRootCmd()
 
 var (
 	VERSION            = "development" // Replaced at compile time
-	errInvalidLogLevel = fmt.Errorf("Invalid log-level flag")
+	errInvalidLogLevel = fmt.Errorf("invalid log-level flag")
 	aerospikeFlags     = flags.NewDefaultAerospikeFlags()
 	cfFileFlags        = flags.NewConfFileFlags()
 )
@@ -34,7 +34,7 @@ func newRootCmd() *cobra.Command {
 		Use:   "asconfig",
 		Short: "Manage Aerospike configuration",
 		Long:  "Asconfig is used to manage Aerospike configuration.",
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			var multiErr error
 
 			cfgFile, err := config.InitConfig(cfFileFlags.File, cfFileFlags.Instance, cmd.Flags())

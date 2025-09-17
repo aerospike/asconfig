@@ -19,6 +19,12 @@ import (
 	"github.com/aerospike/asconfig/testutils"
 )
 
+const (
+	// File and directory permissions.
+	dirPermissions  = 0o755 // rwxr-xr-x
+	filePermissions = 0o600 // rw-------
+)
+
 // global flags.
 var obfuscate *bool
 
@@ -153,7 +159,7 @@ var obfuscateThese = []*obfuscateEntry{
 		cb:      obfuscateDeviceCallback,
 	},
 	{
-		pattern: regexp.MustCompile(`(file\s+)([^{][\S]+)`),
+		pattern: regexp.MustCompile(`(file\s+)([^{]\S+)`),
 		value:   "/dummy/file/path1",
 		cb:      obfuscateFilePathCallback,
 	},
@@ -281,13 +287,13 @@ var obfuscateThese = []*obfuscateEntry{
 	},
 }
 
-var namespacesSeen int = 1
-var mountSeen int = 1
-var setSeen int = 1
-var dcSeen int = 1
-var deviceSeen int = 1
-var fileSeen int = 1
-var tlsSeen int = 1
+var namespacesSeen = 1
+var mountSeen = 1
+var setSeen = 1
+var dcSeen = 1
+var deviceSeen = 1
+var fileSeen = 1
+var tlsSeen = 1
 
 func processFileData(in io.Reader) (io.Reader, error) {
 	processedData := bytes.Buffer{}
@@ -332,10 +338,13 @@ func main() {
 	overwrite := flag.Bool("overwrite", false, "if a testcase directory already exists for this input, overwrite it")
 	obfuscate = flag.Bool("obfuscate", false, "obfuscate sensitive fields in the copied source config file")
 	aerospikeVersion := flag.String("aerospike-version", "6.2.0.2", "the aerospike version to pass to asconfig e.g: 6.2.0.2")
-	originalVersion := flag.String("original-version", "6.2.0.2", "the aerospike version that was originally used with this config e.g: 6.2.0.2")
+	originalVersion := flag.String("original-version", "6.2.0.2",
+		"the aerospike version that was originally used with this config e.g: 6.2.0.2")
 	serverImage := flag.String("server-image", "", "url to an Aerospike image to use. Overrides aerospike-version")
-	dockerUser := flag.String("docker-user", "", "Environment variable that holds a username used to authenticate with docker repositories during image pulls")
-	dockerPass := flag.String("docker-pass", "", "Environment variable that holds a base64 password or ID token used to authenticate with docker repositories during image pulls")
+	dockerUser := flag.String("docker-user", "",
+		"Environment variable that holds a username used to authenticate with docker repositories during image pulls")
+	dockerPass := flag.String("docker-pass", "",
+		"Environment variable that holds a base64 password or ID token used to authenticate with docker repositories during image pulls")
 
 	flag.Parse()
 
@@ -364,7 +373,7 @@ func main() {
 		}
 	}
 
-	err := os.Mkdir(testCasePath, 0755)
+	err := os.Mkdir(testCasePath, dirPermissions)
 	if err != nil {
 		log.Fatalf("failed to create directory %s", testCasePath)
 	}
@@ -458,7 +467,7 @@ func main() {
 
 	yamlTestPath := filepath.Join(testCasePath, "yaml-tests.json")
 
-	err = os.WriteFile(yamlTestPath, data, 0655)
+	err = os.WriteFile(yamlTestPath, data, filePermissions)
 	if err != nil {
 		log.Fatalf("failed to write to %s", yamlTestPath)
 	}
@@ -492,7 +501,7 @@ func main() {
 
 	confTestPath := filepath.Join(testCasePath, "conf-tests.json")
 
-	err = os.WriteFile(confTestPath, data, 0655)
+	err = os.WriteFile(confTestPath, data, filePermissions)
 	if err != nil {
 		log.Fatalf("failed to write to %s", confTestPath)
 	}
@@ -506,7 +515,7 @@ func main() {
 
 	data, err = json.Marshal(vs)
 
-	err = os.WriteFile(versionsPath, data, 0655)
+	err = os.WriteFile(versionsPath, data, filePermissions)
 	if err != nil {
 		log.Fatalf("failed to write to %s", versionsPath)
 	}

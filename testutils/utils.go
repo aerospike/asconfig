@@ -70,7 +70,13 @@ func RemoveAerospikeContainer(id string, cli *client.Client) error {
 	return nil
 }
 
-func CreateAerospikeContainer(name string, c *container.Config, ch *container.HostConfig, imagePullOpts image.PullOptions, cli *client.Client) (string, error) {
+func CreateAerospikeContainer(
+	name string,
+	c *container.Config,
+	ch *container.HostConfig,
+	imagePullOpts image.PullOptions,
+	cli *client.Client,
+) (string, error) {
 	ctx := context.Background()
 
 	// Retry configuration for Docker Hub rate limiting

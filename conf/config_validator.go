@@ -92,9 +92,9 @@ func (a VErrSlice) Len() int           { return len(a) }
 func (a VErrSlice) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a VErrSlice) Less(i, j int) bool { return a[i].Error() < a[j].Error() }
 
-// Outputs a human readable string of validation error details.
+// Error outputs a human readable string of validation error details.
 // error is not nil if validation, or any other type of error occurs.
-func (o ValidationErr) Error() string {
+func (o *ValidationErr) Error() string {
 	verrTemplate := "description: %s, error-type: %s"
 	return fmt.Sprintf(verrTemplate, o.Description, o.ErrType)
 }
@@ -155,7 +155,9 @@ func (o ValidationErrors) Error() string {
 // The function will return "namespaces.test"
 // An error is returned if the json or context are not in the expected management lib format.
 func jsonToConfigContext(jsonConfig any, context string) (string, error) {
-	split := strings.SplitN(context, ".", 2)
+	const maxSplitParts = 2
+
+	split := strings.SplitN(context, ".", maxSplitParts)
 	key := split[0]
 
 	var res string

@@ -302,7 +302,7 @@ func runServerDiff(cmd *cobra.Command, args []string) error {
 // diffFlatMaps reports differences between flattened config maps
 // this only works for maps 1 layer deep as produced by the management
 // lib's flattenConf function.
-func diffFlatMaps(m1 map[string]any, m2 map[string]any) []string {
+func diffFlatMaps(m1, m2 map[string]any) []string {
 	var res []string
 
 	allKeys := map[string]struct{}{}
@@ -314,7 +314,7 @@ func diffFlatMaps(m1 map[string]any, m2 map[string]any) []string {
 		allKeys[k] = struct{}{}
 	}
 
-	var keysList []string
+	keysList := make([]string, 0, len(allKeys))
 	for k := range allKeys {
 		keysList = append(keysList, k)
 	}
