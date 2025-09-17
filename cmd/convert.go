@@ -162,7 +162,12 @@ func processConfigConversion(
 	// validate
 	if !force {
 		verrs, errValidate := conf.NewConfigValidator(asconfig, mgmtLibLogger, asVersion).Validate()
-		if errValidate != nil || verrs != nil {
+		if errValidate != nil {
+			return nil, errors.Join(errValidate, verrs)
+		}
+
+		// Check if there are actual validation errors
+		if verrs != nil && len(verrs.Errors) > 0 {
 			return nil, errors.Join(errValidate, verrs)
 		}
 	}
