@@ -1,7 +1,13 @@
 package main
 
-import "github.com/aerospike/asconfig/cmd"
+import (
+	"os"
+
+	"github.com/aerospike/asconfig/cmd"
+)
 
 func main() {
-	cmd.Execute()
+	if err := cmd.Execute(); err != nil {
+		os.Exit(1)
+	}
 }

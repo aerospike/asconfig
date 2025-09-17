@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -17,6 +18,11 @@ import (
 	"strings"
 
 	"github.com/aerospike/asconfig/testutils"
+)
+
+var (
+	ErrNoArguments    = errors.New("no arguments found, must specify path to source conf or yaml file")
+	ErrTestCaseExists = errors.New("test case already exists")
 )
 
 const (
@@ -348,65 +354,15 @@ func main() {
 
 	flag.Parse()
 
-	if len(flag.Args()) < 1 {
-		log.Fatal("no arguments found, must specify path to source conf or yaml file")
-	}
-
-	dockerAuth := testutils.DockerAuth{
-		Username: *dockerUser,
-		Password: *dockerPass,
-	}
-
-	inputPath := flag.Args()[0]
-
-	inputName := filepath.Base(strings.TrimSuffix(inputPath, filepath.Ext(inputPath)))
-	testCasePath := filepath.Join(*output, inputName)
-
-	if _, err := os.Stat(testCasePath); !errors.Is(err, os.ErrNotExist) {
-		if !*overwrite {
-			log.Fatalf("test case for %s already exists", testCasePath)
-		}
-
-		err := os.RemoveAll(testCasePath)
-		if err != nil {
-			log.Fatalf("failed to remove directory %s %v", testCasePath, err)
-		}
-	}
-
-	err := os.Mkdir(testCasePath, dirPermissions)
+	inputPath, testCasePath, dockerAuth, err := setupTestEnvironment(*output, *overwrite, *dockerUser, *dockerPass)
 	if err != nil {
-		log.Fatalf("failed to create directory %s", testCasePath)
+		log.Fatal(err)
 	}
 
-	// move source file into testcase dir
-	r, err := os.Open(inputPath)
+	copiedSrcPath, err := processSourceFile(inputPath, testCasePath)
 	if err != nil {
-		log.Fatalf("failed to open %s", inputPath)
+		log.Fatal(err)
 	}
-
-	processedFile, err := processFileData(r)
-	if err != nil {
-		r.Close()
-		log.Fatalf("failed to write to processedData %v", err)
-	}
-
-	copiedSrcPath := filepath.Join(testCasePath, filepath.Base(inputPath))
-
-	w, err := os.Create(copiedSrcPath)
-	if err != nil {
-		r.Close()
-		log.Fatalf("failed to create %s", copiedSrcPath)
-	}
-
-	_, err = w.ReadFrom(processedFile)
-	if err != nil {
-		r.Close()
-		w.Close()
-		log.Fatalf("failed to copy %s to %s", inputPath, copiedSrcPath)
-	}
-
-	r.Close() // Close r after successful processing
-	w.Close() // Close w after successful processing
 
 	// convert the input file to yaml or asconf
 	ext := filepath.Ext(inputPath)
@@ -428,25 +384,115 @@ func main() {
 		log.Fatalf("Invalid source type: %s, extension must be .yaml, or .conf", ext)
 	}
 
-	cmd := exec.Command("asconfig", args...)
+	cmd := exec.CommandContext(context.Background(), "asconfig", args...)
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Fatalf("command failed to run %v, %+v, out: %s", cmd, err, string(out))
 	}
 
-	// generate basic test cases
+	inputName := filepath.Base(strings.TrimSuffix(inputPath, filepath.Ext(inputPath)))
 
+	err = generateTestFiles(testCasePath, inputName, *aerospikeVersion, *originalVersion, *serverImage, dockerAuth)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("Done")
+}
+
+// setupTestEnvironment handles initial setup, validation, and directory creation.
+func setupTestEnvironment(
+	output string,
+	overwrite bool,
+	dockerUser,
+	dockerPass string) (inputPath, testCasePath string, dockerAuth testutils.DockerAuth, err error) {
+	if len(flag.Args()) < 1 {
+		return "", "", testutils.DockerAuth{}, ErrNoArguments
+	}
+
+	dockerAuth = testutils.DockerAuth{
+		Username: dockerUser,
+		Password: dockerPass,
+	}
+
+	inputPath = flag.Args()[0]
+
+	inputName := filepath.Base(strings.TrimSuffix(inputPath, filepath.Ext(inputPath)))
+	testCasePath = filepath.Join(output, inputName)
+
+	if _, statErr := os.Stat(testCasePath); !errors.Is(statErr, os.ErrNotExist) {
+		if !overwrite {
+			return "", "", testutils.DockerAuth{}, fmt.Errorf("%w: %s", ErrTestCaseExists, testCasePath)
+		}
+
+		err = os.RemoveAll(testCasePath)
+		if err != nil {
+			return "", "", testutils.DockerAuth{}, fmt.Errorf("failed to remove directory %s: %w", testCasePath, err)
+		}
+	}
+
+	err = os.Mkdir(testCasePath, dirPermissions)
+	if err != nil {
+		return "", "", testutils.DockerAuth{}, fmt.Errorf("failed to create directory %s: %w", testCasePath, err)
+	}
+
+	return inputPath, testCasePath, dockerAuth, nil
+}
+
+// processSourceFile handles file processing and copying to test case directory.
+func processSourceFile(inputPath, testCasePath string) (copiedSrcPath string, err error) {
+	// move source file into testcase dir
+	r, err := os.Open(inputPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to open %s: %w", inputPath, err)
+	}
+
+	processedFile, err := processFileData(r)
+	if err != nil {
+		r.Close()
+
+		return "", fmt.Errorf("failed to write to processedData: %w", err)
+	}
+
+	copiedSrcPath = filepath.Join(testCasePath, filepath.Base(inputPath))
+
+	w, err := os.Create(copiedSrcPath)
+	if err != nil {
+		r.Close()
+
+		return "", fmt.Errorf("failed to create %s: %w", copiedSrcPath, err)
+	}
+
+	_, err = w.ReadFrom(processedFile)
+	if err != nil {
+		r.Close()
+		w.Close()
+
+		return "", fmt.Errorf("failed to copy %s to %s: %w", inputPath, copiedSrcPath, err)
+	}
+
+	r.Close() // Close r after successful processing
+	w.Close() // Close w after successful processing
+
+	return copiedSrcPath, nil
+}
+
+// generateTestFiles creates the test case JSON files and versions file.
+func generateTestFiles(
+	testCasePath, inputName, aerospikeVersion, originalVersion, serverImage string,
+	dockerAuth testutils.DockerAuth,
+) error {
 	yamlPath := filepath.Join(testCasePath, inputName+".yaml")
 	confPath := filepath.Join(testCasePath, inputName+".conf")
 	outYamlPath := filepath.Join(testCasePath, inputName+"-res-.conf")
 	outConfPath := filepath.Join(testCasePath, inputName+"-res-.yaml")
 
 	// yaml to conf test
-	args = []string{
+	args := []string{
 		"convert",
 		"--aerospike-version",
-		*aerospikeVersion,
+		aerospikeVersion,
 		"--format",
 		"yaml",
 		"--output",
@@ -459,28 +505,28 @@ func main() {
 			Expected:    confPath,
 			Destination: outYamlPath,
 			Arguments:   args,
-			ServerImage: *serverImage,
+			ServerImage: serverImage,
 			DockerAuth:  dockerAuth,
 		},
 	}
 
 	data, err := json.Marshal(td)
 	if err != nil {
-		log.Fatalf("failed to marshal %v to json, %v", td, err)
+		return fmt.Errorf("failed to marshal %v to json: %w", td, err)
 	}
 
 	yamlTestPath := filepath.Join(testCasePath, "yaml-tests.json")
 
 	err = os.WriteFile(yamlTestPath, data, filePermissions)
 	if err != nil {
-		log.Fatalf("failed to write to %s", yamlTestPath)
+		return fmt.Errorf("failed to write to %s: %w", yamlTestPath, err)
 	}
 
 	// conf to yaml test
 	args = []string{
 		"convert",
 		"--aerospike-version",
-		*aerospikeVersion,
+		aerospikeVersion,
 		"--format",
 		"asconfig",
 		"--output",
@@ -493,39 +539,39 @@ func main() {
 			Expected:    yamlPath,
 			Destination: outConfPath,
 			Arguments:   args,
-			ServerImage: *serverImage,
+			ServerImage: serverImage,
 			DockerAuth:  dockerAuth,
 		},
 	}
 
 	data, err = json.Marshal(td)
 	if err != nil {
-		log.Fatalf("failed to marshal %v to json, %v", td, err)
+		return fmt.Errorf("failed to marshal %v to json: %w", td, err)
 	}
 
 	confTestPath := filepath.Join(testCasePath, "conf-tests.json")
 
 	err = os.WriteFile(confTestPath, data, filePermissions)
 	if err != nil {
-		log.Fatalf("failed to write to %s", confTestPath)
+		return fmt.Errorf("failed to write to %s: %w", confTestPath, err)
 	}
 
 	// write versions file
 	versionsPath := filepath.Join(testCasePath, "versions.json")
 	vs := versions{
-		TestedVersion:         *aerospikeVersion,
-		OriginallyUsedVersion: *originalVersion,
+		TestedVersion:         aerospikeVersion,
+		OriginallyUsedVersion: originalVersion,
 	}
 
 	data, err = json.Marshal(vs)
 	if err != nil {
-		log.Fatalf("failed to marshal %v to json, %v", vs, err)
+		return fmt.Errorf("failed to marshal %v to json: %w", vs, err)
 	}
 
 	err = os.WriteFile(versionsPath, data, filePermissions)
 	if err != nil {
-		log.Fatalf("failed to write to %s", versionsPath)
+		return fmt.Errorf("failed to write to %s: %w", versionsPath, err)
 	}
 
-	fmt.Println("Done")
+	return nil
 }

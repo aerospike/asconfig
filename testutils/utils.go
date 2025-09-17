@@ -36,7 +36,7 @@ type TestData struct {
 func GetAerospikeContainerID(name string) ([]byte, error) {
 	cmd := fmt.Sprintf("docker ps -a | grep '%s' | awk 'NF>1{print $NF}'", name)
 
-	output, err := exec.Command("bash", "-c", cmd).Output()
+	output, err := exec.CommandContext(context.Background(), "bash", "-c", cmd).Output()
 	if err != nil {
 		return nil, err
 	}
