@@ -60,6 +60,14 @@ tar: asconfig
 .PHONY: test
 test: integration unit
 
+.PHONY: format
+format:
+	golangci-lint run --config .golangci.yml
+
+.PHONY: format-fix
+format-fix:
+	golangci-lint run --config .golangci.yml --fix
+
 .PHONY: integration
 integration:
 	mkdir -p $(COV_INTEGRATION_DIR) || true

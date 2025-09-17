@@ -45,6 +45,8 @@ linters:
     - usetesting
     - whitespace
     - wsl_v5
+  disable:
+    - gochecknoglobals
 
     # don't enable:
     # - godox  # Disabling because we need TODO lines at this stage of project.
