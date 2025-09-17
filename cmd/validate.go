@@ -64,7 +64,7 @@ func newValidateCmd() *cobra.Command {
 			// if the Aerospike server version was not in the file
 			// metadata, require that it is passed as an argument
 			if version == "" {
-				err := cmd.MarkFlagRequired("aerospike-version")
+				err = cmd.MarkFlagRequired("aerospike-version")
 				if err != nil {
 					return err
 				}

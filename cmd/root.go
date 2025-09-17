@@ -83,11 +83,11 @@ func newRootCmd() *cobra.Command {
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
+func Execute() error {
 	// Initialize global loggers and schema
 	if err := initializeGlobals(); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to initialize: %v\n", err)
-		os.Exit(1)
+		return err
 	}
 
 	// Register subcommands
@@ -107,8 +107,10 @@ func Execute() {
 			}
 		}
 
-		os.Exit(1)
+		return err
 	}
+
+	return nil
 }
 
 var logger *logrus.Logger

@@ -12,6 +12,7 @@ import (
 //go:embed schemas/json/aerospike
 var schemas embed.FS
 
+//nolint:revive // SchemaMap is kept for API compatibility
 type SchemaMap map[string]string
 
 func NewSchemaMap() (SchemaMap, error) {

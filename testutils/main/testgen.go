@@ -383,10 +383,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to open %s", inputPath)
 	}
-	defer r.Close()
 
 	processedFile, err := processFileData(r)
 	if err != nil {
+		r.Close()
 		log.Fatalf("failed to write to processedData %v", err)
 	}
 
@@ -394,15 +394,19 @@ func main() {
 
 	w, err := os.Create(copiedSrcPath)
 	if err != nil {
+		r.Close()
 		log.Fatalf("failed to create %s", copiedSrcPath)
 	}
 
-	defer w.Close()
-
 	_, err = w.ReadFrom(processedFile)
 	if err != nil {
+		r.Close()
+		w.Close()
 		log.Fatalf("failed to copy %s to %s", inputPath, copiedSrcPath)
 	}
+
+	r.Close() // Close r after successful processing
+	w.Close() // Close w after successful processing
 
 	// convert the input file to yaml or asconf
 	ext := filepath.Ext(inputPath)
@@ -514,6 +518,9 @@ func main() {
 	}
 
 	data, err = json.Marshal(vs)
+	if err != nil {
+		log.Fatalf("failed to marshal %v to json, %v", vs, err)
+	}
 
 	err = os.WriteFile(versionsPath, data, filePermissions)
 	if err != nil {

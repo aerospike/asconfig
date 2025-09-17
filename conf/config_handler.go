@@ -5,6 +5,7 @@ import (
 	"github.com/go-logr/logr"
 )
 
+//nolint:revive // ConfHandler is kept for API compatibility
 type ConfHandler interface {
 	IsValid(log logr.Logger, version string) (bool, []*asconfig.ValidationErr, error)
 	ToMap() *asconfig.Conf

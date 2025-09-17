@@ -66,8 +66,8 @@ func (cv *ConfigValidator) Validate() (*ValidationErrors, error) {
 		for i, verr := range verrs.Errors {
 			context, _ := strings.CutPrefix(verr.Context, "(root).")
 
-			context, err := jsonToConfigContext(jsonConfig, context)
-			if err != nil {
+			context, errContext := jsonToConfigContext(jsonConfig, context)
+			if errContext != nil {
 				// if we can't associate the error with its
 				// corresponding field, just use the current context
 				continue
@@ -164,39 +164,12 @@ func jsonToConfigContext(jsonConfig any, context string) (string, error) {
 
 	// check if key is an index
 	if index, err := strconv.Atoi(key); err == nil {
-		// if key is an index, then context should be a slice
-		jsonSlice, ok := jsonConfig.([]any)
-		if !ok {
-			return "", fmt.Errorf("%w at: %s", ErrContextNotSlice, context)
-		}
+		var errIndexed error
 
-		// check if index is out of bounds
-		if len(jsonSlice) <= index {
-			return "", fmt.Errorf("%w at: %s", ErrIndexOutOfBounds, context)
+		res, jsonConfig, errIndexed = handleIndexedKey(jsonConfig, index, context)
+		if errIndexed != nil {
+			return "", errIndexed
 		}
-
-		// the indexed object should be a map
-		indexedMap, ok := jsonSlice[index].(map[string]any)
-		if !ok {
-			return "", fmt.Errorf("%w at: %s", ErrContextNotMap, context)
-		}
-
-		// get the name field from the indexed object
-		name, ok := indexedMap["name"]
-		if !ok {
-			return "", fmt.Errorf("%w at: %s", ErrNameNotFound, context)
-		}
-
-		// name should be a string
-		if nameStr, ok := name.(string); !ok {
-			return "", fmt.Errorf("%w at: %v", ErrNameNotString, context)
-		} else {
-			// set res to the name instead of the index
-			res = nameStr
-		}
-
-		// set jsonConfig to the indexed object
-		jsonConfig = indexedMap
 	} else {
 		// if key is not an index, then context should be a map
 		jsonMap, ok := jsonConfig.(map[string]any)
@@ -225,4 +198,44 @@ func jsonToConfigContext(jsonConfig any, context string) (string, error) {
 	}
 
 	return res, nil
+}
+
+// handleIndexedKey processes an indexed key from a JSON slice context.
+func handleIndexedKey(jsonConfig any, index int, context string) (nameStr string, updatedConfig any, err error) {
+	// if key is an index, then context should be a slice
+	jsonSlice, ok := jsonConfig.([]any)
+	if !ok {
+		err = fmt.Errorf("%w at: %s", ErrContextNotSlice, context)
+		return nameStr, updatedConfig, err
+	}
+
+	// check if index is out of bounds
+	if len(jsonSlice) <= index {
+		err = fmt.Errorf("%w at: %s", ErrIndexOutOfBounds, context)
+		return nameStr, updatedConfig, err
+	}
+
+	// the indexed object should be a map
+	indexedMap, ok := jsonSlice[index].(map[string]any)
+	if !ok {
+		err = fmt.Errorf("%w at: %s", ErrContextNotMap, context)
+		return nameStr, updatedConfig, err
+	}
+
+	// get the name field from the indexed object
+	name, ok := indexedMap["name"]
+	if !ok {
+		err = fmt.Errorf("%w at: %s", ErrNameNotFound, context)
+		return nameStr, updatedConfig, err
+	}
+
+	nameStr, ok = name.(string)
+	if !ok {
+		err = fmt.Errorf("%w at: %v", ErrNameNotString, context)
+		return nameStr, updatedConfig, err
+	}
+
+	updatedConfig = indexedMap
+
+	return nameStr, updatedConfig, err
 }

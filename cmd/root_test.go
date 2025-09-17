@@ -142,27 +142,27 @@ func (testsuite *RootTest) TestPersistentPreRunRootInitConfig() {
 			}
 
 			str1, err := flagSet1.GetString("str1")
-			testsuite.NoError(err)
+			testsuite.Require().NoError(err)
 			testsuite.Equal("localhost:3000", str1)
 
 			int1, err := flagSet1.GetInt("int1")
-			testsuite.NoError(err)
+			testsuite.Require().NoError(err)
 			testsuite.Equal(3000, int1)
 
 			bool1, err := flagSet1.GetBool("bool1")
-			testsuite.NoError(err)
+			testsuite.Require().NoError(err)
 			testsuite.True(bool1)
 
 			str2, err := flagSet2.GetString("str2")
-			testsuite.NoError(err)
+			testsuite.Require().NoError(err)
 			testsuite.Equal("localhost:4000", str2)
 
 			int2, err := flagSet2.GetInt("int2")
-			testsuite.NoError(err)
+			testsuite.Require().NoError(err)
 			testsuite.Equal(4000, int2)
 
 			bool2, err := flagSet2.GetBool("bool2")
-			testsuite.NoError(err)
+			testsuite.Require().NoError(err)
 			testsuite.False(bool2)
 		})
 	}

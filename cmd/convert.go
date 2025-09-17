@@ -155,9 +155,9 @@ func processConfigConversion(cfgData []byte, srcFormat, outFmt asConf.Format, as
 
 	// validate
 	if !force {
-		verrs, err := conf.NewConfigValidator(asconfig, mgmtLibLogger, asVersion).Validate()
-		if err != nil || verrs != nil {
-			return nil, errors.Join(err, verrs)
+		verrs, errValidate := conf.NewConfigValidator(asconfig, mgmtLibLogger, asVersion).Validate()
+		if errValidate != nil || verrs != nil {
+			return nil, errors.Join(errValidate, verrs)
 		}
 	}
 
@@ -282,8 +282,8 @@ func validateAerospikeVersion(cmd *cobra.Command, args []string, force bool, cfg
 	*cfgData = data
 
 	metaData := map[string]string{}
-	if err := metadata.Unmarshal(*cfgData, metaData); err != nil {
-		return err
+	if errUnmarshal := metadata.Unmarshal(*cfgData, metaData); errUnmarshal != nil {
+		return errUnmarshal
 	}
 
 	// if the aerospike server version is in the cfg file's metadata, don't mark --aerospike-version as required
@@ -291,7 +291,7 @@ func validateAerospikeVersion(cmd *cobra.Command, args []string, force bool, cfg
 
 	if _, ok := metaData[metaKeyAerospikeVersion]; !ok {
 		if !force {
-			if err := cmd.MarkFlagRequired("aerospike-version"); err != nil {
+			if err = cmd.MarkFlagRequired("aerospike-version"); err != nil {
 				logger.Errorf("Unable to mark aerospike-version flag required: %v", err)
 				return err
 			}
@@ -301,18 +301,18 @@ func validateAerospikeVersion(cmd *cobra.Command, args []string, force bool, cfg
 	}
 
 	if aeroVersionRequired {
-		av, err := cmd.Flags().GetString("aerospike-version")
-		if err != nil {
-			return err
+		av, errFlag := cmd.Flags().GetString("aerospike-version")
+		if errFlag != nil {
+			return errFlag
 		}
 
 		if av == "" {
 			return errors.Join(errMissingAerospikeVersion, err)
 		}
 
-		supported, err := asConf.IsSupportedVersion(av)
-		if err != nil {
-			return errors.Join(errInvalidAerospikeVersion, err)
+		supported, errSupported := asConf.IsSupportedVersion(av)
+		if errSupported != nil {
+			return errors.Join(errInvalidAerospikeVersion, errSupported)
 		}
 
 		// TODO include valid versions in the error message
