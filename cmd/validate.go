@@ -110,7 +110,8 @@ func newValidateCmd() *cobra.Command {
 	// is in the input config file's metadata
 	commonFlags := getCommonFlags()
 	res.Flags().AddFlagSet(commonFlags)
-	res.Flags().StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
+	res.Flags().
+		StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
 
 	res.Version = VERSION
 

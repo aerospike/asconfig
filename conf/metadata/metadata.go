@@ -40,7 +40,7 @@ func formatLine(k string, v any) string {
 
 func Marshal(src map[string]string) ([]byte, error) {
 	res := []byte{}
-	lines := make([]string, len(src))
+	lines := make([]string, 0, len(src))
 
 	for k, v := range src {
 		lines = append(lines, formatLine(k, v)+"\n")

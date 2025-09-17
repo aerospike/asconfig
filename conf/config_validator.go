@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	ErrConfigValidation = fmt.Errorf("error while validating config")
+	ErrConfigValidation = errors.New("error while validating config")
 	ErrContextNotSlice  = errors.New("context is not a slice in json config")
 	ErrIndexOutOfBounds = errors.New("index out of bounds json config")
 	ErrContextNotMap    = errors.New("context is not a map in json config")
@@ -24,6 +24,7 @@ var (
 
 type ConfigValidator struct {
 	ConfHandler
+
 	mgmtLogger logr.Logger
 	version    string
 }
@@ -44,7 +45,7 @@ func (cv *ConfigValidator) Validate() (*ValidationErrors, error) {
 	verrs := ValidationErrors{}
 
 	for _, v := range tempVerrs {
-		verr := ValidationErr{
+		verr := ValidationError{
 			ValidationErr: *v,
 		}
 		verrs.Errors = append(verrs.Errors, verr)
@@ -53,9 +54,9 @@ func (cv *ConfigValidator) Validate() (*ValidationErrors, error) {
 	if !valid || err != nil || len(verrs.Errors) > 0 {
 		config := cv.ToMap()
 
-		jsonConfigStr, err := json.Marshal(config)
-		if err != nil {
-			return nil, err
+		jsonConfigStr, errMarshal := json.Marshal(config)
+		if errMarshal != nil {
+			return nil, errMarshal
 		}
 
 		jsonConfig := map[string]any{}
@@ -82,11 +83,11 @@ func (cv *ConfigValidator) Validate() (*ValidationErrors, error) {
 	return nil, nil
 }
 
-type ValidationErr struct {
+type ValidationError struct {
 	asconfig.ValidationErr
 }
 
-type VErrSlice []ValidationErr
+type VErrSlice []ValidationError
 
 func (a VErrSlice) Len() int           { return len(a) }
 func (a VErrSlice) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
@@ -94,11 +95,12 @@ func (a VErrSlice) Less(i, j int) bool { return a[i].Error() < a[j].Error() }
 
 // Error outputs a human readable string of validation error details.
 // error is not nil if validation, or any other type of error occurs.
-func (o *ValidationErr) Error() string {
+func (o *ValidationError) Error() string {
 	verrTemplate := "description: %s, error-type: %s"
 	return fmt.Sprintf(verrTemplate, o.Description, o.ErrType)
 }
 
+//nolint:errname // TODO: fix this
 type ValidationErrors struct {
 	Errors VErrSlice
 }
@@ -201,41 +203,34 @@ func jsonToConfigContext(jsonConfig any, context string) (string, error) {
 }
 
 // handleIndexedKey processes an indexed key from a JSON slice context.
-func handleIndexedKey(jsonConfig any, index int, context string) (nameStr string, updatedConfig any, err error) {
+func handleIndexedKey(jsonConfig any, index int, context string) (string, any, error) {
 	// if key is an index, then context should be a slice
 	jsonSlice, ok := jsonConfig.([]any)
 	if !ok {
-		err = fmt.Errorf("%w at: %s", ErrContextNotSlice, context)
-		return nameStr, updatedConfig, err
+		return "", nil, fmt.Errorf("%w at: %s", ErrContextNotSlice, context)
 	}
 
 	// check if index is out of bounds
 	if len(jsonSlice) <= index {
-		err = fmt.Errorf("%w at: %s", ErrIndexOutOfBounds, context)
-		return nameStr, updatedConfig, err
+		return "", nil, fmt.Errorf("%w at: %s", ErrIndexOutOfBounds, context)
 	}
 
 	// the indexed object should be a map
 	indexedMap, ok := jsonSlice[index].(map[string]any)
 	if !ok {
-		err = fmt.Errorf("%w at: %s", ErrContextNotMap, context)
-		return nameStr, updatedConfig, err
+		return "", nil, fmt.Errorf("%w at: %s", ErrContextNotMap, context)
 	}
 
 	// get the name field from the indexed object
 	name, ok := indexedMap["name"]
 	if !ok {
-		err = fmt.Errorf("%w at: %s", ErrNameNotFound, context)
-		return nameStr, updatedConfig, err
+		return "", nil, fmt.Errorf("%w at: %s", ErrNameNotFound, context)
 	}
 
-	nameStr, ok = name.(string)
+	nameStr, ok := name.(string)
 	if !ok {
-		err = fmt.Errorf("%w at: %v", ErrNameNotString, context)
-		return nameStr, updatedConfig, err
+		return "", nil, fmt.Errorf("%w at: %v", ErrNameNotString, context)
 	}
 
-	updatedConfig = indexedMap
-
-	return nameStr, updatedConfig, err
+	return nameStr, indexedMap, nil
 }

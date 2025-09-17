@@ -5,8 +5,8 @@ import (
 )
 
 // GetLogLevels - log levels are the same as logrus.
-func GetLogLevels() (levels []string) {
-	levels = make([]string, len(logrus.AllLevels))
+func GetLogLevels() []string {
+	levels := make([]string, len(logrus.AllLevels))
 
 	for i, lvl := range logrus.AllLevels {
 		text, _ := lvl.MarshalText()

@@ -8,8 +8,9 @@ import (
 )
 
 type ConfigMarshaller struct {
-	Format asConf.Format
 	ConfHandler
+
+	Format asConf.Format
 }
 
 func NewConfigMarshaller(conf ConfHandler, format asConf.Format) ConfigMarshaller {
@@ -19,7 +20,9 @@ func NewConfigMarshaller(conf ConfHandler, format asConf.Format) ConfigMarshalle
 	}
 }
 
-func (cm ConfigMarshaller) MarshalText() (text []byte, err error) {
+func (cm ConfigMarshaller) MarshalText() ([]byte, error) {
+	var text []byte
+	var err error
 	switch cm.Format {
 	case asConf.AeroConfig:
 		text = []byte(cm.ToConfFile())

@@ -33,9 +33,18 @@ var (
 	errUnableToMarshalServerConfig      = errors.New("unable to marshal server config")
 	errUnableToParseServerConfigBytes   = errors.New("unable to parse server config bytes")
 	errDiffTooFewArgs                   = fmt.Errorf("diff requires atleast %d file paths as arguments", diffArgMin)
-	errDiffTooManyArgs                  = fmt.Errorf("diff requires no more than %d file paths as arguments", diffArgMax)
-	errDiffServerTooFewArgs             = fmt.Errorf("diff with --server requires exactly %d file path as argument", diffServerArgMin)
-	errDiffServerTooManyArgs            = fmt.Errorf("diff with --server requires no more than %d file path as argument", diffServerArgMax)
+	errDiffTooManyArgs                  = fmt.Errorf(
+		"diff requires no more than %d file paths as arguments",
+		diffArgMax,
+	)
+	errDiffServerTooFewArgs = fmt.Errorf(
+		"diff with --server requires exactly %d file path as argument",
+		diffServerArgMin,
+	)
+	errDiffServerTooManyArgs = fmt.Errorf(
+		"diff with --server requires no more than %d file path as argument",
+		diffServerArgMax,
+	)
 )
 
 // GetDiffCmd returns the diff command.
@@ -60,7 +69,8 @@ func newDiffCmd() *cobra.Command {
 	}
 
 	res.Version = VERSION
-	res.Flags().StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
+	res.Flags().
+		StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
 
 	// Add subcommands
 	res.AddCommand(newDiffFilesCmd())
@@ -90,7 +100,8 @@ func newDiffFilesCmd() *cobra.Command {
 		},
 	}
 	cmd.Version = VERSION
-	cmd.Flags().StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
+	cmd.Flags().
+		StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
 
 	return cmd
 }
@@ -112,7 +123,8 @@ func newDiffServerCmd() *cobra.Command {
 	}
 
 	// Add format flag but hide it from help output as it will be automatically detected
-	cmd.Flags().StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
+	cmd.Flags().
+		StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
 
 	if err := cmd.Flags().MarkHidden("format"); err != nil {
 		logger.Errorf("Unable to hide format flag: %v", err)
@@ -196,8 +208,13 @@ func runFileDiff(cmd *cobra.Command, args []string) error {
 	)
 
 	if len(diffs) > 0 {
-		fmt.Printf("Differences shown from %s to %s, '<' are from file1, '>' are from file2.\n", path1, path2)
-		fmt.Println(strings.Join(diffs, ""))
+		fmt.Fprintf(
+			os.Stdout,
+			"Differences shown from %s to %s, '<' are from file1, '>' are from file2.\n",
+			path1,
+			path2,
+		)
+		fmt.Fprintf(os.Stdout, "%s\n", strings.Join(diffs, ""))
 
 		return fmt.Errorf("%w: %w", errDiffConfigsDiffer, ErrSilent)
 	}
@@ -290,8 +307,12 @@ func runServerDiff(cmd *cobra.Command, args []string) error {
 	)
 
 	if len(diffs) > 0 {
-		fmt.Printf("Differences shown from %s to server, '<' are from local file, '>' are from server.\n", localPath)
-		fmt.Println(strings.Join(diffs, ""))
+		fmt.Fprintf(
+			os.Stdout,
+			"Differences shown from %s to server, '<' are from local file, '>' are from server.\n",
+			localPath,
+		)
+		fmt.Fprintf(os.Stdout, "%s\n", strings.Join(diffs, ""))
 
 		return errDiffConfigsDiffer
 	}

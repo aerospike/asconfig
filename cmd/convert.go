@@ -21,12 +21,12 @@ const (
 
 var (
 	errTooManyArguments            = fmt.Errorf("expected a maximum of %d arguments", convertArgMax)
-	errFileNotExist                = fmt.Errorf("file does not exist")
-	errMissingAerospikeVersion     = fmt.Errorf("missing required flag '--aerospike-version'")
-	errInvalidAerospikeVersion     = fmt.Errorf("aerospike version must be in the form <a>.<b>.<c>")
-	errUnsupportedAerospikeVersion = fmt.Errorf("aerospike version unsupported")
-	errInvalidFormat               = fmt.Errorf("invalid format flag")
-	errMissingFormat               = fmt.Errorf("missing format flag")
+	errFileNotExist                = errors.New("file does not exist")
+	errMissingAerospikeVersion     = errors.New("missing required flag '--aerospike-version'")
+	errInvalidAerospikeVersion     = errors.New("aerospike version must be in the form <a>.<b>.<c>")
+	errUnsupportedAerospikeVersion = errors.New("aerospike version unsupported")
+	errInvalidFormat               = errors.New("invalid format flag")
+	errMissingFormat               = errors.New("missing format flag")
 )
 
 func newConvertCmd() *cobra.Command {
@@ -68,7 +68,8 @@ func newConvertCmd() *cobra.Command {
 	res.Flags().AddFlagSet(asCommonFlags)
 	res.Flags().BoolP("force", "f", false, "Override checks for supported server version and config validation")
 	res.Flags().StringP("output", "o", os.Stdout.Name(), "File path to write output to")
-	res.Flags().StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
+	res.Flags().
+		StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
 
 	res.Version = VERSION
 
@@ -146,7 +147,12 @@ func determineOutputFormat(srcFormat asConf.Format) (asConf.Format, error) {
 }
 
 // processConfigConversion handles loading, validation, and conversion.
-func processConfigConversion(cfgData []byte, srcFormat, outFmt asConf.Format, asVersion string, force bool) ([]byte, error) {
+func processConfigConversion(
+	cfgData []byte,
+	srcFormat, outFmt asConf.Format,
+	asVersion string,
+	force bool,
+) ([]byte, error) {
 	// load
 	asconfig, err := asConf.NewASConfigFromBytes(mgmtLibLogger, cfgData, srcFormat)
 	if err != nil {
@@ -225,11 +231,14 @@ func determineOutputPath(outputPath, srcPath string, outFmt asConf.Format) (stri
 		outFileName = strings.TrimSuffix(outFileName, filepath.Ext(outFileName))
 		outputPath = filepath.Join(outputPath, outFileName)
 
-		if outFmt == asConf.YAML {
+		switch outFmt {
+		case asConf.YAML:
 			outputPath += ".yaml"
-		} else if outFmt == asConf.AeroConfig {
+		case asConf.AeroConfig:
 			outputPath += ".conf"
-		} else {
+		case asConf.Invalid:
+			return "", fmt.Errorf("output format unrecognized %w", errInvalidFormat)
+		default:
 			return "", fmt.Errorf("output format unrecognized %w", errInvalidFormat)
 		}
 	}

@@ -1,4 +1,4 @@
-// A common location to store utilities for testing.
+// Package testutils provides utilities for testing.
 package testutils
 
 import (
@@ -15,6 +15,12 @@ import (
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
+)
+
+const (
+	// Docker pull retry configuration.
+	dockerPullBaseBackoffSeconds = 10 // Base backoff time in seconds
+	dockerPullMaxBackoffMinutes  = 5  // Maximum backoff time in minutes
 )
 
 type DockerAuth struct {
@@ -81,8 +87,8 @@ func CreateAerospikeContainer(
 
 	// Retry configuration for Docker Hub rate limiting
 	maxRetries := 10
-	baseBackoff := 10 * time.Second // Base backoff time
-	maxBackoff := 5 * time.Minute   // Maximum backoff time
+	baseBackoff := dockerPullBaseBackoffSeconds * time.Second
+	maxBackoff := dockerPullMaxBackoffMinutes * time.Minute
 
 	var reader io.ReadCloser
 
@@ -108,7 +114,13 @@ func CreateAerospikeContainer(
 				backoffTime = maxBackoff
 			}
 
-			log.Printf("Docker pull rate limit reached for %s, retrying in %v (attempt %d/%d)", name, backoffTime, attempt, maxRetries)
+			log.Printf(
+				"Docker pull rate limit reached for %s, retrying in %v (attempt %d/%d)",
+				name,
+				backoffTime,
+				attempt,
+				maxRetries,
+			)
 			time.Sleep(backoffTime)
 
 			continue

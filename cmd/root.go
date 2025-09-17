@@ -23,7 +23,7 @@ var mainCmd = newRootCmd()
 
 var (
 	VERSION            = "development" // Replaced at compile time
-	errInvalidLogLevel = fmt.Errorf("invalid log-level flag")
+	errInvalidLogLevel = errors.New("invalid log-level flag")
 	aerospikeFlags     = flags.NewDefaultAerospikeFlags()
 	cfFileFlags        = flags.NewConfFileFlags()
 )

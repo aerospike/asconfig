@@ -25,9 +25,9 @@ func NewSchemaMap() (SchemaMap, error) {
 			}
 
 			if !d.IsDir() {
-				content, err := fs.ReadFile(schemas, path)
-				if err != nil {
-					return err
+				content, errRead := fs.ReadFile(schemas, path)
+				if errRead != nil {
+					return errRead
 				}
 
 				baseName := filepath.Base(path)

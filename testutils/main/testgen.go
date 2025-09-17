@@ -330,8 +330,10 @@ func processFileData(in io.Reader) (io.Reader, error) {
 			}
 		}
 
-		line = append(line, '\n')
-		if _, err := processedData.Write(line); err != nil {
+		lineWithNewline := make([]byte, len(line)+1)
+		copy(lineWithNewline, line)
+		lineWithNewline[len(line)] = '\n'
+		if _, err := processedData.Write(lineWithNewline); err != nil {
 			return nil, err
 		}
 	}
@@ -343,14 +345,21 @@ func main() {
 	output := flag.String("output", "./testdata/cases", "path to output directory")
 	overwrite := flag.Bool("overwrite", false, "if a testcase directory already exists for this input, overwrite it")
 	obfuscate = flag.Bool("obfuscate", false, "obfuscate sensitive fields in the copied source config file")
-	aerospikeVersion := flag.String("aerospike-version", "6.2.0.2", "the aerospike version to pass to asconfig e.g: 6.2.0.2")
+	aerospikeVersion := flag.String(
+		"aerospike-version",
+		"6.2.0.2",
+		"the aerospike version to pass to asconfig e.g: 6.2.0.2",
+	)
 	originalVersion := flag.String("original-version", "6.2.0.2",
 		"the aerospike version that was originally used with this config e.g: 6.2.0.2")
 	serverImage := flag.String("server-image", "", "url to an Aerospike image to use. Overrides aerospike-version")
 	dockerUser := flag.String("docker-user", "",
 		"Environment variable that holds a username used to authenticate with docker repositories during image pulls")
-	dockerPass := flag.String("docker-pass", "",
-		"Environment variable that holds a base64 password or ID token used to authenticate with docker repositories during image pulls")
+	dockerPass := flag.String(
+		"docker-pass",
+		"",
+		"Environment variable that holds a base64 password or ID token used to authenticate with docker repositories during image pulls",
+	)
 
 	flag.Parse()
 
@@ -397,8 +406,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	fmt.Println("Done")
 }
 
 // setupTestEnvironment handles initial setup, validation, and directory creation.
@@ -406,33 +413,33 @@ func setupTestEnvironment(
 	output string,
 	overwrite bool,
 	dockerUser,
-	dockerPass string) (inputPath, testCasePath string, dockerAuth testutils.DockerAuth, err error) {
+	dockerPass string) (string, string, testutils.DockerAuth, error) {
 	if len(flag.Args()) < 1 {
 		return "", "", testutils.DockerAuth{}, ErrNoArguments
 	}
 
-	dockerAuth = testutils.DockerAuth{
+	dockerAuth := testutils.DockerAuth{
 		Username: dockerUser,
 		Password: dockerPass,
 	}
 
-	inputPath = flag.Args()[0]
+	inputPath := flag.Args()[0]
 
 	inputName := filepath.Base(strings.TrimSuffix(inputPath, filepath.Ext(inputPath)))
-	testCasePath = filepath.Join(output, inputName)
+	testCasePath := filepath.Join(output, inputName)
 
 	if _, statErr := os.Stat(testCasePath); !errors.Is(statErr, os.ErrNotExist) {
 		if !overwrite {
 			return "", "", testutils.DockerAuth{}, fmt.Errorf("%w: %s", ErrTestCaseExists, testCasePath)
 		}
 
-		err = os.RemoveAll(testCasePath)
+		err := os.RemoveAll(testCasePath)
 		if err != nil {
 			return "", "", testutils.DockerAuth{}, fmt.Errorf("failed to remove directory %s: %w", testCasePath, err)
 		}
 	}
 
-	err = os.Mkdir(testCasePath, dirPermissions)
+	err := os.Mkdir(testCasePath, dirPermissions)
 	if err != nil {
 		return "", "", testutils.DockerAuth{}, fmt.Errorf("failed to create directory %s: %w", testCasePath, err)
 	}
@@ -441,7 +448,7 @@ func setupTestEnvironment(
 }
 
 // processSourceFile handles file processing and copying to test case directory.
-func processSourceFile(inputPath, testCasePath string) (copiedSrcPath string, err error) {
+func processSourceFile(inputPath, testCasePath string) (string, error) {
 	// move source file into testcase dir
 	r, err := os.Open(inputPath)
 	if err != nil {
@@ -450,30 +457,35 @@ func processSourceFile(inputPath, testCasePath string) (copiedSrcPath string, er
 
 	processedFile, err := processFileData(r)
 	if err != nil {
-		r.Close()
+		_ = r.Close() // Ignore close error when already handling another error
 
 		return "", fmt.Errorf("failed to write to processedData: %w", err)
 	}
 
-	copiedSrcPath = filepath.Join(testCasePath, filepath.Base(inputPath))
+	copiedSrcPath := filepath.Join(testCasePath, filepath.Base(inputPath))
 
 	w, err := os.Create(copiedSrcPath)
 	if err != nil {
-		r.Close()
+		_ = r.Close() // Ignore close error when already handling another error
 
 		return "", fmt.Errorf("failed to create %s: %w", copiedSrcPath, err)
 	}
 
 	_, err = w.ReadFrom(processedFile)
 	if err != nil {
-		r.Close()
-		w.Close()
+		_ = r.Close() // Ignore close error when already handling another error
+		_ = w.Close() // Ignore close error when already handling another error
 
 		return "", fmt.Errorf("failed to copy %s to %s: %w", inputPath, copiedSrcPath, err)
 	}
 
-	r.Close() // Close r after successful processing
-	w.Close() // Close w after successful processing
+	// Close files after successful processing
+	if closeErr := r.Close(); closeErr != nil {
+		return "", fmt.Errorf("failed to close source file: %w", closeErr)
+	}
+	if closeErr := w.Close(); closeErr != nil {
+		return "", fmt.Errorf("failed to close destination file: %w", closeErr)
+	}
 
 	return copiedSrcPath, nil
 }
