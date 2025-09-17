@@ -57,15 +57,42 @@ rpm: asconfig
 tar: asconfig
 	$(MAKE) -C $(ROOT_DIR)/pkg/ $@
 
+.PHONY: help
+help:
+	@echo "Available targets:"
+	@echo "  install-golangci-lint  Install golangci-lint v2.4.0"
+	@echo "  check-golangci-lint    Check if golangci-lint is installed"
+	@echo "  format                 Run golangci-lint (requires golangci-lint)"
+	@echo "  format-fix             Run golangci-lint with --fix (requires golangci-lint)"
+	@echo "  test                   Run unit and integration tests"
+	@echo "  unit                   Run unit tests"
+	@echo "  integration            Run integration tests"
+	@echo "  coverage               Generate coverage report"
+	@echo "  view-coverage          View coverage report in browser"
+	@echo "  clean                  Clean build artifacts"
+	@echo "  install                Install asconfig to $(INSTALL_DIR)"
+	@echo "  uninstall              Remove asconfig from $(INSTALL_DIR)"
+
 .PHONY: test
 test: integration unit
 
+.PHONY: install-golangci-lint
+install-golangci-lint:
+	@echo "Installing golangci-lint..."
+	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $$(go env GOPATH)/bin v2.4.0
+	@echo "golangci-lint installed successfully!"
+	@golangci-lint --version
+
+.PHONY: check-golangci-lint
+check-golangci-lint:
+	@which golangci-lint > /dev/null || (echo "golangci-lint not found. Run 'make install-golangci-lint' to install it." && exit 1)
+
 .PHONY: format
-format:
+format: check-golangci-lint
 	golangci-lint run --config .golangci.yml
 
 .PHONY: format-fix
-format-fix:
+format-fix: check-golangci-lint
 	golangci-lint run --config .golangci.yml --fix
 
 .PHONY: integration
