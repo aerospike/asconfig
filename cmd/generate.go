@@ -66,7 +66,7 @@ func newGenerateCmd() *cobra.Command {
 	}
 
 	res.Version = VERSION
-	asFlagSet := aerospikeFlags.NewFlagSet(flags.DefaultWrapHelpString)
+	asFlagSet := asCommonFlags.NewFlagSet(flags.DefaultWrapHelpString)
 	res.Flags().AddFlagSet(asFlagSet)
 	config.BindPFlags(asFlagSet, "cluster")
 
