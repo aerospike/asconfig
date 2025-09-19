@@ -103,6 +103,6 @@ jobs:
       artifactory-url: https://aerospike.jfrog.io
       artifactory-oidc-provider-name: database-gh-aerospike
       artifactory-oidc-audience: database-gh-aerospike
-      artifact-name: ${{ steps.system-info.outputs.platform }}-${{ runner.arch }}-${{ matrix.os }}-${{ steps.system-info.outputs.release }}-asconfig
+      artifact-name: ${{ matrix.os }}-asconfig
       retention-days: 1
       dry-run: false
