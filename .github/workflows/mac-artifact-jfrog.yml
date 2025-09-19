@@ -87,7 +87,7 @@ jobs:
           asconfig --version 2>&1 | grep "Aerospike Config"
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.system-info.outputs.platform }}-${{ runner.arch }}-${{ matrix.os }}-${{ steps.system-info.outputs.release }}-asconfig
+          name: macos-${{ matrix.os }}-asconfig
           path: ${{ steps.working-dir.outputs.value }}/bin/asconfig
           if-no-files-found: error
   upload-artifacts:
@@ -103,6 +103,6 @@ jobs:
       artifactory-url: https://aerospike.jfrog.io
       artifactory-oidc-provider-name: database-gh-aerospike
       artifactory-oidc-audience: database-gh-aerospike
-      artifact-name: ${{ matrix.os }}-asconfig
+      artifact-name: macos-${{ matrix.os }}-asconfig
       retention-days: 1
       dry-run: false
