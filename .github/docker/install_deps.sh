@@ -107,7 +107,7 @@ function install_deps_ubuntu24.04() {
 }
 
 function install_deps_redhat-el8() {
-  microdnf -y install ruby rpmdevtools make git
+  microdnf -y install ruby rpm-build make git
 
   if [ "$(uname -m)" = "x86_64" ]; then
       curl -L https://go.dev/dl/go1.24.6.linux-amd64.tar.gz -o /tmp/go1.24.6.linux-amd64.tar.gz
