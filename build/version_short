@@ -1,0 +1,3 @@
+#!/bin/bash
+rev=$(git describe --tags | awk -F'-' '{print $1}')
+echo $rev
