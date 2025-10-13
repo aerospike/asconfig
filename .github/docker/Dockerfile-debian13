@@ -1,5 +1,6 @@
 FROM debian:trixie
 SHELL ["/bin/bash", "-euox", "pipefail", "-c"]
+ENV GOROOT=/opt/golang/go/
 ENV DEBIAN_FRONTEND=noninteractive
 RUN useradd -u 9001 -m build
 

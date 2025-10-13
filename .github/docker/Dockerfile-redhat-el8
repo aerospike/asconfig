@@ -1,5 +1,6 @@
 FROM redhat/ubi8
 SHELL ["/bin/bash", "-euox", "pipefail", "-c"]
+ENV GOROOT=/opt/golang/go/
 RUN useradd -u 9001 -m build
 
 ADD .github/docker/entrypoint.sh /tmp/entrypoint.sh
