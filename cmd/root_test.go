@@ -39,7 +39,9 @@ func TestPersistentPreRunRootFlags(t *testing.T) {
 		},
 	}
 
-	cmd.InitializeGlobalsForTesting()
+	if err := cmd.InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
 
 	rootCmd := cmd.NewRootCmd()
 

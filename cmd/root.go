@@ -136,11 +136,3 @@ func InitializeGlobals() error {
 
 	return nil
 }
-
-// InitializeGlobalsForTesting initializes globals for testing, panicking on error.
-// This is a test helper function.
-func InitializeGlobalsForTesting() {
-	if err := InitializeGlobals(); err != nil {
-		panic("Failed to initialize globals for testing: " + err.Error())
-	}
-}

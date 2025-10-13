@@ -62,7 +62,9 @@ var testValidateArgs = []runTestValidate{
 }
 
 func TestRunEValidate(t *testing.T) {
-	InitializeGlobalsForTesting()
+	if err := InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
 
 	for i, test := range testValidateArgs {
 		// Create a fresh command instance for each test case

@@ -87,7 +87,9 @@ var testDiffArgs = []runTestDiff{
 }
 
 func TestRunEDiff(t *testing.T) {
-	InitializeGlobalsForTesting()
+	if err := InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
 	cmd := newDiffCmd()
 
 	for i, test := range testDiffArgs {
@@ -100,7 +102,9 @@ func TestRunEDiff(t *testing.T) {
 }
 
 func TestRunFileDiff(t *testing.T) {
-	InitializeGlobalsForTesting()
+	if err := InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
 	cmd := newDiffCmd()
 
 	// Test valid file diff cases
@@ -149,7 +153,9 @@ func TestRunFileDiff(t *testing.T) {
 }
 
 func TestRunServerDiff(t *testing.T) {
-	InitializeGlobalsForTesting()
+	if err := InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
 	cmd := newDiffCmd()
 
 	// Test server diff argument validation

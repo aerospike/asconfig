@@ -64,7 +64,9 @@ var preTestsConvert = []preTestConvert{
 }
 
 func TestPreRunConvert(t *testing.T) {
-	InitializeGlobalsForTesting()
+	if err := InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
 	cmd := newConvertCmd()
 
 	for _, test := range preTestsConvert {

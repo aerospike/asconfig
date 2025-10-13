@@ -8,7 +8,9 @@ import (
 )
 
 func TestRunEGenerate(t *testing.T) {
-	InitializeGlobalsForTesting()
+	if err := InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
 	type runTestGen struct {
 		flags       []string
 		arguments   []string
