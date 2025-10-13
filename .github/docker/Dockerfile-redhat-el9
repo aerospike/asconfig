@@ -1,4 +1,4 @@
-FROM redhat/el9-minimal
+FROM redhat/ubi9-minimal
 SHELL ["/bin/bash", "-euox", "pipefail", "-c"]
 ENV GOROOT=/opt/golang/go/
 
