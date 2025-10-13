@@ -314,7 +314,7 @@ func runServerDiff(cmd *cobra.Command, args []string) error {
 		)
 		fmt.Fprintf(os.Stdout, "%s\n", strings.Join(diffs, ""))
 
-		return ErrDiffConfigsDiffer
+		return fmt.Errorf("%w: %w", ErrDiffConfigsDiffer, ErrSilent)
 	}
 
 	return nil
