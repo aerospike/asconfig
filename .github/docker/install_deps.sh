@@ -141,7 +141,7 @@ function install_deps_redhat-el9() {
 }
 
 
-function install_deps_redhat-amazon-2023() {
+function install_deps_amazon-2023() {
   dnf -y install ruby rpmdevtools make git
 
   if [ "$(uname -m)" = "x86_64" ]; then
