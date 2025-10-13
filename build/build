@@ -1,0 +1,11 @@
+#!/bin/bash
+# Build a specified version.
+
+cd `dirname $0`
+source run_command
+
+cd ..
+
+runCommand make clean
+runCommand make
+exit 0
