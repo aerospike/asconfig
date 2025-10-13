@@ -62,8 +62,8 @@ help:
 	@echo "Available targets:"
 	@echo "  install-golangci-lint  Install golangci-lint v2.4.0"
 	@echo "  check-golangci-lint    Check if golangci-lint is installed"
-	@echo "  format                 Run golangci-lint (requires golangci-lint)"
-	@echo "  format-fix             Run golangci-lint with --fix (requires golangci-lint)"
+	@echo "  go-lint                Run golangci-lint (auto-installs if needed)"
+	@echo "  go-lint-fix            Run golangci-lint with --fix (auto-installs if needed)"
 	@echo "  test                   Run unit and integration tests"
 	@echo "  unit                   Run unit tests"
 	@echo "  integration            Run integration tests"
@@ -87,13 +87,22 @@ install-golangci-lint:
 check-golangci-lint:
 	@which golangci-lint > /dev/null || (echo "golangci-lint not found. Run 'make install-golangci-lint' to install it." && exit 1)
 
-.PHONY: format
-format: check-golangci-lint
+.PHONY: go-lint
+go-lint:
+	@which golangci-lint > /dev/null || (echo "golangci-lint not found. Installing..." && $(MAKE) install-golangci-lint)
 	golangci-lint run --config .golangci.yml
 
-.PHONY: format-fix
-format-fix: check-golangci-lint
+.PHONY: go-lint-fix
+go-lint-fix:
+	@which golangci-lint > /dev/null || (echo "golangci-lint not found. Installing..." && $(MAKE) install-golangci-lint)
 	golangci-lint run --config .golangci.yml --fix
+
+# Keep old format targets for backward compatibility
+.PHONY: format
+format: go-lint
+
+.PHONY: format-fix
+format-fix: go-lint-fix
 
 .PHONY: integration
 integration:

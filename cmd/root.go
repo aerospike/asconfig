@@ -18,8 +18,8 @@ import (
 	"github.com/aerospike/asconfig/schema"
 )
 
-// mainCmd represents the base command when called without any subcommands.
-var mainCmd = NewRootCmd()
+// rootCmd represents the base command when called without any subcommands.
+var rootCmd = NewRootCmd()
 
 var (
 	VERSION            = "development" // Replaced at compile time
@@ -31,7 +31,7 @@ var (
 // NewRootCmd creates and returns the root cobra command.
 // It is useful for producing copies of rootCmd for testing.
 func NewRootCmd() *cobra.Command {
-	rootCmd := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "asconfig",
 		Short: "Manage Aerospike configuration",
 		Long:  "Asconfig is used to manage Aerospike configuration.",
@@ -65,21 +65,21 @@ func NewRootCmd() *cobra.Command {
 
 	// TODO: log levels should be generic and not tied to logrus or golang.
 	logLevelUsage := fmt.Sprintf("Set the logging detail level. Valid levels are: %v", log.GetLogLevels())
-	rootCmd.PersistentFlags().StringP("log-level", "l", "info", logLevelUsage)
-	rootCmd.PersistentFlags().AddFlagSet(cfFileFlags.NewFlagSet(flags.DefaultWrapHelpString))
-	flags.SetupRoot(rootCmd, "Aerospike Config", VERSION)
+	cmd.PersistentFlags().StringP("log-level", "l", "info", logLevelUsage)
+	cmd.PersistentFlags().AddFlagSet(cfFileFlags.NewFlagSet(flags.DefaultWrapHelpString))
+	flags.SetupRoot(cmd, "Aerospike Config", VERSION)
 
-	rootCmd.SilenceErrors = true
-	rootCmd.SilenceUsage = true
+	cmd.SilenceErrors = true
+	cmd.SilenceUsage = true
 
-	rootCmd.SetFlagErrorFunc(func(cmd *cobra.Command, err error) error {
+	cmd.SetFlagErrorFunc(func(cmd *cobra.Command, err error) error {
 		logger.Error(err)
 		cmd.Println(cmd.UsageString())
 
 		return errors.Join(err, ErrSilent)
 	})
 
-	return rootCmd
+	return cmd
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -92,12 +92,12 @@ func Execute() error {
 	}
 
 	// Register subcommands
-	mainCmd.AddCommand(newConvertCmd())
-	mainCmd.AddCommand(newDiffCmd())
-	mainCmd.AddCommand(newGenerateCmd())
-	mainCmd.AddCommand(newValidateCmd())
+	rootCmd.AddCommand(newConvertCmd())
+	rootCmd.AddCommand(newDiffCmd())
+	rootCmd.AddCommand(newGenerateCmd())
+	rootCmd.AddCommand(newValidateCmd())
 
-	err := mainCmd.Execute()
+	err := rootCmd.Execute()
 	if err != nil {
 		if !errors.Is(err, ErrSilent) {
 			// handle wrapped errors

@@ -21,8 +21,8 @@ import (
 
 const (
 	// Docker pull retry configuration.
-	dockerPullBaseBackoffSeconds = 10 // Base backoff time in seconds
-	dockerPullMaxBackoffMinutes  = 5  // Maximum backoff time in minutes
+	dockerPullBaseBackoff = 10 * time.Second // Base backoff time in seconds
+	dockerPullMaxBackoff  = 5 * time.Minute  // Maximum backoff time in minutes
 )
 
 type DockerAuth struct {
@@ -89,8 +89,8 @@ func CreateAerospikeContainer(
 
 	// Retry configuration for Docker Hub rate limiting
 	maxRetries := 10
-	baseBackoff := dockerPullBaseBackoffSeconds * time.Second
-	maxBackoff := dockerPullMaxBackoffMinutes * time.Minute
+	baseBackoff := dockerPullBaseBackoff
+	maxBackoff := dockerPullMaxBackoff
 
 	var reader io.ReadCloser
 
