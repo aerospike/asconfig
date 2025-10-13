@@ -1,13 +1,12 @@
 //go:build unit
 
-package cmd_test
+package cmd
 
 import (
 	"errors"
 	"os"
 	"testing"
 
-	"github.com/aerospike/asconfig/cmd"
 	"github.com/aerospike/tools-common-go/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -34,16 +33,16 @@ func TestPersistentPreRunRootFlags(t *testing.T) {
 			flags:     []string{"--log-level", "bad_level"},
 			arguments: []string{},
 			expectedErrors: []error{
-				cmd.ErrInvalidLogLevel,
+				ErrInvalidLogLevel,
 			},
 		},
 	}
 
-	if err := cmd.InitializeGlobals(); err != nil {
+	if err := InitializeGlobals(); err != nil {
 		t.Fatalf("Failed to initialize globals for testing: %v", err)
 	}
 
-	rootCmd := cmd.NewRootCmd()
+	rootCmd := NewRootCmd()
 
 	for _, tc := range testCases {
 		t.Run(tc.flags[0], func(t *testing.T) {
@@ -103,7 +102,7 @@ func (testsuite *RootTest) TestPersistentPreRunRootInitConfig() {
 	}
 
 	createCmd := func() (*cobra.Command, *pflag.FlagSet, *pflag.FlagSet) {
-		rootCmd := cmd.NewRootCmd()
+		rootCmd := NewRootCmd()
 		subCmd := &cobra.Command{
 			Use: "sub",
 			Run: func(_ *cobra.Command, _ []string) {},
@@ -132,7 +131,7 @@ func (testsuite *RootTest) TestPersistentPreRunRootInitConfig() {
 
 			rootCmd, flagSet1, flagSet2 := createCmd()
 
-			err := os.WriteFile(tc.configFile, []byte(tc.configFileTxt), cmd.OutputFilePermissions)
+			err := os.WriteFile(tc.configFile, []byte(tc.configFileTxt), OutputFilePermissions)
 			if err != nil {
 				t.Fatalf("unable to write %s: %v", tc.configFile, err)
 			}
