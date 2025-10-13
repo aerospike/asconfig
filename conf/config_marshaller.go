@@ -9,6 +9,7 @@ import (
 
 type ConfigMarshaller struct {
 	ConfHandler
+
 	Format asConf.Format
 }
 
