@@ -1,6 +1,6 @@
 FROM amazonlinux:2023
 SHELL ["/bin/bash", "-euox", "pipefail", "-c"]
-
+ENV GOROOT=/opt/golang/go
 RUN dnf install -y shadow-utils && useradd -u 9001 -m build
 
 ADD .github/docker/entrypoint.sh /tmp/entrypoint.sh
