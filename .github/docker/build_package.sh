@@ -12,6 +12,7 @@ function build_packages(){
   make clean
   make
 
+  git pull origin
   echo "build_package.sh version: $(git describe --tags --always)"
   export VERSION=$(git describe --tags --always)
   # package
