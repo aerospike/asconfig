@@ -20,6 +20,7 @@ jobs:
         set -x &&
         cd local && 
         git submodule update --init &&
+        git pull origin &&
         ls -laht &&
         echo ref_name ${{ github.ref_name }} &&
         git branch -v &&
