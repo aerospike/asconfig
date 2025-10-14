@@ -3,11 +3,14 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
+
+	//nolint:depguard // log is used for logging in test files
 	"log"
 	"os"
 	"os/exec"
@@ -19,12 +22,23 @@ import (
 	"github.com/aerospike/asconfig/testutils"
 )
 
-// global flags
+var (
+	errNoArguments    = errors.New("no arguments found, must specify path to source conf or yaml file")
+	errTestCaseExists = errors.New("test case already exists")
+)
+
+const (
+	// File and directory permissions.
+	dirPermissions  = 0o755 // rwxr-xr-x
+	filePermissions = 0o600 // rw-------
+)
+
+// global flags.
 var obfuscate *bool
 
 type versions struct {
-	TestedVersion         string
-	OriginallyUsedVersion string
+	TestedVersion         string `json:"testedVersion"`
+	OriginallyUsedVersion string `json:"originallyUsedVersion"`
 }
 
 type obfuscateCallback func(*obfuscateEntry, []byte) ([]byte, error)
@@ -52,7 +66,7 @@ func (o *obfuscateEntry) obfuscateLine(line []byte) ([]byte, error) {
 
 func obfuscateNamespaceCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 	chop := len(strconv.Itoa(namespacesSeen))
-	namespacesSeen = namespacesSeen + 1
+	namespacesSeen++
 	o.value = o.value[:len(o.value)-chop] + strconv.Itoa(namespacesSeen)
 
 	return line, nil
@@ -60,7 +74,7 @@ func obfuscateNamespaceCallback(o *obfuscateEntry, line []byte) ([]byte, error) 
 
 func obfuscateMountCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 	chop := len(strconv.Itoa(mountSeen))
-	mountSeen = mountSeen + 1
+	mountSeen++
 	o.value = o.value[:len(o.value)-chop] + strconv.Itoa(mountSeen)
 
 	return line, nil
@@ -68,7 +82,7 @@ func obfuscateMountCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 
 func obfuscateSetCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 	chop := len(strconv.Itoa(setSeen))
-	setSeen = setSeen + 1
+	setSeen++
 	o.value = o.value[:len(o.value)-chop] + strconv.Itoa(setSeen)
 
 	return line, nil
@@ -76,7 +90,7 @@ func obfuscateSetCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 
 func obfuscateDcCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 	chop := len(strconv.Itoa(dcSeen))
-	dcSeen = dcSeen + 1
+	dcSeen++
 	o.value = o.value[:len(o.value)-chop] + strconv.Itoa(dcSeen)
 
 	return line, nil
@@ -84,7 +98,7 @@ func obfuscateDcCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 
 func obfuscateDeviceCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 	chop := len(strconv.Itoa(deviceSeen))
-	deviceSeen = deviceSeen + 1
+	deviceSeen++
 	o.value = o.value[:len(o.value)-chop] + strconv.Itoa(deviceSeen)
 
 	return line, nil
@@ -92,7 +106,7 @@ func obfuscateDeviceCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 
 func obfuscateFilePathCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 	chop := len(strconv.Itoa(fileSeen))
-	fileSeen = fileSeen + 1
+	fileSeen++
 	o.value = o.value[:len(o.value)-chop] + strconv.Itoa(fileSeen)
 
 	return line, nil
@@ -100,7 +114,7 @@ func obfuscateFilePathCallback(o *obfuscateEntry, line []byte) ([]byte, error) {
 
 func obfuscateTLSClusterName(o *obfuscateEntry, line []byte) ([]byte, error) {
 	chop := len(strconv.Itoa(tlsSeen))
-	tlsSeen = tlsSeen + 1
+	tlsSeen++
 	o.value = o.value[:len(o.value)-chop] + strconv.Itoa(tlsSeen)
 
 	return line, nil
@@ -153,7 +167,7 @@ var obfuscateThese = []*obfuscateEntry{
 		cb:      obfuscateDeviceCallback,
 	},
 	{
-		pattern: regexp.MustCompile(`(file\s+)([^{][\S]+)`),
+		pattern: regexp.MustCompile(`(file\s+)([^{]\S+)`),
 		value:   "/dummy/file/path1",
 		cb:      obfuscateFilePathCallback,
 	},
@@ -281,16 +295,17 @@ var obfuscateThese = []*obfuscateEntry{
 	},
 }
 
-var namespacesSeen int = 1
-var mountSeen int = 1
-var setSeen int = 1
-var dcSeen int = 1
-var deviceSeen int = 1
-var fileSeen int = 1
-var tlsSeen int = 1
+var namespacesSeen = 1
+var mountSeen = 1
+var setSeen = 1
+var dcSeen = 1
+var deviceSeen = 1
+var fileSeen = 1
+var tlsSeen = 1
 
 func processFileData(in io.Reader) (io.Reader, error) {
 	processedData := bytes.Buffer{}
+
 	scanner := bufio.NewScanner(in)
 	for scanner.Scan() {
 		tmp := scanner.Bytes()
@@ -309,6 +324,7 @@ func processFileData(in io.Reader) (io.Reader, error) {
 		if *obfuscate {
 			for _, obfs := range obfuscateThese {
 				var err error
+
 				line, err = obfs.obfuscateLine(line)
 				if err != nil {
 					return nil, err
@@ -316,8 +332,10 @@ func processFileData(in io.Reader) (io.Reader, error) {
 			}
 		}
 
-		line = append(line, '\n')
-		if _, err := processedData.Write(line); err != nil {
+		lineWithNewline := make([]byte, len(line)+1)
+		copy(lineWithNewline, line)
+		lineWithNewline[len(line)] = '\n'
+		if _, err := processedData.Write(lineWithNewline); err != nil {
 			return nil, err
 		}
 	}
@@ -329,66 +347,32 @@ func main() {
 	output := flag.String("output", "./testdata/cases", "path to output directory")
 	overwrite := flag.Bool("overwrite", false, "if a testcase directory already exists for this input, overwrite it")
 	obfuscate = flag.Bool("obfuscate", false, "obfuscate sensitive fields in the copied source config file")
-	aerospikeVersion := flag.String("aerospike-version", "6.2.0.2", "the aerospike version to pass to asconfig e.g: 6.2.0.2")
-	originalVersion := flag.String("original-version", "6.2.0.2", "the aerospike version that was originally used with this config e.g: 6.2.0.2")
+	aerospikeVersion := flag.String(
+		"aerospike-version",
+		"6.2.0.2",
+		"the aerospike version to pass to asconfig e.g: 6.2.0.2",
+	)
+	originalVersion := flag.String("original-version", "6.2.0.2",
+		"the aerospike version that was originally used with this config e.g: 6.2.0.2")
 	serverImage := flag.String("server-image", "", "url to an Aerospike image to use. Overrides aerospike-version")
-	dockerUser := flag.String("docker-user", "", "Environment variable that holds a username used to authenticate with docker repositories during image pulls")
-	dockerPass := flag.String("docker-pass", "", "Environment variable that holds a base64 password or ID token used to authenticate with docker repositories during image pulls")
+	dockerUser := flag.String("docker-user", "",
+		"Environment variable that holds a username used to authenticate with docker repositories during image pulls")
+	dockerPass := flag.String(
+		"docker-pass",
+		"",
+		"Environment variable that holds a base64 password or ID token used to authenticate with docker repositories during image pulls",
+	)
 
 	flag.Parse()
 
-	if len(flag.Args()) < 1 {
-		log.Fatal("no arguments found, must specify path to source conf or yaml file")
-	}
-
-	dockerAuth := testutils.DockerAuth{
-		Username: *dockerUser,
-		Password: *dockerPass,
-	}
-
-	inputPath := flag.Args()[0]
-
-	inputName := filepath.Base(strings.TrimSuffix(inputPath, filepath.Ext(inputPath)))
-	testCasePath := filepath.Join(*output, inputName)
-
-	if _, err := os.Stat(testCasePath); !errors.Is(err, os.ErrNotExist) {
-		if !*overwrite {
-			log.Fatalf("test case for %s already exists", testCasePath)
-		}
-
-		err := os.RemoveAll(testCasePath)
-		if err != nil {
-			log.Fatalf("failed to remove directory %s %v", testCasePath, err)
-		}
-	}
-
-	err := os.Mkdir(testCasePath, 0755)
+	inputPath, testCasePath, dockerAuth, err := setupTestEnvironment(*output, *overwrite, *dockerUser, *dockerPass)
 	if err != nil {
-		log.Fatalf("failed to create directory %s", testCasePath)
+		log.Fatal(err)
 	}
 
-	// move source file into testcase dir
-	r, err := os.Open(inputPath)
+	copiedSrcPath, err := processSourceFile(inputPath, testCasePath)
 	if err != nil {
-		log.Fatalf("failed to open %s", inputPath)
-	}
-	defer r.Close()
-
-	processedFile, err := processFileData(r)
-	if err != nil {
-		log.Fatalf("failed to write to processedData %v", err)
-	}
-
-	copiedSrcPath := filepath.Join(testCasePath, filepath.Base(inputPath))
-	w, err := os.Create(copiedSrcPath)
-	if err != nil {
-		log.Fatalf("failed to create %s", copiedSrcPath)
-	}
-	defer w.Close()
-
-	_, err = w.ReadFrom(processedFile)
-	if err != nil {
-		log.Fatalf("failed to copy %s to %s", inputPath, copiedSrcPath)
+		log.Fatal(err)
 	}
 
 	// convert the input file to yaml or asconf
@@ -411,24 +395,105 @@ func main() {
 		log.Fatalf("Invalid source type: %s, extension must be .yaml, or .conf", ext)
 	}
 
-	cmd := exec.Command("asconfig", args...)
+	cmd := exec.CommandContext(context.Background(), "asconfig", args...)
+
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Fatalf("command failed to run %v, %+v, out: %s", cmd, err, string(out))
 	}
 
-	// generate basic test cases
+	inputName := filepath.Base(strings.TrimSuffix(inputPath, filepath.Ext(inputPath)))
 
+	err = generateTestFiles(testCasePath, inputName, *aerospikeVersion, *originalVersion, *serverImage, dockerAuth)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+// setupTestEnvironment handles initial setup, validation, and directory creation.
+func setupTestEnvironment(
+	output string,
+	overwrite bool,
+	dockerUser,
+	dockerPass string) (string, string, testutils.DockerAuth, error) {
+	if len(flag.Args()) < 1 {
+		return "", "", testutils.DockerAuth{}, errNoArguments
+	}
+
+	dockerAuth := testutils.DockerAuth{
+		Username: dockerUser,
+		Password: dockerPass,
+	}
+
+	inputPath := flag.Args()[0]
+
+	inputName := filepath.Base(strings.TrimSuffix(inputPath, filepath.Ext(inputPath)))
+	testCasePath := filepath.Join(output, inputName)
+
+	if _, statErr := os.Stat(testCasePath); !errors.Is(statErr, os.ErrNotExist) {
+		if !overwrite {
+			return "", "", testutils.DockerAuth{}, fmt.Errorf("%w: %s", errTestCaseExists, testCasePath)
+		}
+
+		err := os.RemoveAll(testCasePath)
+		if err != nil {
+			return "", "", testutils.DockerAuth{}, fmt.Errorf("failed to remove directory %s: %w", testCasePath, err)
+		}
+	}
+
+	err := os.Mkdir(testCasePath, dirPermissions)
+	if err != nil {
+		return "", "", testutils.DockerAuth{}, fmt.Errorf("failed to create directory %s: %w", testCasePath, err)
+	}
+
+	return inputPath, testCasePath, dockerAuth, nil
+}
+
+// processSourceFile handles file processing and copying to test case directory.
+func processSourceFile(inputPath, testCasePath string) (string, error) {
+	// move source file into testcase dir
+	r, err := os.Open(inputPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to open %s: %w", inputPath, err)
+	}
+	defer r.Close()
+
+	processedFile, err := processFileData(r)
+	if err != nil {
+		return "", fmt.Errorf("failed to write to processedData: %w", err)
+	}
+
+	copiedSrcPath := filepath.Join(testCasePath, filepath.Base(inputPath))
+
+	w, err := os.Create(copiedSrcPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to create %s: %w", copiedSrcPath, err)
+	}
+	defer w.Close()
+
+	_, err = w.ReadFrom(processedFile)
+	if err != nil {
+		return "", fmt.Errorf("failed to copy %s to %s: %w", inputPath, copiedSrcPath, err)
+	}
+
+	return copiedSrcPath, nil
+}
+
+// generateTestFiles creates the test case JSON files and versions file.
+func generateTestFiles(
+	testCasePath, inputName, aerospikeVersion, originalVersion, serverImage string,
+	dockerAuth testutils.DockerAuth,
+) error {
 	yamlPath := filepath.Join(testCasePath, inputName+".yaml")
 	confPath := filepath.Join(testCasePath, inputName+".conf")
 	outYamlPath := filepath.Join(testCasePath, inputName+"-res-.conf")
 	outConfPath := filepath.Join(testCasePath, inputName+"-res-.yaml")
 
 	// yaml to conf test
-	args = []string{
+	args := []string{
 		"convert",
 		"--aerospike-version",
-		*aerospikeVersion,
+		aerospikeVersion,
 		"--format",
 		"yaml",
 		"--output",
@@ -441,27 +506,28 @@ func main() {
 			Expected:    confPath,
 			Destination: outYamlPath,
 			Arguments:   args,
-			ServerImage: *serverImage,
+			ServerImage: serverImage,
 			DockerAuth:  dockerAuth,
 		},
 	}
 
 	data, err := json.Marshal(td)
 	if err != nil {
-		log.Fatalf("failed to marshal %v to json, %v", td, err)
+		return fmt.Errorf("failed to marshal %v to json: %w", td, err)
 	}
 
 	yamlTestPath := filepath.Join(testCasePath, "yaml-tests.json")
-	err = os.WriteFile(yamlTestPath, data, 0655)
+
+	err = os.WriteFile(yamlTestPath, data, filePermissions)
 	if err != nil {
-		log.Fatalf("failed to write to %s", yamlTestPath)
+		return fmt.Errorf("failed to write to %s: %w", yamlTestPath, err)
 	}
 
 	// conf to yaml test
 	args = []string{
 		"convert",
 		"--aerospike-version",
-		*aerospikeVersion,
+		aerospikeVersion,
 		"--format",
 		"asconfig",
 		"--output",
@@ -474,35 +540,39 @@ func main() {
 			Expected:    yamlPath,
 			Destination: outConfPath,
 			Arguments:   args,
-			ServerImage: *serverImage,
+			ServerImage: serverImage,
 			DockerAuth:  dockerAuth,
 		},
 	}
 
 	data, err = json.Marshal(td)
 	if err != nil {
-		log.Fatalf("failed to marshal %v to json, %v", td, err)
+		return fmt.Errorf("failed to marshal %v to json: %w", td, err)
 	}
 
 	confTestPath := filepath.Join(testCasePath, "conf-tests.json")
-	err = os.WriteFile(confTestPath, data, 0655)
+
+	err = os.WriteFile(confTestPath, data, filePermissions)
 	if err != nil {
-		log.Fatalf("failed to write to %s", confTestPath)
+		return fmt.Errorf("failed to write to %s: %w", confTestPath, err)
 	}
 
 	// write versions file
 	versionsPath := filepath.Join(testCasePath, "versions.json")
 	vs := versions{
-		TestedVersion:         *aerospikeVersion,
-		OriginallyUsedVersion: *originalVersion,
+		TestedVersion:         aerospikeVersion,
+		OriginallyUsedVersion: originalVersion,
 	}
 
 	data, err = json.Marshal(vs)
-
-	err = os.WriteFile(versionsPath, data, 0655)
 	if err != nil {
-		log.Fatalf("failed to write to %s", versionsPath)
+		return fmt.Errorf("failed to marshal %v to json: %w", vs, err)
 	}
 
-	fmt.Println("Done")
+	err = os.WriteFile(versionsPath, data, filePermissions)
+	if err != nil {
+		return fmt.Errorf("failed to write to %s: %w", versionsPath, err)
+	}
+
+	return nil
 }

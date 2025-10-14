@@ -1,10 +1,12 @@
-// A common location to store utilities for testing.
+// Package testutils provides utilities for testing.
 package testutils
 
 import (
 	"context"
 	"fmt"
 	"io"
+
+	//nolint:depguard // log is used for logging in test files
 	"log"
 	"os"
 	"os/exec"
@@ -17,26 +19,32 @@ import (
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
+const (
+	// Docker pull retry configuration.
+	dockerPullBaseBackoff = 10 * time.Second // Base backoff time in seconds
+	dockerPullMaxBackoff  = 5 * time.Minute  // Maximum backoff time in minutes
+)
+
 type DockerAuth struct {
-	Username string
-	Password string
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 type TestData struct {
-	Source               string
-	Destination          string
-	Expected             string
-	Arguments            []string
-	SkipServerTest       bool
-	ServerErrorAllowList []string
-	ServerImage          string
-	DockerAuth           DockerAuth
+	Source               string     `json:"source"`
+	Destination          string     `json:"destination"`
+	Expected             string     `json:"expected"`
+	Arguments            []string   `json:"arguments"`
+	SkipServerTest       bool       `json:"skipServerTest"`
+	ServerErrorAllowList []string   `json:"serverErrorAllowList"`
+	ServerImage          string     `json:"serverImage"`
+	DockerAuth           DockerAuth `json:"dockerAuth"`
 }
 
 func GetAerospikeContainerID(name string) ([]byte, error) {
 	cmd := fmt.Sprintf("docker ps -a | grep '%s' | awk 'NF>1{print $NF}'", name)
-	output, err := exec.Command("bash", "-c", cmd).Output()
 
+	output, err := exec.CommandContext(context.Background(), "bash", "-c", cmd).Output()
 	if err != nil {
 		return nil, err
 	}
@@ -70,15 +78,22 @@ func RemoveAerospikeContainer(id string, cli *client.Client) error {
 	return nil
 }
 
-func CreateAerospikeContainer(name string, c *container.Config, ch *container.HostConfig, imagePullOpts image.PullOptions, cli *client.Client) (string, error) {
+func CreateAerospikeContainer(
+	name string,
+	c *container.Config,
+	ch *container.HostConfig,
+	imagePullOpts image.PullOptions,
+	cli *client.Client,
+) (string, error) {
 	ctx := context.Background()
 
 	// Retry configuration for Docker Hub rate limiting
 	maxRetries := 10
-	baseBackoff := 10 * time.Second // Base backoff time
-	maxBackoff := 5 * time.Minute   // Maximum backoff time
+	baseBackoff := dockerPullBaseBackoff
+	maxBackoff := dockerPullMaxBackoff
 
 	var reader io.ReadCloser
+
 	var err error
 
 	// Retry loop for image pulling with exponential backoff
@@ -101,18 +116,31 @@ func CreateAerospikeContainer(name string, c *container.Config, ch *container.Ho
 				backoffTime = maxBackoff
 			}
 
-			log.Printf("Docker pull rate limit reached for %s, retrying in %v (attempt %d/%d)", name, backoffTime, attempt, maxRetries)
+			log.Printf(
+				"Docker pull rate limit reached for %s, retrying in %v (attempt %d/%d)",
+				name,
+				backoffTime,
+				attempt,
+				maxRetries,
+			)
 			time.Sleep(backoffTime)
+
 			continue
 		}
 
 		// If it's not a rate limit error, don't retry
 		log.Printf("Unable to pull image %s: %s", name, err)
+
 		return "", err
 	}
 
 	defer reader.Close()
-	io.Copy(os.Stdout, reader)
+
+	_, err = io.Copy(os.Stdout, reader)
+	if err != nil {
+		log.Printf("Unable to read image pull response for %s: %s", name, err)
+		return "", err
+	}
 
 	platform := &v1.Platform{
 		Architecture: imagePullOpts.Platform,
@@ -139,7 +167,6 @@ func StartAerospikeContainer(id string, cli *client.Client) error {
 }
 
 func IndexOf(l []string, s string) int {
-
 	for i, e := range l {
 		if e == s {
 			return i
