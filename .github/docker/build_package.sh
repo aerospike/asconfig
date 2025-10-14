@@ -15,7 +15,11 @@ function build_packages(){
   echo "environment: "
   env
 
-  echo "git branch -v: $(git branch -v)"
+  echo "git branch -v:"
+  git branch -v
+  git tags
+  git describe --tags
+  git status
 
   echo "build_package.sh version: $(git describe --tags --always)"
   export VERSION=$(git describe --tags --always)
