@@ -17,7 +17,7 @@ function build_packages(){
 
   echo "git branch -v:"
   git branch -v
-  git tags
+  git tag
   git describe --tags
   git status
 
