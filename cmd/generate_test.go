@@ -21,17 +21,17 @@ func TestRunEGenerate(t *testing.T) {
 		{
 			flags:       []string{},
 			arguments:   []string{"too", "many", "args"},
-			expectError: ErrTooManyArguments,
+			expectError: errTooManyArguments,
 		},
 		{
 			flags:       []string{"--format", "bad_fmt"},
 			arguments:   []string{},
-			expectError: ErrInvalidFormat,
+			expectError: errInvalidFormat,
 		},
 		{
 			flags:       []string{"-F", "bad_fmt"},
 			arguments:   []string{},
-			expectError: ErrInvalidFormat,
+			expectError: errInvalidFormat,
 		},
 	}
 	cmd := newGenerateCmd()

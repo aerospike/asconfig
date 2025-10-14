@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"errors"
-	"fmt"
 	"os"
 
 	asConf "github.com/aerospike/aerospike-management-lib/asconfig"
@@ -13,10 +12,6 @@ import (
 
 const (
 	validateArgMax = 1
-)
-
-var (
-	ErrValidateTooManyArguments = fmt.Errorf("expected a maximum of %d arguments", convertArgMax)
 )
 
 func newValidateCmd() *cobra.Command {
@@ -50,7 +45,7 @@ func runValidateCommand(cmd *cobra.Command, args []string) error {
 	logger.Debug("Running validate command")
 
 	if len(args) > validateArgMax {
-		return ErrValidateTooManyArguments
+		return errValidateTooManyArguments
 	}
 
 	// read stdin by default
@@ -75,7 +70,7 @@ func runValidateCommand(cmd *cobra.Command, args []string) error {
 
 	version, err := getMetaDataItemOptional(fdata, metaKeyAerospikeVersion)
 	if err != nil {
-		return errors.Join(ErrMissingAerospikeVersion, err)
+		return errors.Join(errMissingAerospikeVersion, err)
 	}
 
 	// if the Aerospike server version was not in the file

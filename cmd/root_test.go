@@ -33,7 +33,7 @@ func TestPersistentPreRunRootFlags(t *testing.T) {
 			flags:     []string{"--log-level", "bad_level"},
 			arguments: []string{},
 			expectedErrors: []error{
-				ErrInvalidLogLevel,
+				errInvalidLogLevel,
 			},
 		},
 	}
@@ -131,7 +131,7 @@ func (testsuite *RootTest) TestPersistentPreRunRootInitConfig() {
 
 			rootCmd, flagSet1, flagSet2 := createCmd()
 
-			err := os.WriteFile(tc.configFile, []byte(tc.configFileTxt), OutputFilePermissions)
+			err := os.WriteFile(tc.configFile, []byte(tc.configFileTxt), outputFilePermissions)
 			if err != nil {
 				t.Fatalf("unable to write %s: %v", tc.configFile, err)
 			}

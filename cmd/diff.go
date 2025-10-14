@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"reflect"
@@ -22,29 +21,6 @@ const (
 	diffArgMax       = 2
 	diffServerArgMin = 1 // For server diff, we need only one local file
 	diffServerArgMax = 1
-)
-
-var (
-	ErrDiffConfigsDiffer                = errors.New("configuration files are not equal")
-	ErrMismatchedFileFormats            = errors.New("mismatched file formats")
-	ErrUnableToCreateClientPolicy       = errors.New("unable to create client policy")
-	ErrUnableToParseGeneratedServerConf = errors.New("unable to parse the generated server conf")
-	ErrUnableToGenerateConfigFromServer = errors.New("unable to generate config from server")
-	ErrUnableToMarshalServerConfig      = errors.New("unable to marshal server config")
-	ErrUnableToParseServerConfigBytes   = errors.New("unable to parse server config bytes")
-	ErrDiffTooFewArgs                   = fmt.Errorf("diff requires atleast %d file paths as arguments", diffArgMin)
-	ErrDiffTooManyArgs                  = fmt.Errorf(
-		"diff requires no more than %d file paths as arguments",
-		diffArgMax,
-	)
-	ErrDiffServerTooFewArgs = fmt.Errorf(
-		"diff with --server requires exactly %d file path as argument",
-		diffServerArgMin,
-	)
-	ErrDiffServerTooManyArgs = fmt.Errorf(
-		"diff with --server requires no more than %d file path as argument",
-		diffServerArgMax,
-	)
 )
 
 // GetDiffCmd returns the diff command.
@@ -144,11 +120,11 @@ func newDiffServerCmd() *cobra.Command {
 // runFileDiff handles the original file-to-file diff functionality.
 func runFileDiff(cmd *cobra.Command, args []string) error {
 	if len(args) < diffArgMin {
-		return ErrDiffTooFewArgs
+		return errDiffTooFewArgs
 	}
 
 	if len(args) > diffArgMax {
-		return ErrDiffTooManyArgs
+		return errDiffTooManyArgs
 	}
 
 	path1 := args[0]
@@ -171,7 +147,7 @@ func runFileDiff(cmd *cobra.Command, args []string) error {
 	logger.Debugf("Diff file 2 format is %v", fmt2)
 
 	if fmt1 != fmt2 {
-		return fmt.Errorf("%w: detected %s and %s", ErrMismatchedFileFormats, fmt1, fmt2)
+		return fmt.Errorf("%w: detected %s and %s", errMismatchedFileFormats, fmt1, fmt2)
 	}
 
 	f1, err := os.ReadFile(path1)
@@ -216,7 +192,7 @@ func runFileDiff(cmd *cobra.Command, args []string) error {
 		)
 		fmt.Fprintf(os.Stdout, "%s\n", strings.Join(diffs, ""))
 
-		return fmt.Errorf("%w: %w", ErrDiffConfigsDiffer, ErrSilent)
+		return fmt.Errorf("%w: %w", errDiffConfigsDiffer, ErrSilent)
 	}
 
 	return nil
@@ -225,11 +201,11 @@ func runFileDiff(cmd *cobra.Command, args []string) error {
 // runServerDiff handles comparing a local file against a running server.
 func runServerDiff(cmd *cobra.Command, args []string) error {
 	if len(args) < diffServerArgMin {
-		return ErrDiffServerTooFewArgs
+		return errDiffServerTooFewArgs
 	}
 
 	if len(args) > diffServerArgMax {
-		return ErrDiffServerTooManyArgs
+		return errDiffServerTooManyArgs
 	}
 
 	logger.Warning(
@@ -264,7 +240,7 @@ func runServerDiff(cmd *cobra.Command, args []string) error {
 
 	asPolicy, err := asCommonConfig.NewClientPolicy()
 	if err != nil {
-		return fmt.Errorf("%w: %w", ErrUnableToCreateClientPolicy, err)
+		return fmt.Errorf("%w: %w", errUnableToCreateClientPolicy, err)
 	}
 
 	logger.Debugf("Retrieving Aerospike configuration from server")
@@ -274,13 +250,13 @@ func runServerDiff(cmd *cobra.Command, args []string) error {
 
 	generatedConf, err := asConf.GenerateConf(mgmtLibLogger, asinfo, true)
 	if err != nil {
-		return fmt.Errorf("%w: %w", ErrUnableToGenerateConfigFromServer, err)
+		return fmt.Errorf("%w: %w", errUnableToGenerateConfigFromServer, err)
 	}
 
 	// Convert server config to the same format as local file to ensure same parsing path
 	serverConfHandler, err := asConf.NewMapAsConfig(mgmtLibLogger, generatedConf.Conf)
 	if err != nil {
-		return fmt.Errorf("%w: %w", ErrUnableToParseGeneratedServerConf, err)
+		return fmt.Errorf("%w: %w", errUnableToParseGeneratedServerConf, err)
 	}
 
 	// Marshal server config to bytes in the same format as local file
@@ -288,13 +264,13 @@ func runServerDiff(cmd *cobra.Command, args []string) error {
 
 	serverConfigBytes, err := serverConfigMarshaller.MarshalText()
 	if err != nil {
-		return fmt.Errorf("%w: %w", ErrUnableToMarshalServerConfig, err)
+		return fmt.Errorf("%w: %w", errUnableToMarshalServerConfig, err)
 	}
 
 	// Parse server config bytes using the same path as local file
 	serverConf, err := asConf.NewASConfigFromBytes(mgmtLibLogger, serverConfigBytes, localFormat)
 	if err != nil {
-		return fmt.Errorf("%w: %w", ErrUnableToParseServerConfigBytes, err)
+		return fmt.Errorf("%w: %w", errUnableToParseServerConfigBytes, err)
 	}
 
 	// Get flattened config maps - now both should have the same data types
@@ -314,7 +290,7 @@ func runServerDiff(cmd *cobra.Command, args []string) error {
 		)
 		fmt.Fprintf(os.Stdout, "%s\n", strings.Join(diffs, ""))
 
-		return fmt.Errorf("%w: %w", ErrDiffConfigsDiffer, ErrSilent)
+		return fmt.Errorf("%w: %w", errDiffConfigsDiffer, ErrSilent)
 	}
 
 	return nil

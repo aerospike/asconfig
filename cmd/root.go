@@ -22,10 +22,9 @@ import (
 var rootCmd = NewRootCmd()
 
 var (
-	VERSION            = "development" // Replaced at compile time
-	ErrInvalidLogLevel = errors.New("invalid log-level flag")
-	aerospikeFlags     = flags.NewDefaultAerospikeFlags()
-	cfFileFlags        = flags.NewConfFileFlags()
+	VERSION        = "development" // Replaced at compile time
+	aerospikeFlags = flags.NewDefaultAerospikeFlags()
+	cfFileFlags    = flags.NewConfFileFlags()
 )
 
 // NewRootCmd creates and returns the root cobra command.
@@ -50,7 +49,7 @@ func NewRootCmd() *cobra.Command {
 
 			lvlCode, err := logrus.ParseLevel(lvl)
 			if err != nil {
-				multiErr = errors.Join(multiErr, ErrInvalidLogLevel, err)
+				multiErr = errors.Join(multiErr, errInvalidLogLevel, err)
 			}
 
 			logger.SetLevel(lvlCode)

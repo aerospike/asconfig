@@ -5,8 +5,6 @@ package cmd
 import (
 	"errors"
 	"testing"
-
-	asConf "github.com/aerospike/aerospike-management-lib/asconfig"
 )
 
 type preTestConvert struct {
@@ -25,21 +23,21 @@ var preTestsConvert = []preTestConvert{
 		flags:     []string{"-a", ""},
 		arguments: []string{"./bad_file.yaml", "too_many"},
 		expectedErrors: []error{
-			ErrTooManyArguments,
+			errTooManyArguments,
 		},
 	},
 	{
 		flags:     []string{},
 		arguments: []string{"./bad_file.yaml"},
 		expectedErrors: []error{
-			ErrFileNotExist,
+			errFileNotExist,
 		},
 	},
 	{
 		flags:     []string{},
 		arguments: []string{"./convert_test.go"},
 		expectedErrors: []error{
-			ErrMissingAerospikeVersion,
+			errMissingAerospikeVersion,
 		},
 	},
 	{
@@ -51,14 +49,14 @@ var preTestsConvert = []preTestConvert{
 		flags:     []string{"--format", "bad_fmt"},
 		arguments: []string{"./convert_test.go"},
 		expectedErrors: []error{
-			asConf.ErrInvalidFormat,
+			errInvalidFormat,
 		},
 	},
 	{
 		flags:     []string{"-F", "bad_fmt"},
 		arguments: []string{"./convert_test.go"},
 		expectedErrors: []error{
-			asConf.ErrInvalidFormat,
+			errInvalidFormat,
 		},
 	},
 }

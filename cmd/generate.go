@@ -15,11 +15,6 @@ import (
 )
 
 var generateArgMax = 1
-var (
-	ErrUnableToGenerateConfigFile       = errors.New("unable to generate config file")
-	ErrUnableToParseGeneratedConfFile   = errors.New("unable to parse the generated conf file")
-	ErrUnableToMarshalGeneratedConfFile = errors.New("unable to marshal the generated conf file")
-)
 
 func newGenerateCmd() *cobra.Command {
 	asCommonFlags := flags.NewDefaultAerospikeFlags()
@@ -42,7 +37,7 @@ func newGenerateCmd() *cobra.Command {
 		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > generateArgMax {
-				return ErrTooManyArguments
+				return errTooManyArguments
 			}
 
 			// validate flags
@@ -53,12 +48,12 @@ func newGenerateCmd() *cobra.Command {
 
 			formatString, err := cmd.Flags().GetString("format")
 			if err != nil {
-				return errors.Join(ErrMissingFormat, err)
+				return errors.Join(errMissingFormat, err)
 			}
 
 			_, err = ParseFmtString(formatString)
 			if err != nil && formatString != "" {
-				return errors.Join(ErrInvalidFormat, err)
+				return errors.Join(errInvalidFormat, err)
 			}
 
 			return nil
@@ -98,7 +93,7 @@ func runGenerateCommand(cmd *cobra.Command, aerospikeFlags *flags.AerospikeFlags
 
 	asPolicy, err := asCommonConfig.NewClientPolicy()
 	if err != nil {
-		return fmt.Errorf("%w: %w", ErrUnableToCreateClientPolicy, err)
+		return fmt.Errorf("%w: %w", errUnableToCreateClientPolicy, err)
 	}
 
 	logger.Infof("Retrieving Aerospike configuration from node %s", &aerospikeFlags.Seeds)
@@ -108,19 +103,19 @@ func runGenerateCommand(cmd *cobra.Command, aerospikeFlags *flags.AerospikeFlags
 
 	generatedConf, err := asconfig.GenerateConf(mgmtLibLogger, asinfo, true)
 	if err != nil {
-		return fmt.Errorf("%w: %w", ErrUnableToGenerateConfigFile, err)
+		return fmt.Errorf("%w: %w", errUnableToGenerateConfigFile, err)
 	}
 
 	aerospikeConfig, err := asconfig.NewMapAsConfig(mgmtLibLogger, generatedConf.Conf)
 	if err != nil {
-		return fmt.Errorf("%w: %w", ErrUnableToParseGeneratedConfFile, err)
+		return fmt.Errorf("%w: %w", errUnableToParseGeneratedConfFile, err)
 	}
 
 	marshaller := conf.NewConfigMarshaller(aerospikeConfig, outFormat)
 
 	fdata, err := marshaller.MarshalText()
 	if err != nil {
-		return fmt.Errorf("%w: %w", ErrUnableToMarshalGeneratedConfFile, err)
+		return fmt.Errorf("%w: %w", errUnableToMarshalGeneratedConfFile, err)
 	}
 
 	mdata := map[string]string{
@@ -139,7 +134,7 @@ func runGenerateCommand(cmd *cobra.Command, aerospikeFlags *flags.AerospikeFlags
 	if outputPath == os.Stdout.Name() {
 		outFile = os.Stdout
 	} else {
-		outFile, err = os.OpenFile(outputPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, OutputFilePermissions)
+		outFile, err = os.OpenFile(outputPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, outputFilePermissions)
 		if err != nil {
 			return err
 		}

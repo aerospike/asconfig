@@ -456,11 +456,10 @@ func processSourceFile(inputPath, testCasePath string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to open %s: %w", inputPath, err)
 	}
+	defer r.Close()
 
 	processedFile, err := processFileData(r)
 	if err != nil {
-		_ = r.Close() // Ignore close error when already handling another error
-
 		return "", fmt.Errorf("failed to write to processedData: %w", err)
 	}
 
@@ -468,25 +467,13 @@ func processSourceFile(inputPath, testCasePath string) (string, error) {
 
 	w, err := os.Create(copiedSrcPath)
 	if err != nil {
-		_ = r.Close() // Ignore close error when already handling another error
-
 		return "", fmt.Errorf("failed to create %s: %w", copiedSrcPath, err)
 	}
+	defer w.Close()
 
 	_, err = w.ReadFrom(processedFile)
 	if err != nil {
-		_ = r.Close() // Ignore close error when already handling another error
-		_ = w.Close() // Ignore close error when already handling another error
-
 		return "", fmt.Errorf("failed to copy %s to %s: %w", inputPath, copiedSrcPath, err)
-	}
-
-	// Close files after successful processing
-	if closeErr := r.Close(); closeErr != nil {
-		return "", fmt.Errorf("failed to close source file: %w", closeErr)
-	}
-	if closeErr := w.Close(); closeErr != nil {
-		return "", fmt.Errorf("failed to close destination file: %w", closeErr)
 	}
 
 	return copiedSrcPath, nil

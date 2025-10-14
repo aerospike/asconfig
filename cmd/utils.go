@@ -14,14 +14,51 @@ import (
 )
 
 const (
-	// OutputFilePermissions defines the default file permissions for output files.
-	OutputFilePermissions   = 0o600
+	// outputFilePermissions defines the default file permissions for output files.
+	outputFilePermissions   = 0o600
 	metaKeyAerospikeVersion = "aerospike-server-version"
 	metaKeyAsconfigVersion  = "asconfig-version"
 	metaKeyAsadmVersion     = "asadm-version"
 )
 
 var (
+	errTooManyArguments            = fmt.Errorf("expected a maximum of %d arguments", convertArgMax)
+	errFileNotExist                = errors.New("file does not exist")
+	errMissingAerospikeVersion     = errors.New("missing required flag '--aerospike-version'")
+	errInvalidAerospikeVersion     = errors.New("aerospike version must be in the form <a>.<b>.<c>")
+	errUnsupportedAerospikeVersion = errors.New("aerospike version unsupported")
+	errInvalidFormat               = errors.New("invalid format flag")
+	errMissingFormat               = errors.New("missing format flag")
+
+	errDiffConfigsDiffer                = errors.New("configuration files are not equal")
+	errMismatchedFileFormats            = errors.New("mismatched file formats")
+	errUnableToCreateClientPolicy       = errors.New("unable to create client policy")
+	errUnableToParseGeneratedServerConf = errors.New("unable to parse the generated server conf")
+	errUnableToGenerateConfigFromServer = errors.New("unable to generate config from server")
+	errUnableToMarshalServerConfig      = errors.New("unable to marshal server config")
+	errUnableToParseServerConfigBytes   = errors.New("unable to parse server config bytes")
+	errDiffTooFewArgs                   = fmt.Errorf("diff requires atleast %d file paths as arguments", diffArgMin)
+	errDiffTooManyArgs                  = fmt.Errorf(
+		"diff requires no more than %d file paths as arguments",
+		diffArgMax,
+	)
+	errDiffServerTooFewArgs = fmt.Errorf(
+		"diff with --server requires exactly %d file path as argument",
+		diffServerArgMin,
+	)
+	errDiffServerTooManyArgs = fmt.Errorf(
+		"diff with --server requires no more than %d file path as argument",
+		diffServerArgMax,
+	)
+
+	errUnableToGenerateConfigFile       = errors.New("unable to generate config file")
+	errUnableToParseGeneratedConfFile   = errors.New("unable to parse the generated conf file")
+	errUnableToMarshalGeneratedConfFile = errors.New("unable to marshal the generated conf file")
+
+	errInvalidLogLevel = errors.New("invalid log-level flag")
+
+	errValidateTooManyArguments = fmt.Errorf("expected a maximum of %d arguments", convertArgMax)
+
 	errMetadataDoesNotContain = errors.New("metadata does not contain key")
 )
 
