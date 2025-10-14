@@ -34,7 +34,7 @@ deb: prep
 		--license $(LICENSE) \
 		--url $(URL) \
 		--vendor $(VENDOR) \
-		--package $(TARGET_DIR)/asconfig_$(VERSION)_$(BUILD_DISTRO)_$(ARCH).deb
+		--package $(TARGET_DIR)/asconfig_$(shell git describe --tags --always)_$(BUILD_DISTRO)_$(ARCH).deb
 
 .PHONY: rpm
 rpm: prep
@@ -50,7 +50,7 @@ rpm: prep
 		--license $(LICENSE) \
 		--url $(URL) \
 		--vendor $(VENDOR) \
-		--package $(TARGET_DIR)/asconfig-$(VERSION).$(BUILD_DISTRO).$(ARCH).rpm
+		--package $(TARGET_DIR)/asconfig-$(shell git describe --tags --always).$(BUILD_DISTRO).$(ARCH).rpm
 
 .PHONY: tar
 tar: prep
