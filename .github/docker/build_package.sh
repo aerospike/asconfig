@@ -12,6 +12,11 @@ function build_packages(){
   make clean
   make
 
+  echo "environment: "
+  env
+
+  echo "git branch -v: $(git branch -v)"
+
   echo "build_package.sh version: $(git describe --tags --always)"
   export VERSION=$(git describe --tags --always)
   # package
