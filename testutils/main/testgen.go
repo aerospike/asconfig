@@ -23,8 +23,8 @@ import (
 )
 
 var (
-	ErrNoArguments    = errors.New("no arguments found, must specify path to source conf or yaml file")
-	ErrTestCaseExists = errors.New("test case already exists")
+	errNoArguments    = errors.New("no arguments found, must specify path to source conf or yaml file")
+	errTestCaseExists = errors.New("test case already exists")
 )
 
 const (
@@ -417,7 +417,7 @@ func setupTestEnvironment(
 	dockerUser,
 	dockerPass string) (string, string, testutils.DockerAuth, error) {
 	if len(flag.Args()) < 1 {
-		return "", "", testutils.DockerAuth{}, ErrNoArguments
+		return "", "", testutils.DockerAuth{}, errNoArguments
 	}
 
 	dockerAuth := testutils.DockerAuth{
@@ -432,7 +432,7 @@ func setupTestEnvironment(
 
 	if _, statErr := os.Stat(testCasePath); !errors.Is(statErr, os.ErrNotExist) {
 		if !overwrite {
-			return "", "", testutils.DockerAuth{}, fmt.Errorf("%w: %s", ErrTestCaseExists, testCasePath)
+			return "", "", testutils.DockerAuth{}, fmt.Errorf("%w: %s", errTestCaseExists, testCasePath)
 		}
 
 		err := os.RemoveAll(testCasePath)
