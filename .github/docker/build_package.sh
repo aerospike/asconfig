@@ -16,12 +16,16 @@ function build_packages(){
   env
 
   echo "git branch v r status tag"
+
   git branch -v
   git branch -r
   git status
   git tag
   git remote -v
 #  git describe --tags
+
+  git pull origin
+  git tag
 
   echo "build_package.sh version: $(git describe --tags --always)"
   export VERSION=$(git describe --tags --always)
