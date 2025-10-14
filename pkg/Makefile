@@ -8,7 +8,7 @@ CONFIG_DIR = /etc/aerospike
 
 # Package variables
 NAME = "asconfig"
-override VERSION = $(shell git describe --tags --always | cut -d '-' -f 1-2)
+#override VERSION =
 MAINTAINER = "Aerospike"
 DESCRIPTION = "Asconfig, a tool for managing Aerospike database configuration files."
 LICENSE = "Apache License 2.0"
@@ -28,7 +28,7 @@ deb: prep
 		--output-type deb \
 		--chdir $(BUILD_DIR)/ \
 		--name $(NAME) \
-		--version $(VERSION) \
+		--version $(shell git describe --tags --always) \
 		--maintainer $(MAINTAINER) \
 		--description $(DESCRIPTION) \
 		--license $(LICENSE) \
@@ -44,7 +44,7 @@ rpm: prep
 		--output-type rpm \
 		--chdir $(BUILD_DIR)/ \
 		--name $(NAME) \
-		--version $(VERSION) \
+		--version $(shell git describe --tags --always) \
 		--maintainer $(MAINTAINER) \
 		--description $(DESCRIPTION) \
 		--license $(LICENSE) \
@@ -60,13 +60,13 @@ tar: prep
 		--output-type tar \
 		--chdir $(BUILD_DIR)/ \
 		--name $(NAME) \
-		--version $(VERSION) \
+		--version $(shell git describe --tags --always) \
 		--maintainer $(MAINTAINER) \
 		--description $(DESCRIPTION) \
 		--license $(LICENSE) \
 		--url $(URL) \
 		--vendor $(VENDOR) \
-		--package $(TARGET_DIR)/asconfig-$(BUILD_DISTRO)-$(VERSION)-$(ARCH).tar
+		--package $(TARGET_DIR)/asconfig-$(BUILD_DISTRO)-$(shell git describe --tags --always)-$(ARCH).tar
 
 .PHONY: prep
 prep:
