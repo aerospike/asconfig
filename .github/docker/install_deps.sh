@@ -107,7 +107,9 @@ function install_deps_ubuntu24.04() {
 }
 
 function install_deps_redhat-el8() {
-  dnf -y install ruby rpm-build make git
+  dnf module enable -y ruby:2.7
+  dnf -y install ruby ruby-devel redhat-rpm-config rubygems rpm-build make git
+  gem install --no-document fpm
 
   if [ "$(uname -m)" = "x86_64" ]; then
       curl -L https://go.dev/dl/go1.24.6.linux-amd64.tar.gz -o /tmp/go1.24.6.linux-amd64.tar.gz
@@ -120,7 +122,6 @@ function install_deps_redhat-el8() {
       exit 1
   fi
   install /opt/golang/go/bin/go /usr/local/bin/
-  gem install fpm
 }
 
 function install_deps_redhat-el9() {
@@ -140,6 +141,22 @@ function install_deps_redhat-el9() {
   gem install fpm
 }
 
+function install_deps_redhat-el10() {
+  dnf -y install ruby rpmdevtools make git
+
+  if [ "$(uname -m)" = "x86_64" ]; then
+      curl -L https://go.dev/dl/go1.24.6.linux-amd64.tar.gz -o /tmp/go1.24.6.linux-amd64.tar.gz
+      mkdir -p /opt/golang && tar -zxvf /tmp/go1.24.6.linux-amd64.tar.gz -C /opt/golang
+  elif [ "$(uname -m)" = "aarch64" ]; then
+      curl -L https://go.dev/dl/go1.24.6.linux-arm64.tar.gz -o /tmp/go1.24.6.linux-arm64.tar.gz
+      mkdir -p /opt/golang && tar -zxvf /tmp/go1.24.6.linux-arm64.tar.gz -C /opt/golang
+  else
+      echo "unknown arch $(uname -m)"
+      exit 1
+  fi
+  install /opt/golang/go/bin/go /usr/local/bin/
+  gem install fpm
+}
 
 function install_deps_amazon-2023() {
   dnf -y install ruby rpmdevtools make git
