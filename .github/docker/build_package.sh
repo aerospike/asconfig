@@ -12,12 +12,18 @@ function build_packages(){
   make clean
   make
 
+  git log --decorate --oneline
+
+  git status
   git pull origin
   echo "tags"
   git tag
+  git rev-parse --is-shallow-repository
+  git fetch --unshallow --tags
 
-  echo "build_package.sh version: $(git describe --long)"
-  export VERSION=$(git describe --long)
+
+  echo "build_package.sh version: $(git describe --tags --always)"
+  export VERSION=$(git describe --tags --always)
   # package
   cd $PKG_DIR
   make clean
