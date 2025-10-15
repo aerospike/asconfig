@@ -16,8 +16,8 @@ function build_packages(){
   echo "tags"
   git tag
 
-  echo "build_package.sh version: $(git describe --tags --always)"
-  export VERSION=$(git describe --tags --always)
+  echo "build_package.sh version: $(git describe --long)"
+  export VERSION=$(git describe --long)
   # package
   cd $PKG_DIR
   make clean
