@@ -9,6 +9,7 @@ CONFIG_DIR = /etc/aerospike
 # Package variables
 NAME = "asconfig"
 MAINTAINER = "Aerospike"
+VERSION = $(shell git describe --tags --always)
 DESCRIPTION = "Asconfig, a tool for managing Aerospike database configuration files."
 LICENSE = "Apache License 2.0"
 URL = "https://github.com/aerospike/asconfig"
