@@ -6,20 +6,16 @@ import (
 	"sort"
 )
 
-var commentChar string
-var findComments *regexp.Regexp
+const commentChar = "#"
 
-func init() {
-	commentChar = "#"
-	// findComments matches text of the form `<commentChar> <key>: <val>`
-	// for example, parsing...
-	// # comment about metadata
-	// # a: b
-	// other data
-	// matches
-	// # a: b
-	findComments = regexp.MustCompile(commentChar + `(?m)\s*(.+):\s*(.+)\s*$`)
-}
+// findComments matches text of the form `<commentChar> <key>: <val>`.
+// for example, parsing...
+// # comment about metadata
+// # a: b
+// other data
+// matches
+// # a: b.
+var findComments = regexp.MustCompile(commentChar + `(?m)\s*(.+):\s*(.+)\s*$`)
 
 func Unmarshal(src []byte, dst map[string]string) error {
 	matches := findComments.FindAllSubmatch(src, -1)
@@ -44,7 +40,7 @@ func formatLine(k string, v any) string {
 
 func Marshal(src map[string]string) ([]byte, error) {
 	res := []byte{}
-	lines := make([]string, len(src))
+	lines := make([]string, 0, len(src))
 
 	for k, v := range src {
 		lines = append(lines, formatLine(k, v)+"\n")

@@ -5,8 +5,6 @@ package cmd
 import (
 	"errors"
 	"testing"
-
-	asConf "github.com/aerospike/aerospike-management-lib/asconfig"
 )
 
 type preTestConvert struct {
@@ -51,20 +49,23 @@ var preTestsConvert = []preTestConvert{
 		flags:     []string{"--format", "bad_fmt"},
 		arguments: []string{"./convert_test.go"},
 		expectedErrors: []error{
-			asConf.ErrInvalidFormat,
+			errInvalidFormat,
 		},
 	},
 	{
 		flags:     []string{"-F", "bad_fmt"},
 		arguments: []string{"./convert_test.go"},
 		expectedErrors: []error{
-			asConf.ErrInvalidFormat,
+			errInvalidFormat,
 		},
 	},
 }
 
 func TestPreRunConvert(t *testing.T) {
-	cmd := convertCmd
+	if err := InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
+	cmd := newConvertCmd()
 
 	for _, test := range preTestsConvert {
 		cmd.ParseFlags(test.flags)

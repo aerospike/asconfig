@@ -12,6 +12,7 @@ import (
 //go:embed schemas/json/aerospike
 var schemas embed.FS
 
+//nolint:revive // SchemaMap is kept for API compatibility
 type SchemaMap map[string]string
 
 func NewSchemaMap() (SchemaMap, error) {
@@ -24,9 +25,9 @@ func NewSchemaMap() (SchemaMap, error) {
 			}
 
 			if !d.IsDir() {
-				content, err := fs.ReadFile(schemas, path)
-				if err != nil {
-					return err
+				content, errRead := fs.ReadFile(schemas, path)
+				if errRead != nil {
+					return errRead
 				}
 
 				baseName := filepath.Base(path)
