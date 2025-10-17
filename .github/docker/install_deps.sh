@@ -18,7 +18,7 @@ function install_deps_debian11() {
       exit 1
   fi
   install /opt/golang/go/bin/go /usr/local/bin/
-  gem install fpm
+  gem install fpm -v 1.17.0
 }
 
 function install_deps_debian12() {
@@ -35,7 +35,7 @@ function install_deps_debian12() {
       exit 1
   fi
   install /opt/golang/go/bin/go /usr/local/bin/
-  gem install fpm
+  gem install fpm -v 1.17.0
 }
 
 function install_deps_debian13() {
@@ -52,7 +52,7 @@ function install_deps_debian13() {
       exit 1
   fi
   install /opt/golang/go/bin/go /usr/local/bin/
-  gem install fpm
+  gem install fpm -v 1.17.0
 }
 
 function install_deps_ubuntu20.04() {
@@ -69,7 +69,7 @@ function install_deps_ubuntu20.04() {
       exit 1
   fi
   install /opt/golang/go/bin/go /usr/local/bin/
-  gem install fpm
+  gem install fpm -v 1.17.0
 }
 
 function install_deps_ubuntu22.04() {
@@ -86,7 +86,7 @@ function install_deps_ubuntu22.04() {
       exit 1
   fi
   install /opt/golang/go/bin/go /usr/local/bin/
-  gem install fpm
+  gem install fpm -v 1.17.0
 }
 
 function install_deps_ubuntu24.04() {
@@ -103,7 +103,7 @@ function install_deps_ubuntu24.04() {
       exit 1
   fi
   install /opt/golang/go/bin/go /usr/local/bin/
-  gem install fpm
+  gem install fpm -v 1.17.0
 }
 
 function install_deps_redhat-el8() {
@@ -120,7 +120,7 @@ function install_deps_redhat-el8() {
       exit 1
   fi
   install /opt/golang/go/bin/go /usr/local/bin/
-  gem install fpm
+  gem install fpm -v 1.17.0
 }
 
 function install_deps_redhat-el9() {
@@ -137,7 +137,7 @@ function install_deps_redhat-el9() {
       exit 1
   fi
   install /opt/golang/go/bin/go /usr/local/bin/
-  gem install fpm
+  gem install fpm -v 1.17.0
 }
 
 
@@ -155,5 +155,5 @@ function install_deps_amazon-2023() {
       exit 1
   fi
   install /opt/golang/go/bin/go /usr/local/bin/
-  gem install fpm
+  gem install fpm -v 1.17.0
 }

@@ -1,4 +1,4 @@
-FROM redhat/ubi8
+FROM redhat/ubi8:8.10
 SHELL ["/bin/bash", "-euox", "pipefail", "-c"]
 ENV GOROOT=/opt/golang/go/
 ADD .github/docker/entrypoint.sh /tmp/entrypoint.sh
