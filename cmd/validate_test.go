@@ -45,8 +45,8 @@ var testValidateArgs = []runTestValidate{
 		expectError: false,
 	},
 	{
-		flags:       []string{"--log-level", "debug", "--aerospike-version", "7.0.0"},
-		arguments:   []string{"../testdata/cases/server70/server70.conf"},
+		flags:       []string{"--aerospike-version", "7.0.0"},
+		arguments:   []string{"../testdata/cases/server70/server70.yaml"},
 		expectError: false,
 	},
 	{
@@ -62,10 +62,14 @@ var testValidateArgs = []runTestValidate{
 }
 
 func TestRunEValidate(t *testing.T) {
-	cmd := validateCmd
+	if err := InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
 
 	for i, test := range testValidateArgs {
-		cmd.Parent().ParseFlags(test.flags)
+		// Create a fresh command instance for each test case
+		cmd := newValidateCmd()
+
 		cmd.ParseFlags(test.flags)
 		err := cmd.RunE(cmd, test.arguments)
 		if test.expectError == (err == nil) {
