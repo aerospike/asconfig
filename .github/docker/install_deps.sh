@@ -106,7 +106,7 @@ function install_deps_ubuntu24.04() {
   gem install fpm -v 1.17.0
 }
 
-function install_deps_redhat-el8() {
+function install_deps_el8() {
   dnf module enable -y ruby:2.7
   dnf -y install ruby ruby-devel redhat-rpm-config rubygems rpm-build make git
   gem install --no-document fpm
@@ -125,7 +125,7 @@ function install_deps_redhat-el8() {
   gem install fpm -v 1.17.0
 }
 
-function install_deps_redhat-el9() {
+function install_deps_el9() {
   dnf -y install ruby rpmdevtools make git
 
   if [ "$(uname -m)" = "x86_64" ]; then
@@ -142,7 +142,7 @@ function install_deps_redhat-el9() {
   gem install fpm -v 1.17.0
 }
 
-function install_deps_redhat-el10() {
+function install_deps_el10() {
   dnf -y install ruby rpmdevtools make git
 
   if [ "$(uname -m)" = "x86_64" ]; then
@@ -159,7 +159,7 @@ function install_deps_redhat-el10() {
   gem install fpm -v 1.17.0
 }
 
-function install_deps_amazon-2023() {
+function install_deps_amzn2023() {
   dnf -y install ruby rpmdevtools make git
 
   if [ "$(uname -m)" = "x86_64" ]; then

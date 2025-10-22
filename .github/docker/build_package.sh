@@ -25,6 +25,8 @@ function build_packages(){
     make deb
   elif [[ $ENV_DISTRO == *"el"* ]]; then
     make rpm
+  elif [[ $ENV_DISTRO == *"amzn"* ]]; then
+    make rpm
   else
     make tar
   fi
