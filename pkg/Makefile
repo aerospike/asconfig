@@ -7,7 +7,7 @@ TARGET_DIR = $(PKG_DIR)/target
 CONFIG_DIR = /etc/aerospike
 
 # Package variables
-NAME = "aerospike-config"
+NAME = "aerospike-asconfig"
 MAINTAINER = "Aerospike"
 VERSION = $(shell git describe --tags --always)
 DESCRIPTION = "Asconfig, a tool for managing Aerospike database configuration files."
