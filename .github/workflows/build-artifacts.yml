@@ -2,14 +2,25 @@ name: build-artifacts.yml
 on:
   workflow_dispatch:
   push:
-    branches: [ main, SERVER-216,  SERVER-434 ]
+    branches: [main, SERVER-216, SERVER-434]
 
 jobs:
   build-artifacts:
     strategy:
       matrix:
-        distro: [ debian12, debian13, ubuntu20.04, ubuntu22.04, ubuntu24.04, el8, el9, el10, amzn2023 ]
-        host: [ ubuntu-24.04-arm, ubuntu-24.04 ]
+        distro:
+          [
+            debian12,
+            debian13,
+            ubuntu20.04,
+            ubuntu22.04,
+            ubuntu24.04,
+            el8,
+            el9,
+            el10,
+            amzn2023,
+          ]
+        host: [ubuntu-24.04-arm, ubuntu-24.04]
     uses: aerospike/shared-workflows/.github/workflows/reusable_execute-build.yaml@0da06cb2182165b125dc219ca2fda09732ca0fa4
     with:
       source-ref: ${{ github.ref_name }}
@@ -38,8 +49,19 @@ jobs:
   sign-artifacts:
     strategy:
       matrix:
-        distro: [ debian12, debian13, ubuntu20.04, ubuntu22.04, ubuntu24.04, el8, el9, el10, amzn2023 ]
-        host: [ ubuntu-24.04-arm, ubuntu-24.04 ]
+        distro:
+          [
+            debian12,
+            debian13,
+            ubuntu20.04,
+            ubuntu22.04,
+            ubuntu24.04,
+            el8,
+            el9,
+            el10,
+            amzn2023,
+          ]
+        host: [ubuntu-24.04-arm, ubuntu-24.04]
     needs: build-artifacts
     uses: aerospike/shared-workflows/.github/workflows/reusable_sign-artifacts.yaml@0da06cb2182165b125dc219ca2fda09732ca0fa4 # vn.n.n
     with:
@@ -56,8 +78,19 @@ jobs:
   upload-artifacts:
     strategy:
       matrix:
-        distro: [ debian12, debian13, ubuntu20.04, ubuntu22.04, ubuntu24.04, el8, el9, el10, amzn2023 ]
-        host: [ ubuntu-24.04-arm, ubuntu-24.04 ]
+        distro:
+          [
+            debian12,
+            debian13,
+            ubuntu20.04,
+            ubuntu22.04,
+            ubuntu24.04,
+            el8,
+            el9,
+            el10,
+            amzn2023,
+          ]
+        host: [ubuntu-24.04-arm, ubuntu-24.04]
     needs: sign-artifacts
     uses: aerospike/shared-workflows/.github/workflows/reusable_deploy-artifacts.yaml@0da06cb2182165b125dc219ca2fda09732ca0fa4 # vn.n.n
     with:
