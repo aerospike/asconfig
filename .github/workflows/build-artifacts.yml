@@ -2,7 +2,8 @@ name: build-artifacts.yml
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [ SERVER-216 ]
+    tags: [ '*' ]
 
 jobs:
   build-artifacts:
