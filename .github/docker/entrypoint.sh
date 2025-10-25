@@ -56,12 +56,12 @@ shift $((OPTIND -1))
 
 if [ "$INSTALL" = false ] && [ "$BUILD_INTERNAL" = false ] && [ "$BUILD_CONTAINERS" = false ] && [ "$EXECUTE_BUILD" = false ];
 then
-    echo """Error: Options:
+    echo "Error: Options:
     -i ( install )
     -b ( build internal )
     -c ( build containers )
     -e ( execute docker package build )
-    -d [ redhat | ubuntu | debian ]""" 1>&2
+    -d [ redhat | ubuntu | debian ]" 1>&2
     exit 1
 fi
 
