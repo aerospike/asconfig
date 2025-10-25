@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 set -xeuo pipefail
-env
 
 
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
