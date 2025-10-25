@@ -45,9 +45,6 @@ jobs:
     with:
       artifact-name: signed-artifacts-${{ matrix.distro }}-${{ matrix.host }}
       unsigned-artifacts: unsigned-artifacts-${{ matrix.distro }}-${{ matrix.host }}
-      # artifact-name: signed-artifacts  # optional, defaults to signed-artifacts
-      # retention-days: 7               # optional, defaults to 7
-      # dry-run: false                  # optional, for future compatibility
     secrets:
       gpg-private-key: ${{ secrets.GPG_SECRET_KEY }}
       gpg-public-key: ${{ secrets.GPG_PUBLIC_KEY }}
