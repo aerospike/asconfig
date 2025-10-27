@@ -2,7 +2,7 @@
 set -xeuo pipefail
 
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
-REPO_NAME=$(basename $(realpath "$SCRIPT_DIR/../../"))
+REPO_NAME=$(basename $(pwd))
 PKG_VERSION=${PKG_VERSION:-$(git describe --tags --always)}
 
 
