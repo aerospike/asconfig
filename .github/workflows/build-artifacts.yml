@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - SERVER-216
     tags:
       - '*'
 #  pull_request:
