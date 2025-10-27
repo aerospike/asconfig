@@ -2,8 +2,10 @@ name: build-artifacts.yml
 on:
   workflow_dispatch:
   push:
-    branches: [SERVER-216, SERVER-216-consolidate]
-    tags: ['*']
+    branches:
+      - main
+    tags:
+      - '*'
   pull_request:
     branches:
       - main
@@ -13,15 +15,15 @@ jobs:
     strategy:
       matrix:
         distro:
+          - el8
+          - el9
+          - el10
+          - amzn2023
           - debian12
           - debian13
           - ubuntu20.04
           - ubuntu22.04
           - ubuntu24.04
-          - el8
-          - el9
-          - el10
-          - amzn2023
         host:
           - ubuntu-24.04
           - ubuntu-24.04-arm
@@ -54,15 +56,15 @@ jobs:
     strategy:
       matrix:
         distro:
+          - el8
+          - el9
+          - el10
+          - amzn2023
           - debian12
           - debian13
           - ubuntu20.04
           - ubuntu22.04
           - ubuntu24.04
-          - el8
-          - el9
-          - el10
-          - amzn2023
         host:
           - ubuntu-24.04
           - ubuntu-24.04-arm
@@ -80,15 +82,15 @@ jobs:
     strategy:
       matrix:
         distro:
+          - el8
+          - el9
+          - el10
+          - amzn2023
           - debian12
           - debian13
           - ubuntu20.04
           - ubuntu22.04
           - ubuntu24.04
-          - el8
-          - el9
-          - el10
-          - amzn2023
         host:
           - ubuntu-24.04
           - ubuntu-24.04-arm
