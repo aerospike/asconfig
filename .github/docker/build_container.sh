@@ -1,9 +1,7 @@
-
-
 function build_container() {
   docker build \
     --progress=plain \
-    --build-arg=BASE_IMAGE=${image_table["$1"]} \
+    --build-arg=BASE_IMAGE=${distro_to_image["$1"]} \
     --build-arg=ENV_DISTRO="$1" \
     -t $REPO_NAME-pkg-builder-"$1":"$PKG_VERSION" \
     -f .github/docker/Dockerfile .

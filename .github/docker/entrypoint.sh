@@ -7,17 +7,34 @@ SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 REPO_NAME=$(basename $(realpath "$SCRIPT_DIR/../../"))
 PKG_VERSION=${PKG_VERSION:-$(git describe --tags --always)}
 
-declare -A image_table
-image_table["el8"]="redhat/ubi8:8.10"
-image_table["el9"]="redhat/ubi9:9.6"
-image_table["el10"]="redhat/ubi10:10.0"
-image_table["amzn2023"]="amazonlinux:2023"
-image_table["debian12"]="debian:bookworm"
-image_table["debian13"]="debian:trixie"
-image_table["ubuntu20.04"]="ubuntu:20.04"
-image_table["ubuntu22.04"]="ubuntu:22.04"
-image_table["ubuntu24.04"]="ubuntu:24.04"
+declare -A distro_to_image
+distro_to_image["el8"]="redhat/ubi8:8.10"
+distro_to_image["el9"]="redhat/ubi9:9.6"
+distro_to_image["el10"]="redhat/ubi10:10.0"
+distro_to_image["amzn2023"]="amazonlinux:2023"
+distro_to_image["debian12"]="debian:bookworm"
+distro_to_image["debian13"]="debian:trixie"
+distro_to_image["ubuntu20.04"]="ubuntu:20.04"
+distro_to_image["ubuntu22.04"]="ubuntu:22.04"
+distro_to_image["ubuntu24.04"]="ubuntu:24.04"
 
+
+
+declare -A repo_to_package
+repo_to_package["asconfig"]="asconfig"
+repo_to_package["aerospike-admin"]="asadm"
+repo_to_package["aerospike-benchmark"]="asbench"
+repo_to_package["aerospike-tools-backup"]="asbackup"
+repo_to_package["aql"]="aql"
+export PACKAGE_NAME=repo_to_package["$REPO_NAME"]
+
+function install_deb_package() {
+  apt -y install "aerospike-$PACKAGE_NAME"="$PKG_VERSION"
+}
+
+function install_rpm_package() {
+  dnf install -y aerospike-"$PACKAGE_NAME"-"$(echo $PKG_VERSION | tr '-' '_')"-1.$(uname -m)
+}
 
 #PKG_DIR is used in build_package.sh
 if [ -d ".git" ]; then

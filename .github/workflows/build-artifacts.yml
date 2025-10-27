@@ -2,8 +2,11 @@ name: build-artifacts.yml
 on:
   workflow_dispatch:
   push:
-    branches: [ SERVER-216 ]
+    branches: [ SERVER-216, SERVER-216-consolidate ]
     tags: [ '*' ]
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build-artifacts:

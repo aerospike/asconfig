@@ -2,6 +2,8 @@
 UBUNTU_DEPS="git wget gpg lsb-release sudo"
 REDHAT_DEPS="git wget gpg sudo"
 
+
+
 function install_test_framework() {
   cd /tmp
   git clone https://github.com/bats-core/bats-core.git

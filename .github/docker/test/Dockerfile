@@ -10,13 +10,15 @@ ARG JF_TOKEN
 ENV JF_TOKEN=${JF_TOKEN}
 ARG PKG_VERSION
 ENV PKG_VERSION=${PKG_VERSION}
+#noop for non-golang projects
+ENV GOROOT=/opt/golang/go/
 #noop for RHEL based enviornments
 ENV DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-euox", "pipefail", "-c"]
 ADD .github/docker/test/entrypoint.sh /tmp/entrypoint.sh
-ADD .github/docker/test/install_test_deps.sh /tmp/install_test_deps.sh
-RUN source /tmp/install_deps.sh && "install_test_deps_$ENV_DISTRO"
+ADD .github/docker/test/install_deps.sh /tmp/install_deps.sh
+RUN source /tmp/install_deps.sh && "install_deps_$ENV_DISTRO"
 ADD . /opt/$REPO_NAME
 WORKDIR /opt/$REPO_NAME
-ENTRYPOINT ["/opt/${REPO_NAME}/.github/docker/test/entrypoint.sh"]
+ENTRYPOINT [".github/docker/test/entrypoint.sh"]
 CMD ["-t"]
