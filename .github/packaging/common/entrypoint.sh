@@ -4,13 +4,15 @@ env
 
 
 REPO_NAME=${REPO_NAME:-"$(git config --get remote.origin.url | cut -d '/' -f 2 | cut -d '.' -f 1)"}
-REPO_NAME=${REPO_NAME:-"$(echo $GITHUB_REPOSITORY | cut -d '/' -f 2)"}
+REPO_NAME=${REPO_NAME:-"$(echo "$GITHUB_REPOSITORY" | cut -d '/' -f 2)"}
 PKG_VERSION=${PKG_VERSION:-$(git describe --tags --always)}
 
 if [ ${TEST_MODE:-"false"} = "true" ]; then
-  SCRIPT_DIR="$(pwd)/.github/docker/test/"
+  BASE_COMMON_DIR="$(pwd)/.github/packaging/common/test/"
+  BASE_PROJECT_DIR="$(pwd)/.github/packaging/project/test/"
 else
-  SCRIPT_DIR="$(pwd)/.github/docker/"
+  BASE_COMMON_DIR="$(pwd)/.github/packaging/common/"
+  BASE_PROJECT_DIR="$(pwd)/.github/packaging/project/"
 fi
 
 declare -A distro_to_image
@@ -35,11 +37,11 @@ export PACKAGE_NAME=${repo_to_package["$REPO_NAME"]}
 
 
 
-if [ -f "$SCRIPT_DIR/build_package.sh" ]; then
-  source "$SCRIPT_DIR/build_package.sh"
+if [ -f "$BASE_PROJECT_DIR/build_package.sh" ]; then
+  source "$BASE_PROJECT_DIR/build_package.sh"
 fi
 
-source "$SCRIPT_DIR/build_container.sh"
+source "$BASE_COMMON_DIR/build_container.sh"
 
 
 
@@ -109,7 +111,7 @@ fi
 
 
 if [ "$RUN_TESTS" = "true" ]; then
-  bats .github/docker/test/test_execute.bats
+  bats .github/packaging/project/test/test_execute.bats
   exit $?
 elif [ "$BUILD_INTERNAL" = "true" ]; then
   build_packages

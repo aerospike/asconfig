@@ -23,7 +23,7 @@ SHELL ["/bin/bash", "-euox", "pipefail", "-c"]
 ADD . /opt/$REPO_NAME
 WORKDIR /opt/$REPO_NAME
 
-RUN source .github/docker/test/header.sh && source .github/docker/test/install_deps.sh && install_deps $ENV_DISTRO
+RUN source .github/packaging/common/project/test/header.sh && source .github/packaging/common/project/test/install_deps.sh && install_deps $ENV_DISTRO
 
-ENTRYPOINT [".github/docker/test/entrypoint.sh"]
+ENTRYPOINT [".github/packaging/common/test/entrypoint.sh"]
 CMD ["-t"]

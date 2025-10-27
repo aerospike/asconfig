@@ -3,9 +3,9 @@ function build_container() {
     --progress=plain \
     --build-arg=BASE_IMAGE=${distro_to_image["$1"]} \
     --build-arg=ENV_DISTRO="$1" \
-    --build-arg=REPO_NAME=$REPO_NAME \
-    -t $REPO_NAME-pkg-builder-"$1":"$PKG_VERSION" \
-    -f .github/docker/Dockerfile .
+    --build-arg=REPO_NAME="$REPO_NAME" \
+    -t "$REPO_NAME-pkg-builder-$1":"$PKG_VERSION" \
+    -f .github/packaging/common/Dockerfile .
 }
 
 function execute_build_image() {

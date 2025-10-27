@@ -16,9 +16,7 @@ RUN if command -v apt; then apt -y update; fi
 ADD . /opt/$REPO_NAME
 WORKDIR /opt/$REPO_NAME
 
-RUN source .github/docker/header.sh && source .github/docker/install_deps.sh && install_deps $ENV_DISTRO
+RUN source .github/packaging/common/header.sh && source .github/packaging/project/install_deps.sh && install_deps $ENV_DISTRO
 
-ADD . /opt/$REPO_NAME
-WORKDIR /opt/$REPO_NAME
-ENTRYPOINT [".github/docker/entrypoint.sh"]
+ENTRYPOINT [".github/packaging/common/entrypoint.sh"]
 CMD ["-b"]

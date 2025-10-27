@@ -2,7 +2,6 @@
 
 
 function install_deps_debian11() {
-  apt -y update
   apt -y install ruby-rubygems make rpm git snapd curl binutils
 
   if [ "$(uname -m)" = "x86_64" ]; then

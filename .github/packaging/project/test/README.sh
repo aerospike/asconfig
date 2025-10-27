@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #You can execute this README by replacing the following with your email and your JFrog token:
-# JF_USERNAME='ghaywood@aerospike.com' JF_TOKEN='xxxxxxxxxxxxxxxxxx' .github/docker/test/README.sh
+# JF_USERNAME='ghaywood@aerospike.com' JF_TOKEN='xxxxxxxxxxxxxxxxxx' .github/packaging/common/test/README.sh
 
 
 
@@ -13,7 +13,7 @@ PKG_VERSION=$(git describe --tags --always)
 
 #Build the test container and install the current version of asconfig from JFrog
 # -d specifies the distro to test
-TEST_MODE=true .github/docker/test/entrypoint.sh -c -d el9
+TEST_MODE=true .github/packaging/common/test/entrypoint.sh -c -d el9
 #...
 
 #Execute the test runner
