@@ -37,6 +37,7 @@ jobs:
       runs-on: ${{ matrix.host }}
       jf-project: database
       jf-build-id: ${{ github.run_number }}
+      gh-source-ref: ${{ github.ref }}
       build-script: |
         set -xeuo pipefail
         cd local
