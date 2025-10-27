@@ -6,6 +6,7 @@ function build_container() {
     --build-arg=JF_USERNAME="$JF_USERNAME" \
     --build-arg=JF_TOKEN="$JF_TOKEN" \
     --build-arg=PACKAGE_NAME=$PACKAGE_NAME \
+    --build-arg=REPO_NAME=$REPO_NAME \
     --progress=plain -t $REPO_NAME-pkg-tester-"$1":"$PKG_VERSION" \
     -f .github/docker/test/Dockerfile .
 

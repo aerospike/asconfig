@@ -2,6 +2,7 @@
 #You can execute this README by replacing the following with your email and your JFrog token:
 # JF_USERNAME='ghaywood@aerospike.com' JF_TOKEN='xxxxxxxxxxxxxxxxxx' .github/docker/test/README.sh
 
+TEST_MODE=true
 
 #Testing a package is available from the repository and can be executed:
 JF_USERNAME=${JF_USERNAME:-"You must provide your JFrog username"}
