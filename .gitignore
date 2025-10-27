@@ -31,3 +31,6 @@ testdata/*.log
 
 # Build directory
 build/
+
+# Intellij
+.idea/
