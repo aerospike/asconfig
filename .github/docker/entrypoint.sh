@@ -23,8 +23,7 @@ repo_to_package["aerospike-admin"]="asadm"
 repo_to_package["aerospike-benchmark"]="asbench"
 repo_to_package["aerospike-tools-backup"]="asbackup"
 repo_to_package["aql"]="aql"
-echo script dir is $SCRIPT_DIR
-echo repo name is $REPO_NAME
+
 export PACKAGE_NAME=${repo_to_package["$REPO_NAME"]}
 
 
