@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 set -xeuo pipefail
+env
+echo "git remote"
+git config --get remote.origin.url
 
 REPO_NAME=${REPO_NAME:-"$(git config --get remote.origin.url | cut -d '/' -f 2 | cut -d '.' -f 1)"}
-
+REPO_NAME=${REPO_NAME:-"$(basename $(realpath ../))"}
 PKG_VERSION=${PKG_VERSION:-$(git describe --tags --always)}
 
 if [ ${TEST_MODE:-"false"} = "true" ]; then
