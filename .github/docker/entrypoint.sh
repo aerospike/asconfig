@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 set -xeuo pipefail
-env
-
 
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 REPO_NAME=$(basename $(realpath "$SCRIPT_DIR/../../"))
 PKG_VERSION=${PKG_VERSION:-$(git describe --tags --always)}
+
 
 declare -A distro_to_image
 distro_to_image["el8"]="redhat/ubi8:8.10"
@@ -18,8 +17,6 @@ distro_to_image["ubuntu20.04"]="ubuntu:20.04"
 distro_to_image["ubuntu22.04"]="ubuntu:22.04"
 distro_to_image["ubuntu24.04"]="ubuntu:24.04"
 
-
-
 declare -A repo_to_package
 repo_to_package["asconfig"]="asconfig"
 repo_to_package["aerospike-admin"]="asadm"
@@ -29,15 +26,6 @@ repo_to_package["aql"]="aql"
 export PACKAGE_NAME=repo_to_package["$REPO_NAME"]
 
 
-function install_deb_package() {
-  apt -y install "aerospike-$PACKAGE_NAME"="$PKG_VERSION"
-}
-
-function install_rpm_package() {
-  dnf install -y aerospike-"$PACKAGE_NAME"-"$(echo $PKG_VERSION | tr '-' '_')"-1.$(uname -m)
-}
-
-#PKG_DIR is used in build_package.sh
 if [ -d ".git" ]; then
     GIT_DIR=$(pwd)
     PKG_DIR=$GIT_DIR/pkg
@@ -47,7 +35,11 @@ if [ -f "$SCRIPT_DIR/build_package.sh" ]; then
   source "$SCRIPT_DIR/build_package.sh"
 fi
 
-source "$SCRIPT_DIR/build_container.sh"
+if [ ${TEST_MODE:-"false"} = "true" ]; then
+  source "$GIT_DIR/.github/docker/test/build_container.sh"
+else
+  source "$GIT_DIR/.github/docker/build_container.sh"
+fi
 
 
 INSTALL=false
@@ -63,9 +55,6 @@ while getopts "tibced:" opt; do
         t )
             RUN_TESTS=true
             ;;
-        i )
-            INSTALL=true
-            ;;
         b )
             BUILD_INTERNAL=true
             ;;
@@ -80,7 +69,6 @@ while getopts "tibced:" opt; do
             ;;
     esac
 done
-
 shift $((OPTIND -1))
 
 if [ "$INSTALL" = false ] && [ "$BUILD_INTERNAL" = false ] && [ "$BUILD_CONTAINERS" = false ] && [ "$EXECUTE_BUILD" = false ] && [ "$RUN_TESTS" = false ];
@@ -118,81 +106,15 @@ else
   echo "os not supported"
 fi
 
+
 if [ "$RUN_TESTS" = "true" ]; then
   bats .github/docker/test/test_execute.bats
   exit $?
-elif [ "$INSTALL" = "true" ]; then
-  if [ "$ENV_DISTRO" = "ubuntu20.04" ]; then
-      echo "installing dependencies for Ubuntu 20.04"
-      install_deps_ubuntu20.04
-  elif [ "$ENV_DISTRO" = "ubuntu22.04" ]; then
-      echo "installing dependencies for Ubuntu 22.04"
-      install_deps_ubuntu22.04
-  elif [ "$ENV_DISTRO" = "ubuntu24.04" ]; then
-      echo "installing dependencies for Ubuntu 24.04"
-      install_deps_ubuntu24.04
-  elif [ "$ENV_DISTRO" = "el8" ]; then
-      echo "installing dependencies for RedHat el8"
-      install_deps_el8
-  elif [ "$ENV_DISTRO" = "el9" ]; then
-      echo "installing dependencies for RedHat el9"
-      install_deps_el9
-  elif [ "$ENV_DISTRO" = "el10" ]; then
-      echo "installing dependencies for RedHat el10"
-      install_deps_el10
-  elif [ "$ENV_DISTRO" = "amzn2023" ]; then
-      echo "installing dependencies for Amazon 2023"
-      install_deps_amzn2023
-  elif [ "$ENV_DISTRO" = "debian12" ]; then
-      echo "installing dependencies for Debian 12"
-      install_deps_debian12
-  elif [ "$ENV_DISTRO" = "debian13" ]; then
-      echo "installing dependencies for Debian 13"
-      install_deps_debian13
-  else
-      cat /etc/os-release
-      echo "distro not supported"
-  fi
 elif [ "$BUILD_INTERNAL" = "true" ]; then
   build_packages
 elif [ "$BUILD_CONTAINERS" = "true" ]; then
-  if  [ "$BUILD_DISTRO" = "all" ]; then
-    build_container debian12
-    build_container debian13
-    build_container ubuntu20.04
-    build_container ubuntu22.04
-    build_container ubuntu24.04
-    build_container el8
-    build_container el9
-    build_container el10
-    build_container amzn2023
-  else
-    build_container "$BUILD_DISTRO"
-  fi
-fi
-
-if [ "$EXECUTE_BUILD" = "true" ]; then
-   if [ "$BUILD_DISTRO" = "all" ]; then
-        echo "building package for Debian 12"
-        execute_build_image debian12
-        echo "building package for Debian 13"
-        execute_build_image debian13
-        echo "building package for Ubuntu 20.04"
-        execute_build_image ubuntu20.04
-        echo "building package for Ubuntu 22.04"
-        execute_build_image ubuntu22.04
-        echo "building package for Ubuntu 24.04"
-        execute_build_image ubuntu24.04
-        echo "building package for RedHat el8"
-        execute_build_image el8
-        echo "building package for RedHat el9"
-        execute_build_image el9
-        echo "building package for RedHat el10"
-        execute_build_image el10
-        echo "building package for Amazon 2023"
-        execute_build_image amzn2023
-    else
-        echo "building package for $BUILD_DISTRO"
-        execute_build_image "$BUILD_DISTRO"
-    fi
+  build_container "$BUILD_DISTRO"
+elif [ "$EXECUTE_BUILD" = "true" ]; then
+    echo "building package for $BUILD_DISTRO"
+    execute_build_image "$BUILD_DISTRO"
 fi

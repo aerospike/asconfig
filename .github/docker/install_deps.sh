@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
 
 
-function install_deps () {
-  install_deps_$1
-}
-
 function install_deps_debian11() {
   apt -y update
   apt -y install ruby-rubygems make rpm git snapd curl binutils

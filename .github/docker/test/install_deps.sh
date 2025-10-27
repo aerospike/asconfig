@@ -160,30 +160,35 @@ function install_deps_debian12() {
   apt -y install $UBUNTU_DEPS
   install_test_framework
   install_deb_repo
+  install_deb_package
 }
 
 function install_deps_debian13() {
   apt -y install $UBUNTU_DEPS
   install_test_framework
   install_deb_repo
+  install_deb_package
 }
 
 function install_deps_ubuntu20.04() {
   apt -y install $UBUNTU_DEPS
   install_test_framework
   install_deb_repo
+  install_deb_package
 }
 
 function install_deps_ubuntu22.04() {
   apt -y install $UBUNTU_DEPS
   install_test_framework
   install_deb_repo
+  install_deb_package
 }
 
 function install_deps_ubuntu24.04() {
   apt -y install $UBUNTU_DEPS
   install_test_framework
   install_deb_repo
+  install_deb_package
 }
 
 function install_deps_el8() {
