@@ -20,11 +20,10 @@ ENV TEST_MODE="true"
 
 
 SHELL ["/bin/bash", "-euox", "pipefail", "-c"]
-ADD .github/docker/test/entrypoint.sh /tmp/entrypoint.sh
-ADD .github/docker/test/install_deps.sh /tmp/install_deps.sh
-ADD .github/docker/test/header.sh /tmp/header.sh
-RUN source /tmp/header.sh && source /tmp/install_deps.sh && install_deps $ENV_DISTRO
 ADD . /opt/$REPO_NAME
 WORKDIR /opt/$REPO_NAME
+
+RUN source .github/docker/test/header.sh && source .github/docker/test/install_deps.sh && install_deps $ENV_DISTRO
+
 ENTRYPOINT [".github/docker/test/entrypoint.sh"]
 CMD ["-t"]

@@ -13,10 +13,10 @@ ENV GOROOT=/opt/golang/go/
 ENV DEBIAN_FRONTEND=noninteractive
 RUN if command -v apt; then apt -y update; fi
 
-ADD .github/docker/entrypoint.sh /tmp/entrypoint.sh
-ADD .github/docker/install_deps.sh /tmp/install_deps.sh
-ADD .github/docker/header.sh /tmp/header.sh
-RUN source /tmp/header.sh && source /tmp/install_deps.sh && install_deps $ENV_DISTRO
+ADD . /opt/$REPO_NAME
+WORKDIR /opt/$REPO_NAME
+
+RUN source .github/docker/header.sh && source .github/docker/install_deps.sh && install_deps $ENV_DISTRO
 
 ADD . /opt/$REPO_NAME
 WORKDIR /opt/$REPO_NAME
