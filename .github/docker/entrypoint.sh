@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 set -xeuo pipefail
 
-SCRIPT_DIR="$(dirname "$(realpath "$0")")"
-REPO_NAME=$(basename $(pwd))
+REPO_NAME=${REPO_NAME:-"$(git config --get remote.origin.url | cut -d '/' -f 2 | cut -d '.' -f 1)"}
+
 PKG_VERSION=${PKG_VERSION:-$(git describe --tags --always)}
 
+if [ ${TEST_MODE:-"false"} = "true" ]; then
+  SCRIPT_DIR="$(pwd)/.github/docker/test/"
+else
+  SCRIPT_DIR="$(pwd)/.github/docker/"
+fi
 
 declare -A distro_to_image
 distro_to_image["el8"]="redhat/ubi8:8.10"
@@ -27,20 +32,13 @@ repo_to_package["aql"]="aql"
 export PACKAGE_NAME=${repo_to_package["$REPO_NAME"]}
 
 
-if [ -d ".git" ]; then
-    GIT_DIR=$(pwd)
-    PKG_DIR=$GIT_DIR/pkg
-fi
 
 if [ -f "$SCRIPT_DIR/build_package.sh" ]; then
   source "$SCRIPT_DIR/build_package.sh"
 fi
 
-if [ ${TEST_MODE:-"false"} = "true" ]; then
-  source "$GIT_DIR/.github/docker/test/build_container.sh"
-else
-  source "$GIT_DIR/.github/docker/build_container.sh"
-fi
+source "$SCRIPT_DIR/build_container.sh"
+
 
 
 INSTALL=false

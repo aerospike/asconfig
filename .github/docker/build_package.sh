@@ -15,7 +15,7 @@ function build_packages(){
   echo "build_package.sh version: $(git describe --tags --always)"
   export VERSION=$(git describe --tags --always)
   # package
-  cd $PKG_DIR
+  cd $GIT_DIR/pkg
   make clean
   echo "building package for $BUILD_DISTRO"
 
@@ -32,5 +32,5 @@ function build_packages(){
   fi
 
   mkdir -p /tmp/output/$ENV_DISTRO
-  cp -a $PKG_DIR/target/* /tmp/output/$ENV_DISTRO
+  cp -a $GIT_DIR/pkg/target/* /tmp/output/$ENV_DISTRO
 }
