@@ -1,3 +1,0 @@
-#!/bin/bash
-rev=$(git describe --tags)
-echo $rev
