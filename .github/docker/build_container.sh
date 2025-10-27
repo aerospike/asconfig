@@ -1,0 +1,19 @@
+
+
+function build_container() {
+  docker build \
+    --progress=plain \
+    --build-arg=BASE_IMAGE=${image_table["$1"]} \
+    --build-arg=ENV_DISTRO="$1" \
+    -t $REPO_NAME-pkg-builder-"$1":"$PKG_VERSION" \
+    -f .github/docker/Dockerfile .
+}
+
+function execute_build_image() {
+  export BUILD_DISTRO="$1"
+  docker run \
+    -e BUILD_DISTRO \
+    -v "$(realpath ../dist)":/tmp/output \
+    "$REPO_NAME-pkg-builder-$BUILD_DISTRO":"$PKG_VERSION"
+  ls -laht ../dist
+}

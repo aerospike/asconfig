@@ -154,55 +154,55 @@ EOF
 }
 
 
-function install_test_deps_debian12() {
+function install_deps_debian12() {
   apt -y install $UBUNTU_DEPS
   install_test_framework
   install_deb_repo
 }
 
-function install_test_deps_debian13() {
+function install_deps_debian13() {
   apt -y install $UBUNTU_DEPS
   install_test_framework
   install_deb_repo
 }
 
-function install_test_deps_ubuntu20.04() {
+function install_deps_ubuntu20.04() {
   apt -y install $UBUNTU_DEPS
   install_test_framework
   install_deb_repo
 }
 
-function install_test_deps_ubuntu22.04() {
+function install_deps_ubuntu22.04() {
   apt -y install $UBUNTU_DEPS
   install_test_framework
   install_deb_repo
 }
 
-function install_test_deps_ubuntu24.04() {
+function install_deps_ubuntu24.04() {
   apt -y install $UBUNTU_DEPS
   install_test_framework
   install_deb_repo
 }
 
-function install_test_deps_el8() {
+function install_deps_el8() {
   dnf install -y $REDHAT_DEPS
   install_test_framework
   install_yum_repo
 }
 
-function install_test_deps_el9() {
+function install_deps_el9() {
   dnf install -y $REDHAT_DEPS
   install_test_framework
   install_yum_repo
 }
 
-function install_test_deps_el10() {
+function install_deps_el10() {
   dnf install -y $REDHAT_DEPS
   install_test_framework
   install_yum_repo
 }
 
-function install_test_deps_amzn2023() {
+function install_deps_amzn2023() {
   dnf install -y $REDHAT_DEPS
   install_test_framework
   install_yum_repo
