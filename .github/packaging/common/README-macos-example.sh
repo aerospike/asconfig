@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # If you are on MacOS you can use the following to test
 docker run -t -i \
   -v /var/run/docker.sock:/var/run/docker.sock \
