@@ -15,7 +15,7 @@ DESCRIPTION = "Asconfig, a tool for managing Aerospike database configuration fi
 LICENSE = "Apache License 2.0"
 URL = "https://github.com/aerospike/asconfig"
 VENDOR = "Aerospike, Inc."
-ARCH = $( SHELL uname -m )
+ARCH = $( shell uname -m )
 
 
 .PHONY: all
