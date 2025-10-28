@@ -1,3 +1,6 @@
+#!/usr/bin/env bash
+set -xeuo pipefail
+
 function install_deb_package() {
   apt -y install "aerospike-$PACKAGE_NAME"="$PKG_VERSION"
 }

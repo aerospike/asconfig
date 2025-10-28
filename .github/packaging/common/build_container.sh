@@ -1,3 +1,6 @@
+#!/usr/bin/env bash
+set -xeuo pipefail
+
 function build_container() {
   docker build \
     --progress=plain \

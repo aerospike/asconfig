@@ -7,14 +7,15 @@ TARGET_DIR = $(PKG_DIR)/target
 CONFIG_DIR = /etc/aerospike
 
 # Package variables
+MY_VARIABLE ?= default_value
 NAME = "aerospike-asconfig"
 MAINTAINER = "Aerospike"
-VERSION = $(shell git describe --tags --always)
+BUILD_DISTRO = $( shell git describe --tags --always)
 DESCRIPTION = "Asconfig, a tool for managing Aerospike database configuration files."
 LICENSE = "Apache License 2.0"
 URL = "https://github.com/aerospike/asconfig"
 VENDOR = "Aerospike, Inc."
-ARCH = $(shell uname -m)
+ARCH = $(shell .github/packaging/common/os_version.sh)
 
 
 .PHONY: all

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+set -xeuo pipefail
 
 function install_deps_debian11() {
   apt -y install ruby-rubygems make rpm git snapd curl binutils

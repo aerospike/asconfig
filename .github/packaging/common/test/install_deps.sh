@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+set -xeuo pipefail
+
 UBUNTU_DEPS="git wget gpg lsb-release sudo"
 REDHAT_DEPS="git wget gpg sudo"
 
