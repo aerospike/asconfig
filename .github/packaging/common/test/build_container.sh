@@ -10,7 +10,7 @@ function build_container() {
     --build-arg=JF_TOKEN="$JF_TOKEN" \
     --build-arg=PACKAGE_NAME=$PACKAGE_NAME \
     --build-arg=REPO_NAME=$REPO_NAME \
-    --progress=plain -t $REPO_NAME-pkg-tester-"$1":"$PKG_VERSION" \
+    -t $REPO_NAME-pkg-tester-"$1":"$PKG_VERSION" \
     -f .github/packaging/common/test/Dockerfile .
 
   docker tag $REPO_NAME-pkg-tester-"$1":"$PKG_VERSION" $REPO_NAME-pkg-tester-"$1":"latest"

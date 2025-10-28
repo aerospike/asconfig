@@ -2,6 +2,12 @@
 set -xeuo pipefail
 env
 
+#Requires associative array support
+if [ -z "${BASH_VERSION:-}" ] || [ "${BASH_VERSION%%.*}" -lt 4 ]; then
+    echo "This script requires Bash version 4.0 or higher"
+    exit 1
+fi
+
 
 REPO_NAME=${REPO_NAME:-"$(git config --get remote.origin.url | cut -d '/' -f 2 | cut -d '.' -f 1)"}
 REPO_NAME=${REPO_NAME:-"$(echo "$GITHUB_REPOSITORY" | cut -d '/' -f 2)"}

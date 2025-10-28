@@ -3,7 +3,6 @@ set -xeuo pipefail
 
 function build_container() {
   docker build \
-    --progress=plain \
     --build-arg=BASE_IMAGE=${distro_to_image["$1"]} \
     --build-arg=ENV_DISTRO="$1" \
     --build-arg=REPO_NAME="$REPO_NAME" \
