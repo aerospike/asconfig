@@ -10,9 +10,7 @@ on:
       - '*'
     tags:
       - '*'
-  pull_request:
-    branches:
-      - main
+
 
 jobs:
   build-artifacts:
