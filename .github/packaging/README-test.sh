@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-#You can execute this README by replacing the following with your email and your JFrog token:
+# You can execute this README by replacing the following with your email and your JFrog token:
 # JF_USERNAME='ghaywood@aerospike.com' JF_TOKEN='xxxxxxxxxxxxxxxxxx' .github/packaging/common/test/README-test.sh
-
+# This assumes the current commit has already been built and is available on JFrog
 
 
 #Testing a package is available from the repository and can be executed:
