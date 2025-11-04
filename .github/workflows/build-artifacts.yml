@@ -102,11 +102,26 @@ jobs:
       jf-build-id: ${{ github.run_number }}
       jf-metadata-build-id: ${{ github.run_number }}-metadata
   test-artifacts:
+    strategy:
+      matrix:
+        distro:
+          - el8
+          - el9
+          - el10
+          - amzn2023
+          - debian12
+          - debian13
+          - ubuntu20.04
+          - ubuntu22.04
+          - ubuntu24.04
+        host:
+          - ubuntu-24.04
+          - ubuntu-24.04-arm
     needs: upload-artifacts
     env:
       JFROG_CLI_BUILD_NAME: ${{ inputs.jf-build-name || github.workflow }}
       JFROG_CLI_LOG_LEVEL: INFO
-    runs-on: ubuntu-22.04
+    runs-on: ${{ matrix.host }}
     permissions:
       contents: read
       packages: write
@@ -122,9 +137,15 @@ jobs:
         with:
           oidc-provider-name: gh-dev-test
           oidc-audience: aerospike/testing
-      - name: Docker login to Artifactory
-        uses: docker/login-action@v3
+      - name: Checkout
+        uses: actions/checkout@v5
         with:
-          registry: artifact.aerospike.io/test-container-dev-local
-          username: ${{ steps.jf.outputs.oidc-user }}
-          password: ${{ steps.jf.outputs.oidc-token }}
+          ref: ${{ github.ref }}
+          submodules: recursive
+
+      - name: Run test cases
+        env:
+          JF_USERNAME: ${{ steps.jf.outputs.oidc-user }}
+          JF_TOKEN: ${{ steps.jf.outputs.oidc-token }}
+        run: .github/packaging/common/example-test.sh ${{ matrix.distro }}
+
