@@ -38,7 +38,8 @@ jobs:
       # this is the default behaviour so we can leave it out but if it is wanted to be explicit
       # we need to use the ref not the ref_name in github actions. The ref_name is the short name and so not a valid ref.
       # gh-source-ref: ${{ github.ref }}
-      build-script: local/.github/packaging/project/gha-main.sh
+      build-script: local/.github/packaging/project/gha-main.sh "${{ matrix.distro }}"
+
       gh-artifact-directory: dist
       gh-artifact-name: unsigned-artifacts-${{ matrix.distro }}-${{ matrix.host }}
       gh-retention-days: 1
