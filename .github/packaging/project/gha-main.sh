@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -xeuo pipefail
+env
 cd local
 git fetch --unshallow --tags --no-recurse-submodules
 git submodule update --init
