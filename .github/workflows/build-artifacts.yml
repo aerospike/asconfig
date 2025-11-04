@@ -30,26 +30,15 @@ jobs:
         host:
           - ubuntu-24.04
           - ubuntu-24.04-arm
-    uses: aerospike/shared-workflows/.github/workflows/reusable_execute-build.yaml@13e070c7317f655edfff04bb255483b5bd3828cc
+    uses: aerospike/shared-workflows/.github/workflows/reusable_execute-build.yaml@v2.0.2
     with:
-      gh-workflows-ref: 13e070c7317f655edfff04bb255483b5bd3828cc
       runs-on: ${{ matrix.host }}
       jf-project: database
       jf-build-id: ${{ github.run_number }}
       # this is the default behaviour so we can leave it out but if it is wanted to be explicit
       # we need to use the ref not the ref_name in github actions. The ref_name is the short name and so not a valid ref.
       # gh-source-ref: ${{ github.ref }}
-      build-script: |
-        set -xeuo pipefail
-        cd local
-        git fetch --unshallow --tags --no-recurse-submodules
-        git submodule update --init
-        ls -laht
-        echo ref_name ${{ github.ref_name }}
-        git branch -v
-        .github/packaging/common/entrypoint.sh -c -d ${{ matrix.distro }}
-        .github/packaging/common/entrypoint.sh -e -d ${{ matrix.distro }}
-        ls -laht ../dist
+      build-script: local/.github/packaging/project/gha-main.sh
       gh-artifact-directory: dist
       gh-artifact-name: unsigned-artifacts-${{ matrix.distro }}-${{ matrix.host }}
       gh-retention-days: 1
@@ -74,9 +63,8 @@ jobs:
           - ubuntu-24.04
           - ubuntu-24.04-arm
     needs: build-artifacts
-    uses: aerospike/shared-workflows/.github/workflows/reusable_sign-artifacts.yaml@13e070c7317f655edfff04bb255483b5bd3828cc
+    uses: aerospike/shared-workflows/.github/workflows/reusable_sign-artifacts.yaml@v2.0.2
     with:
-      gh-workflows-ref: 13e070c7317f655edfff04bb255483b5bd3828cc
       gh-artifact-name: signed-artifacts-${{ matrix.distro }}-${{ matrix.host }}
       gh-unsigned-artifacts: unsigned-artifacts-${{ matrix.distro }}-${{ matrix.host }}
     secrets:
@@ -101,9 +89,8 @@ jobs:
           - ubuntu-24.04
           - ubuntu-24.04-arm
     needs: sign-artifacts
-    uses: aerospike/shared-workflows/.github/workflows/reusable_deploy-artifacts.yaml@13e070c7317f655edfff04bb255483b5bd3828cc
+    uses: aerospike/shared-workflows/.github/workflows/reusable_deploy-artifacts.yaml@v2.0.2
     with:
-      gh-workflows-ref: 13e070c7317f655edfff04bb255483b5bd3828cc
       jf-project: database
       jf-build-name: asconfig
       version: ${{ github.ref_name }}
