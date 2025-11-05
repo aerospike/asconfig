@@ -146,5 +146,6 @@ jobs:
       - name: Run test cases
         env:
           JF_TOKEN: ${{ steps.jf.outputs.oidc-token }}
-        run: JF_USERNAME=$( echo ${{ steps.jf.outputs.oidc-user }} | sed 's/\//\%2F/g' ) .github/packaging/common/example-test.sh ${{ matrix.distro }};
+          JF_USERNAME: ${{ steps.jf.outputs.oidc-user }}
+        run: .github/packaging/common/example-test.sh ${{ matrix.distro }};
 
