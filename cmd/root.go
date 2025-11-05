@@ -94,6 +94,7 @@ func Execute() error {
 	rootCmd.AddCommand(newConvertCmd())
 	rootCmd.AddCommand(newDiffCmd())
 	rootCmd.AddCommand(newGenerateCmd())
+	rootCmd.AddCommand(newListCmd())
 	rootCmd.AddCommand(newValidateCmd())
 
 	err := rootCmd.Execute()

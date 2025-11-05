@@ -12,6 +12,8 @@ import (
 //go:embed schemas/json/aerospike
 var schemas embed.FS
 
+const JSONExtension = ".json"
+
 //nolint:revive // SchemaMap is kept for API compatibility
 type SchemaMap map[string]string
 
@@ -30,9 +32,14 @@ func NewSchemaMap() (SchemaMap, error) {
 					return errRead
 				}
 
-				baseName := filepath.Base(path)
-				key := strings.TrimSuffix(baseName, filepath.Ext(baseName))
-				schema[key] = string(content)
+				// Only include JSON files
+				// and extract the key from the filename
+				// by removing the directory prefix and the .json extension
+				if strings.HasSuffix(path, JSONExtension) {
+					baseName := filepath.Base(path)
+					key := strings.TrimSuffix(baseName, filepath.Ext(baseName))
+					schema[key] = string(content)
+				}
 			}
 
 			return nil
