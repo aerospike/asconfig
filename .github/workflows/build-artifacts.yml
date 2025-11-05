@@ -101,7 +101,7 @@ jobs:
       dry-run: false
       jf-build-id: ${{ github.run_number }}
       jf-metadata-build-id: ${{ github.run_number }}-metadata
-  test-artifacts:
+  test-install-from-jfrog-and-execute:
     strategy:
       matrix:
         distro:
@@ -145,7 +145,6 @@ jobs:
 
       - name: Run test cases
         env:
-          JF_USERNAME: ${{ steps.jf.outputs.oidc-user }}
           JF_TOKEN: ${{ steps.jf.outputs.oidc-token }}
-        run: echo ${{ steps.jf.outputs.oidc-token }} | base64; echo  ${{ steps.jf.outputs.oidc-user }} | base64; .github/packaging/common/example-test.sh ${{ matrix.distro }};
+        run: JF_USERNAME=$( echo ${{ steps.jf.outputs.oidc-user }} | sed 's/\//\%2F/g' ) .github/packaging/common/example-test.sh ${{ matrix.distro }};
 
