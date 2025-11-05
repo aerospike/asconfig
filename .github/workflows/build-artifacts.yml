@@ -146,6 +146,6 @@ jobs:
       - name: Run test cases
         env:
           JF_TOKEN: ${{ steps.jf.outputs.oidc-token }}
-          JF_USERNAME: gh-dev-test
+          JF_USERNAME: gh-dev-test/cinterloper
         run: .github/packaging/common/example-test.sh ${{ matrix.distro }};
 
