@@ -147,5 +147,5 @@ jobs:
         env:
           JF_TOKEN: ${{ secrets.JF_TOKEN_STATIC }}
           JF_USERNAME: ${{ secrets.JF_USERNAME_STATIC }}
-        run: .github/packaging/common/example-test.sh ${{ matrix.distro }};
+        run: git fetch --unshallow --tags --no-recurse-submodules; .github/packaging/common/example-test.sh ${{ matrix.distro }};
 
