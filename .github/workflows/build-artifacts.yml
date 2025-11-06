@@ -133,10 +133,10 @@ jobs:
         uses: jfrog/setup-jfrog-cli@5b06f730cc5a6f55d78b30753f8583454b08c0aa # v4.8.1
         env:
           JF_URL: https://artifact.aerospike.io
-          JF_PROJECT: test
+          JF_PROJECT: database
         with:
-          oidc-provider-name: gh-dev-test
-          oidc-audience: aerospike/testing
+          oidc-provider-name: database-gh-aerospike
+          oidc-audience: database-gh-aerospike
       - name: Checkout
         uses: actions/checkout@v5
         with:
@@ -145,7 +145,7 @@ jobs:
 
       - name: Run test cases
         env:
-          JF_TOKEN: ${{ secrets.JF_TOKEN_STATIC }}
-          JF_USERNAME: ${{ secrets.JF_USERNAME_STATIC }}
+          JF_TOKEN: ${{ steps.jf.outputs.oidc-token }}
+          JF_USERNAME: ${{ steps.jf.outputs.oidc-user }}
         run: .github/packaging/project/test/gha-test-main.sh ${{ matrix.distro }} ${{ github.event.repository.name }}
 
