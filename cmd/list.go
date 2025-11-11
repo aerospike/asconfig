@@ -21,6 +21,7 @@ func newListCmd() *cobra.Command {
 		},
 	}
 
+	res.Version = VERSION
 	res.AddCommand(newListVersionsCmd())
 	return res
 }
@@ -70,6 +71,7 @@ func newListVersionsCmd() *cobra.Command {
 	}
 
 	res.Flags().BoolP("verbose", "v", false, "Display output in verbose format with numbering")
+	res.Version = VERSION
 
 	return res
 }

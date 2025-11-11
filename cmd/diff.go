@@ -1,12 +1,15 @@
 package cmd
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"reflect"
 	"sort"
 	"strings"
 
+	lib "github.com/aerospike/aerospike-management-lib"
 	asConf "github.com/aerospike/aerospike-management-lib/asconfig"
 	"github.com/aerospike/aerospike-management-lib/info"
 	"github.com/aerospike/tools-common-go/config"
@@ -14,13 +17,16 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/aerospike/asconfig/conf"
+	"github.com/aerospike/asconfig/schema"
 )
 
 const (
-	diffArgMin       = 2
-	diffArgMax       = 2
-	diffServerArgMin = 1 // For server diff, we need only one local file
-	diffServerArgMax = 1
+	diffArgMin         = 2
+	diffArgMax         = 2
+	diffServerArgMin   = 1 // For server diff, we need only one local file
+	diffServerArgMax   = 1
+	diffVersionsArgMin = 2 // For versions diff, we need exactly 2 versions
+	diffVersionsArgMax = 2
 )
 
 // GetDiffCmd returns the diff command.
@@ -29,15 +35,15 @@ func newDiffCmd() *cobra.Command {
 		Use:   "diff",
 		Short: "Diff Aerospike configuration files or a file against a running server's configuration.",
 		Long: `Diff is used to compare Aerospike configuration files, or a file against a running server's configuration.
-					
-			If no subcommand is provided, 'files' is used by default for backward compatibility.
+				
+				If no subcommand is provided, 'files' is used by default for backward compatibility.
 
-			See subcommands for available diff modes.`,
+				See subcommands for available diff modes.`,
 		Example: `
-		# Diff two local yaml configuration files
-			asconfig diff files aerospike1.yaml aerospike2.yaml
-		# Diff a local .conf file against a running server
-			asconfig diff server -h 127.0.0.1:3000  aerospike.conf`,
+				# Diff two local yaml configuration files
+				asconfig diff files aerospike1.yaml aerospike2.yaml
+				# Diff a local .conf file against a running server
+				asconfig diff server -h 127.0.0.1:3000  aerospike.conf`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger.Warn("Using legacy 'diff' subcommand. Use 'diff files' instead.")
 			return runFileDiff(cmd, args)
@@ -51,6 +57,7 @@ func newDiffCmd() *cobra.Command {
 	// Add subcommands
 	res.AddCommand(newDiffFilesCmd())
 	res.AddCommand(newDiffServerCmd())
+	res.AddCommand(newDiffVersionsCmd())
 
 	return res
 }
@@ -113,6 +120,51 @@ func newDiffServerCmd() *cobra.Command {
 	asFlagSet := aerospikeFlags.NewFlagSet(flags.DefaultWrapHelpString)
 	cmd.Flags().AddFlagSet(asFlagSet)
 	config.BindPFlags(asFlagSet, "cluster")
+	cmd.Version = VERSION
+
+	return cmd
+}
+
+func newDiffVersionsCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "versions [flags] <version1> <version2>",
+		Short: "Show configuration file difference between versions of the Aerospike server.",
+		Long: `Compare configuration schemas between two Aerospike server versions to understand
+what changes when upgrading or downgrading. This command shows which configuration 
+parameters are added, removed, or modified between versions in a detailed, human-readable format.
+
+The tool automatically orders versions chronologically, so you can specify them in any order.
+By default, detailed information is shown including property types, defaults, and descriptions.
+Use --compact to show only configuration names for a minimal view.
+Use --filter-path to focus on specific configuration sections.`,
+		Example: `
+			# Compare configuration changes between versions (detailed by default)
+			asconfig diff versions 7.0.0 7.2.0
+			asconfig diff versions 8.1.0 7.0.0  # automatically reordered
+
+			# Show minimal output with only configuration names
+			asconfig diff versions 6.4.0 7.0.0 --compact
+
+			# Focus on specific configuration areas
+			asconfig diff versions 7.0.0 8.0.0 --filter-path "logging,namespaces"
+
+			# Combine compact view with filtering
+			asconfig diff versions 7.0.0 8.0.0 --compact --filter-path "service"
+
+			# List all available Aerospike server versions
+			asconfig list versions --verbose
+			`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			logger.Debug("Running versions diff command")
+			return runVersionsDiff(cmd, args)
+		},
+	}
+
+	cmd.Flags().
+		BoolP("compact", "c", false, "Show minimal output with only configuration names (default shows detailed information)")
+	cmd.Flags().
+		StringP("filter-path", "f", "", "Filter results to only show properties under the specified path (e.g., 'service', 'namespaces')")
+	cmd.Version = VERSION
 
 	return cmd
 }
@@ -292,6 +344,91 @@ func runServerDiff(cmd *cobra.Command, args []string) error {
 
 		return fmt.Errorf("%w: %w", errDiffConfigsDiffer, ErrSilent)
 	}
+
+	return nil
+}
+
+// runVersionsDiff compares the configuration between two Aerospike server versions.
+func runVersionsDiff(cmd *cobra.Command, args []string) error {
+	if len(args) < diffVersionsArgMin {
+		return errSchemaDiffTWrongArgs
+	}
+
+	if len(args) > diffVersionsArgMax {
+		return errSchemaDiffTWrongArgs
+	}
+
+	version1 := args[0]
+	version2 := args[1]
+
+	// Use lib.CompareVersions to determine order and auto-reverse if needed
+	compareResult, err := lib.CompareVersions(version1, version2)
+	if err != nil {
+		return fmt.Errorf("failed to compare versions %s and %s: %w", version1, version2, err)
+	}
+
+	// If version1 > version2 (compareResult > 0), swap them for logical diff order
+	if compareResult > 0 {
+		logger.Debugf(
+			"Reversing version order: %s > %s, showing diff from %s to %s",
+			version1,
+			version2,
+			version2,
+			version1,
+		)
+		version1, version2 = version2, version1
+	}
+
+	logger.Debugf("Comparing schema from version %s to version %s", version1, version2)
+
+	// Load schemas
+	schemaMap, err := schema.NewSchemaMap()
+	if err != nil {
+		return fmt.Errorf("failed to load schema map: %w", err)
+	}
+
+	schema1, exists := schemaMap[version1]
+	if !exists {
+		return errors.Join(errInvalidSchemaVersion, fmt.Errorf("schema for version %s not found", version1))
+	}
+
+	schema2, exists := schemaMap[version2]
+	if !exists {
+		return errors.Join(errInvalidSchemaVersion, fmt.Errorf("schema for version %s not found", version2))
+	}
+
+	var schemaLower, schemaUpper map[string]interface{}
+	if unmarshalErr := json.Unmarshal([]byte(schema1), &schemaLower); unmarshalErr != nil {
+		return fmt.Errorf("failed to parse schema for version %s: %w", version1, unmarshalErr)
+	}
+	if unmarshalErr := json.Unmarshal([]byte(schema2), &schemaUpper); unmarshalErr != nil {
+		return fmt.Errorf("failed to parse schema for version %s: %w", version2, unmarshalErr)
+	}
+
+	// Get flags - verbose is now the default, compact is the exception
+	compact, _ := cmd.Flags().GetBool("compact")
+	verbose := !compact // Verbose is the default behavior, compact overrides it
+	filterPath, _ := cmd.Flags().GetString("filter-path")
+
+	filterSections := make(map[string]struct{})
+	if filterPath != "" {
+		sections := strings.Split(filterPath, ",")
+		for _, s := range sections {
+			filterSections[strings.TrimSpace(s)] = struct{}{}
+		}
+	}
+
+	// Compare the two JSON files
+	summary, err := compareSchemas(schemaLower, schemaUpper, version1, version2)
+	if err != nil {
+		return fmt.Errorf("failed to compare schemas: %w", err)
+	}
+
+	// Output the results
+	printChangeSummary(summary, DiffOptions{
+		Verbose:        verbose,
+		FilterSections: filterSections,
+	})
 
 	return nil
 }

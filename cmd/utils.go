@@ -43,13 +43,17 @@ var (
 		diffArgMax,
 	)
 	errDiffServerTooFewArgs = fmt.Errorf(
-		"diff with --server requires exactly %d file path as argument",
+		"diff server requires at least %d file path as argument",
 		diffServerArgMin,
 	)
 	errDiffServerTooManyArgs = fmt.Errorf(
-		"diff with --server requires no more than %d file path as argument",
+		"diff server requires no more than %d file path as argument",
 		diffServerArgMax,
 	)
+
+	// Schema diff errors.
+	errSchemaDiffTWrongArgs = errors.New("diff versions requires exactly 2 version arguments")
+	errInvalidSchemaVersion = errors.New("invalid schema version")
 
 	errUnableToGenerateConfigFile       = errors.New("unable to generate config file")
 	errUnableToParseGeneratedConfFile   = errors.New("unable to parse the generated conf file")

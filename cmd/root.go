@@ -72,6 +72,12 @@ func NewRootCmd() *cobra.Command {
 	cmd.SilenceUsage = true
 
 	cmd.SetFlagErrorFunc(func(cmd *cobra.Command, err error) error {
+		// Don't log help requests as errors
+		if strings.Contains(err.Error(), "help requested") {
+			cmd.Println(cmd.UsageString())
+			return errors.Join(err, ErrSilent)
+		}
+
 		logger.Error(err)
 		cmd.Println(cmd.UsageString())
 
