@@ -52,7 +52,7 @@ var (
 	)
 
 	// Schema diff errors.
-	errSchemaDiffTWrongArgs = errors.New("diff versions requires exactly 2 version arguments")
+	errSchemaDiffWrongArgs  = errors.New("diff versions requires exactly 2 version arguments")
 	errInvalidSchemaVersion = errors.New("invalid schema version")
 
 	errUnableToGenerateConfigFile       = errors.New("unable to generate config file")

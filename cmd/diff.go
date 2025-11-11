@@ -351,11 +351,11 @@ func runServerDiff(cmd *cobra.Command, args []string) error {
 // runVersionsDiff compares the configuration between two Aerospike server versions.
 func runVersionsDiff(cmd *cobra.Command, args []string) error {
 	if len(args) < diffVersionsArgMin {
-		return errSchemaDiffTWrongArgs
+		return errSchemaDiffWrongArgs
 	}
 
 	if len(args) > diffVersionsArgMax {
-		return errSchemaDiffTWrongArgs
+		return errSchemaDiffWrongArgs
 	}
 
 	version1 := args[0]

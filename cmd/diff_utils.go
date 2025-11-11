@@ -201,6 +201,11 @@ func extractSection(path string, validSections map[string]bool) string {
 // Output formatting
 // ---------------
 
+const (
+	// minBoxWidth defines the minimum width for the section box.
+	minBoxWidth = 50
+)
+
 // printChangeSummary prints a formatted summary of schema changes.
 func printChangeSummary(summary ChangeSummary, options DiffOptions) {
 	// Print header with versions
@@ -247,9 +252,7 @@ func printHeader(summary ChangeSummary, options DiffOptions) {
 func printSectionChanges(section string, changes SectionChanges, options DiffOptions) {
 	// Section header
 	if options.Verbose {
-		fmt.Fprintf(os.Stdout, "\n╭─────────────────────────────────────────────────────────────╮\n")
-		fmt.Fprintf(os.Stdout, "│ SECTION: %-50s │\n", strings.ToUpper(section))
-		fmt.Fprintf(os.Stdout, "╰─────────────────────────────────────────────────────────────╯\n")
+		printSectionBox(section)
 	} else {
 		fmt.Fprintf(os.Stdout, "\n[SECTION: %s]\n", strings.ToUpper(section))
 	}
@@ -484,6 +487,40 @@ func formatValue(value interface{}) string {
 
 // Utility functions
 // ---------------
+
+// printSectionBox prints a dynamically-sized box around the section name.
+// The box width adjusts to accommodate the section name while maintaining a minimum width.
+func printSectionBox(section string) {
+	upperSection := strings.ToUpper(section)
+	sectionText := "SECTION: " + upperSection
+
+	// Calculate the required width (text + padding)
+	const padding = 2 // 1 space on each side
+	requiredWidth := len(sectionText) + padding
+
+	// Use the larger of minimum width or required width
+	boxWidth := minBoxWidth
+	if requiredWidth > minBoxWidth {
+		boxWidth = requiredWidth
+	}
+
+	// Calculate padding for centering the text
+	totalPadding := boxWidth - len(sectionText)
+	leftPadding := totalPadding / padding
+	rightPadding := totalPadding - leftPadding
+
+	// Create the box borders
+	topBorder := "╭" + strings.Repeat("─", boxWidth) + "╮"
+	bottomBorder := "╰" + strings.Repeat("─", boxWidth) + "╯"
+
+	// Print the box
+	fmt.Fprintf(os.Stdout, "\n%s\n", topBorder)
+	fmt.Fprintf(os.Stdout, "│%s%s%s│\n",
+		strings.Repeat(" ", leftPadding),
+		sectionText,
+		strings.Repeat(" ", rightPadding))
+	fmt.Fprintf(os.Stdout, "%s\n", bottomBorder)
+}
 
 // formatPath formats a JSON path into a more human-readable form.
 func formatPath(path string) string {
