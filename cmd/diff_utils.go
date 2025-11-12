@@ -39,6 +39,29 @@ const (
 	minBoxWidth = 50
 )
 
+// Display constants.
+const (
+	// Configuration headers.
+	removedConfigHeader  = "REMOVED CONFIGURATIONS"
+	newConfigHeader      = "NEW CONFIGURATIONS"
+	modifiedConfigHeader = "MODIFIED CONFIGURATIONS"
+
+	// Icons and prefixes.
+	iconRemoval        = "❌"
+	iconAddition       = "✅"
+	iconModification   = "🔄"
+	removalPrefix      = "-"
+	additionPrefix     = "+"
+	modificationPrefix = "~"
+
+	// Business logic constants.
+	defaultSectionName = "general"
+	enterpriseOnlyText = "Enterprise Edition Only"
+	allowedValuesText  = "Allowed values"
+	booleanYesText     = "Yes"
+	booleanNoText      = "No"
+)
+
 // SchemaChange represents a single schema change.
 type SchemaChange struct {
 	Path         string
@@ -237,7 +260,7 @@ func extractSection(path string, validSections map[string]bool) string {
 	}
 
 	// If we didn't find a valid section, return "general"
-	return "general"
+	return defaultSectionName
 }
 
 // Output formatting
@@ -307,9 +330,9 @@ func printAllChanges(changes SectionChanges, options DiffOptions) {
 		icon    string
 		prefix  string
 	}{
-		{changes.Removals, "REMOVED CONFIGURATIONS", "❌", "-"},
-		{changes.Additions, "NEW CONFIGURATIONS", "✅", "+"},
-		{changes.Modifications, "MODIFIED CONFIGURATIONS", "🔄", "~"},
+		{changes.Removals, removedConfigHeader, iconRemoval, removalPrefix},
+		{changes.Additions, newConfigHeader, iconAddition, additionPrefix},
+		{changes.Modifications, modifiedConfigHeader, iconModification, modificationPrefix},
 	}
 
 	// Process each change type
@@ -326,7 +349,7 @@ func printAllChanges(changes SectionChanges, options DiffOptions) {
 		}
 
 		// Handle modifications with array processing
-		if config.header == "MODIFIED CONFIGURATIONS" {
+		if config.header == modifiedConfigHeader {
 			printModifications(config.changes, options, config.icon, config.prefix)
 			continue
 		}
@@ -373,7 +396,7 @@ func printArrayChangeVerbose(change SchemaChange, path, header, icon string, opt
 	}
 
 	// Print additional details for additions (only for simple objects)
-	if header == "NEW CONFIGURATIONS" && !isComplexProperty(change.Value) {
+	if header == newConfigHeader && !isComplexProperty(change.Value) {
 		printValueProperties(change.Value, options)
 	}
 }
@@ -392,7 +415,7 @@ func printNormalChange(change SchemaChange, path, header, icon, prefix string, o
 	if options.Verbose {
 		fmt.Fprintf(os.Stdout, "  %s %s\n", icon, path)
 		// Print additional details for additions
-		if header == "NEW CONFIGURATIONS" {
+		if header == newConfigHeader {
 			printValueProperties(change.Value, options)
 		}
 	} else {
@@ -647,9 +670,9 @@ func formatKeyName(key string) string {
 	// Handle common special cases
 	switch key {
 	case "enterpriseOnly":
-		return "Enterprise Edition Only"
+		return enterpriseOnlyText
 	case "enum":
-		return "Allowed values"
+		return allowedValuesText
 	default:
 		// Simple camelCase to Title Case conversion
 		if len(key) == 0 {
@@ -668,9 +691,9 @@ func formatValue(value any) string {
 	switch v := value.(type) {
 	case bool:
 		if v {
-			return "Yes"
+			return booleanYesText
 		}
-		return "No"
+		return booleanNoText
 	case string:
 		if v == "" {
 			return ""

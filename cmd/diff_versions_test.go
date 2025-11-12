@@ -321,7 +321,7 @@ func TestVersionsDiffCLIIntegration(t *testing.T) {
 		},
 		{
 			name:        "valid versions diff with filter",
-			args:        []string{"diff", "versions", firstVersion, secondVersion, "--filter-path", "service"},
+			args:        []string{"diff", "versions", firstVersion, secondVersion, "--filter-path", "security"},
 			expectError: false,
 		},
 		{
@@ -672,7 +672,7 @@ func TestVersionsDiffOutputConsistency(t *testing.T) {
 	}{
 		{"verbose_mode", firstVersion, secondVersion, []string{}},
 		{"compact_mode", firstVersion, secondVersion, []string{"--compact"}},
-		{"filtered_mode", firstVersion, secondVersion, []string{"--filter-path", "service"}},
+		{"filtered_mode", firstVersion, secondVersion, []string{"--filter-path", "security"}},
 	}
 
 	for _, tc := range testCases {
