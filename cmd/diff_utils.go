@@ -536,7 +536,7 @@ func printNestedSchema(value any, prefix string, options DiffOptions, visited ma
 		return
 	}
 
-	// Check for cycles .. our schemas are not expected to have cycles, but we'll check for them anyway.
+	// Check for cycles. Our schemas are not expected to have cycles, but we'll check for them anyway.
 	if hasCycle(obj, visited) {
 		fmt.Fprintf(os.Stdout, "%s... (circular reference)\n", prefix)
 		return
