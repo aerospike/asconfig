@@ -743,3 +743,442 @@ func TestVersionsDiffOutputConsistency(t *testing.T) {
 		})
 	}
 }
+
+// TestFormatValue tests the formatValue function with various data types
+func TestFormatValue(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    any
+		expected string
+	}{
+		{
+			name:     "nil value",
+			input:    nil,
+			expected: "",
+		},
+		{
+			name:     "empty string",
+			input:    "",
+			expected: "",
+		},
+		{
+			name:     "simple string",
+			input:    "test",
+			expected: "test",
+		},
+		{
+			name:     "integer",
+			input:    42,
+			expected: "42",
+		},
+		{
+			name:     "float",
+			input:    3.14,
+			expected: "3.14",
+		},
+		{
+			name:     "boolean true",
+			input:    true,
+			expected: "Yes",
+		},
+		{
+			name:     "boolean false",
+			input:    false,
+			expected: "No",
+		},
+		{
+			name:     "empty array",
+			input:    []any{},
+			expected: "[]",
+		},
+		{
+			name:     "simple array",
+			input:    []any{"a", "b", "c"},
+			expected: `["a","b","c"]`,
+		},
+		{
+			name:     "complex object",
+			input:    map[string]any{"key": "value"},
+			expected: "[object]",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := formatValue(tt.input)
+			if result != tt.expected {
+				t.Errorf("formatValue(%v) = %q, want %q", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestFormatArrayValue tests the formatArrayValue function
+func TestFormatArrayValue(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    any
+		expected string
+	}{
+		{
+			name:     "empty array",
+			input:    []any{},
+			expected: "[]",
+		},
+		{
+			name:     "simple string array",
+			input:    []any{"service", "network", "namespaces"},
+			expected: `["service","network","namespaces"]`,
+		},
+		{
+			name:     "mixed simple array",
+			input:    []any{"string", 42, true},
+			expected: `["string",42,true]`,
+		},
+		{
+			name:     "array with complex objects",
+			input:    []any{map[string]any{"type": "object"}, "simple"},
+			expected: "[2 items with complex objects]",
+		},
+		{
+			name: "array with only complex objects",
+			input: []any{
+				map[string]any{"type": "object"},
+				map[string]any{"another": "object"},
+			},
+			expected: "[2 items with complex objects]",
+		},
+		{
+			name:     "non-array input",
+			input:    "not an array",
+			expected: "not an array",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := formatArrayValue(tt.input)
+			if result != tt.expected {
+				t.Errorf("formatArrayValue(%v) = %q, want %q", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestPrintArrayChange tests array change formatting to ensure no raw maps are displayed
+func TestPrintArrayChange(t *testing.T) {
+	tests := []struct {
+		name                string
+		change              SchemaChange
+		header              string
+		verbose             bool
+		expectedContains    []string
+		expectedNotContains []string
+	}{
+		{
+			name: "simple array addition verbose",
+			change: SchemaChange{
+				Path:  "/required/-",
+				Value: "Bang!",
+				Type:  Addition,
+			},
+			header:  "NEW CONFIGURATIONS",
+			verbose: true,
+			expectedContains: []string{
+				"Array item: Bang!",
+			},
+			expectedNotContains: []string{
+				"[object]",
+				"map[",
+				"interface{}",
+			},
+		},
+		{
+			name: "simple array addition compact",
+			change: SchemaChange{
+				Path:  "/required/-",
+				Value: "Bang!",
+				Type:  Addition,
+			},
+			header:  "NEW CONFIGURATIONS",
+			verbose: false,
+			expectedContains: []string{
+				"required[+]: Bang!",
+			},
+			expectedNotContains: []string{
+				"[object]",
+				"map[",
+				"interface{}",
+			},
+		},
+		{
+			name: "complex object array addition verbose",
+			change: SchemaChange{
+				Path: "/required/-",
+				Value: map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"test": map[string]any{
+							"type":    "string",
+							"default": "",
+						},
+					},
+				},
+				Type: Addition,
+			},
+			header:  "NEW CONFIGURATIONS",
+			verbose: true,
+			expectedContains: []string{
+				"Array item (complex object):",
+				"Type: object",
+				"Properties:",
+				"test:",
+			},
+			expectedNotContains: []string{
+				"map[",
+				"interface{}",
+			},
+		},
+		{
+			name: "complex object array addition compact",
+			change: SchemaChange{
+				Path: "/required/-",
+				Value: map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"test": map[string]any{
+							"type":    "string",
+							"default": "",
+						},
+					},
+				},
+				Type: Addition,
+			},
+			header:  "NEW CONFIGURATIONS",
+			verbose: false,
+			expectedContains: []string{
+				"required[+]: (complex object)",
+			},
+			expectedNotContains: []string{
+				"map[",
+				"interface{}",
+				"[object]",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Capture stdout
+			oldStdout := os.Stdout
+			r, w, _ := os.Pipe()
+			os.Stdout = w
+
+			// Run the function
+			options := DiffOptions{Verbose: tt.verbose}
+			path := formatPath(tt.change.Path)
+			printArrayChange(tt.change, path, tt.header, "✅", "+", options)
+
+			// Restore stdout and get output
+			w.Close()
+			os.Stdout = oldStdout
+			var buf bytes.Buffer
+			buf.ReadFrom(r)
+			output := buf.String()
+
+			// Check expected content
+			for _, expected := range tt.expectedContains {
+				if !strings.Contains(output, expected) {
+					t.Errorf("Expected output to contain %q, but got:\n%s", expected, output)
+				}
+			}
+
+			// Check content that should not be present
+			for _, notExpected := range tt.expectedNotContains {
+				if strings.Contains(output, notExpected) {
+					t.Errorf("Expected output to NOT contain %q, but got:\n%s", notExpected, output)
+				}
+			}
+		})
+	}
+}
+
+// TestNoRawMapOutput tests that no raw Go maps are ever displayed in diff output
+func TestNoRawMapOutput(t *testing.T) {
+	// Test various complex scenarios that previously showed raw maps
+	testCases := []struct {
+		name   string
+		schema any
+	}{
+		{
+			name: "nested objects with properties",
+			schema: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"nested": map[string]any{
+						"type": "object",
+						"properties": map[string]any{
+							"deep": map[string]any{
+								"type":    "string",
+								"default": "",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "array with mixed content",
+			schema: []any{
+				"simple string",
+				42,
+				true,
+				map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"field": map[string]any{
+							"type": "string",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Test formatValue
+			result := formatValue(tc.schema)
+			if strings.Contains(result, "map[") {
+				t.Errorf("formatValue returned raw map: %s", result)
+			}
+
+			// Test formatArrayValue
+			arrayResult := formatArrayValue(tc.schema)
+			if strings.Contains(arrayResult, "map[") {
+				t.Errorf("formatArrayValue returned raw map: %s", arrayResult)
+			}
+
+			// Test printNestedSchema output
+			oldStdout := os.Stdout
+			r, w, _ := os.Pipe()
+			os.Stdout = w
+
+			options := DiffOptions{Verbose: true}
+			printNestedSchemaRoot(tc.schema, "  ", options)
+
+			w.Close()
+			os.Stdout = oldStdout
+			var buf bytes.Buffer
+			buf.ReadFrom(r)
+			output := buf.String()
+
+			if strings.Contains(output, "map[") {
+				t.Errorf("printNestedSchema output contains raw map:\n%s", output)
+			}
+			if strings.Contains(output, "interface{}") {
+				t.Errorf("printNestedSchema output contains interface{} type:\n%s", output)
+			}
+		})
+	}
+}
+
+// TestInvalidChangeType tests that invalid change types are handled gracefully
+func TestInvalidChangeType(t *testing.T) {
+	// Create a mock schema change with invalid type
+	changes := []SchemaChange{
+		{
+			Path: "/test/path",
+			Type: ChangeType("invalid_type"), // This should trigger the default case
+		},
+	}
+
+	validSections := map[string]bool{"test": true}
+	summary := groupChangesBySection(changes, "1.0.0", "2.0.0", validSections)
+
+	// The change should be ignored due to invalid type
+	// Total counts should be 0
+	if summary.TotalAdditions != 0 || summary.TotalRemovals != 0 || summary.TotalModified != 0 {
+		t.Errorf(
+			"Expected all totals to be 0 for invalid change type, got: additions=%d, removals=%d, modifications=%d",
+			summary.TotalAdditions,
+			summary.TotalRemovals,
+			summary.TotalModified,
+		)
+	}
+
+	// The change should not appear in any section
+	for _, sectionChanges := range summary.Sections {
+		if len(sectionChanges.Additions) > 0 || len(sectionChanges.Removals) > 0 ||
+			len(sectionChanges.Modifications) > 0 {
+			t.Error("Invalid change type should not be added to any section")
+		}
+	}
+}
+
+// TestInvalidFilterValidation tests that invalid filter sections are properly validated
+func TestInvalidFilterValidation(t *testing.T) {
+	testCases := []struct {
+		name           string
+		filterSections map[string]struct{}
+		expectError    bool
+		expectedError  string
+	}{
+		{
+			name:           "valid single filter",
+			filterSections: map[string]struct{}{"namespaces": {}},
+			expectError:    false,
+		},
+		{
+			name:           "valid multiple filters",
+			filterSections: map[string]struct{}{"namespaces": {}, "service": {}},
+			expectError:    false,
+		},
+		{
+			name:           "invalid single filter",
+			filterSections: map[string]struct{}{"invalid": {}},
+			expectError:    true,
+			expectedError:  "invalid filter section(s): invalid",
+		},
+		{
+			name:           "invalid multiple filters",
+			filterSections: map[string]struct{}{"invalid1": {}, "invalid2": {}},
+			expectError:    true,
+			expectedError:  "invalid filter section(s): invalid1, invalid2",
+		},
+		{
+			name:           "mix of valid and invalid filters",
+			filterSections: map[string]struct{}{"namespaces": {}, "invalid": {}},
+			expectError:    true,
+			expectedError:  "invalid filter section(s): invalid",
+		},
+	}
+
+	// Create mock available sections
+	availableSections := map[string]SectionChanges{
+		"namespaces": {},
+		"service":    {},
+		"network":    {},
+		"logging":    {},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateFilterSections(tc.filterSections, availableSections)
+
+			if tc.expectError {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+					return
+				}
+				if !strings.Contains(err.Error(), tc.expectedError) {
+					t.Errorf("Expected error to contain %q, got %q", tc.expectedError, err.Error())
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Expected no error but got: %v", err)
+				}
+			}
+		})
+	}
+}

@@ -43,7 +43,11 @@ func newDiffCmd() *cobra.Command {
 				# Diff two local yaml configuration files
 				asconfig diff files aerospike1.yaml aerospike2.yaml
 				# Diff a local .conf file against a running server
-				asconfig diff server -h 127.0.0.1:3000  aerospike.conf`,
+				asconfig diff server -h 127.0.0.1:3000  aerospike.conf
+				# Compare configuration changes between versions
+				asconfig diff versions 7.0.0 8.1.0
+				# Compare configuration changes between versions and focus on specific configuration areas
+				asconfig diff versions 7.0.0 8.0.0 --filter-path "logging,namespaces"`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger.Warn("Using legacy 'diff' subcommand. Use 'diff files' instead.")
 			return runFileDiff(cmd, args)
@@ -130,13 +134,12 @@ func newDiffVersionsCmd() *cobra.Command {
 		Use:   "versions [flags] <version1> <version2>",
 		Short: "Show configuration file difference between versions of the Aerospike server.",
 		Long: `Compare configuration schemas between two Aerospike server versions to understand
-what changes when upgrading or downgrading. This command shows which configuration 
-parameters are added, removed, or modified between versions in a detailed, human-readable format.
+			what changes when upgrading or downgrading. This command shows which configuration 
+			parameters are added, removed, or modified between versions in a detailed, human-readable format.
 
-The tool automatically orders versions chronologically, so you can specify them in any order.
-By default, detailed information is shown including property types, defaults, and descriptions.
-Use --compact to show only configuration names for a minimal view.
-Use --filter-path to focus on specific configuration sections.`,
+			By default, detailed information is shown including property types, defaults, and descriptions.
+			Use --compact to show only configuration names for a minimal view.
+			Use --filter-path to focus on specific configuration sections.`,
 		Example: `
 			# Compare configuration changes between versions (detailed by default)
 			asconfig diff versions 7.0.0 7.2.0
@@ -397,7 +400,7 @@ func runVersionsDiff(cmd *cobra.Command, args []string) error {
 		return errors.Join(errInvalidSchemaVersion, fmt.Errorf("schema for version %s not found", version2))
 	}
 
-	var schemaLower, schemaUpper map[string]interface{}
+	var schemaLower, schemaUpper map[string]any
 	if unmarshalErr := json.Unmarshal([]byte(schema1), &schemaLower); unmarshalErr != nil {
 		return fmt.Errorf("failed to parse schema for version %s: %w", version1, unmarshalErr)
 	}
@@ -422,6 +425,13 @@ func runVersionsDiff(cmd *cobra.Command, args []string) error {
 	summary, err := compareSchemas(schemaLower, schemaUpper, version1, version2)
 	if err != nil {
 		return fmt.Errorf("failed to compare schemas: %w", err)
+	}
+
+	// Validate filter sections if provided
+	if len(filterSections) > 0 {
+		if err := validateFilterSections(filterSections, summary.Sections); err != nil {
+			return err
+		}
 	}
 
 	// Output the results

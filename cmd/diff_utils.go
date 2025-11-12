@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -26,14 +27,26 @@ const (
 	Modification ChangeType = "replace"
 )
 
+// Schema field constants.
+const (
+	propertiesField  = "properties"
+	itemsField       = "items"
+	descriptionField = "description"
+)
+
+const (
+	// minBoxWidth defines the minimum width for the section box.
+	minBoxWidth = 50
+)
+
 // SchemaChange represents a single schema change.
 type SchemaChange struct {
 	Path         string
 	Type         ChangeType
-	OldValue     interface{}
-	Value        interface{}
-	OldFullValue interface{}
-	NewFullValue interface{}
+	OldValue     any
+	Value        any
+	OldFullValue any
+	NewFullValue any
 }
 
 // ChangeSummary groups changes by section and type.
@@ -56,18 +69,13 @@ type SectionChanges struct {
 
 // compareSchemas compares two schema objects and returns a summary of changes.
 func compareSchemas(
-	schemaLower, schemaUpper map[string]interface{},
+	schemaLower, schemaUpper map[string]any,
 	newVersion, oldVersion string,
 ) (ChangeSummary, error) {
 	patch, err := jsondiff.Compare(schemaLower, schemaUpper)
 	if err != nil {
 		return ChangeSummary{}, err
 	}
-
-	// Caches for full array values to avoid redundant lookups
-	oldFullValuesCache := make(map[string]interface{})
-	newFullValuesCache := make(map[string]interface{})
-	processedArrayPaths := make(map[string]struct{})
 
 	// Create schema changes from patch operations
 	changes := make([]SchemaChange, 0, len(patch))
@@ -86,25 +94,19 @@ func compareSchemas(
 		case string(Modification):
 			change.Type = Modification
 
-			// For array modifications, store the full old and new array values
+			// For array modifications, get the full old and new array values when needed
 			if isArrayIndex(op.Path) {
 				parentPath := getParentPath(op.Path)
-
-				if _, processed := processedArrayPaths[parentPath]; !processed {
-					oldArray, oldOk := getValueByJSONPath(schemaLower, parentPath)
-					newArray, newOk := getValueByJSONPath(schemaUpper, parentPath)
-
-					if oldOk && newOk {
-						oldFullValuesCache[parentPath] = oldArray
-						newFullValuesCache[parentPath] = newArray
-					}
-					processedArrayPaths[parentPath] = struct{}{}
+				if oldArray, ok := getValueByJSONPath(schemaLower, parentPath); ok {
+					change.OldFullValue = oldArray
 				}
-
-				// Assign cached full values
-				change.OldFullValue = oldFullValuesCache[parentPath]
-				change.NewFullValue = newFullValuesCache[parentPath]
+				if newArray, ok := getValueByJSONPath(schemaUpper, parentPath); ok {
+					change.NewFullValue = newArray
+				}
 			}
+		default:
+			// Handle unexpected operation types from jsondiff library
+			return ChangeSummary{}, fmt.Errorf("unsupported jsondiff operation type: %q at path %s", op.Type, op.Path)
 		}
 
 		changes = append(changes, change)
@@ -118,18 +120,18 @@ func compareSchemas(
 }
 
 // extractValidSections dynamically extracts all top-level sections from both schemas.
-func extractValidSections(schema1, schema2 map[string]interface{}) map[string]bool {
+func extractValidSections(schema1, schema2 map[string]any) map[string]bool {
 	validSections := make(map[string]bool)
 
 	// Extract sections from first schema
-	if props1, ok := schema1["properties"].(map[string]interface{}); ok {
+	if props1, ok := schema1[propertiesField].(map[string]any); ok {
 		for section := range props1 {
 			validSections[section] = true
 		}
 	}
 
 	// Extract sections from second schema (in case of additions/removals)
-	if props2, ok := schema2["properties"].(map[string]interface{}); ok {
+	if props2, ok := schema2[propertiesField].(map[string]any); ok {
 		for section := range props2 {
 			validSections[section] = true
 		}
@@ -167,12 +169,52 @@ func groupChangesBySection(
 		case Modification:
 			sectionChanges.Modifications = append(sectionChanges.Modifications, change)
 			summary.TotalModified++
+		default:
+			// This should never happen if the first switch statement is working correctly,
+			// but handle it anyway.
+			fmt.Fprintf(
+				os.Stderr,
+				"Warning: Skipping change with unknown type %q at path %s\n",
+				change.Type,
+				change.Path,
+			)
 		}
 
 		summary.Sections[section] = sectionChanges
 	}
 
 	return summary
+}
+
+// validateFilterSections validates that the provided filter sections exist in the available sections.
+func validateFilterSections(filterSections map[string]struct{}, availableSections map[string]SectionChanges) error {
+	var invalidSections []string
+	var validSections []string
+
+	// Collect all available section names
+	for section := range availableSections {
+		validSections = append(validSections, section)
+	}
+	sort.Strings(validSections)
+
+	// Check each filter section
+	for filterSection := range filterSections {
+		if _, exists := availableSections[filterSection]; !exists {
+			invalidSections = append(invalidSections, filterSection)
+		}
+	}
+
+	// If there are invalid sections, return an error with helpful information
+	if len(invalidSections) > 0 {
+		sort.Strings(invalidSections)
+		return fmt.Errorf(
+			"invalid filter section(s): %s. Available sections: %s",
+			strings.Join(invalidSections, ", "),
+			strings.Join(validSections, ", "),
+		)
+	}
+
+	return nil
 }
 
 // Path utilities
@@ -184,12 +226,12 @@ func extractSection(path string, validSections map[string]bool) string {
 
 	// Look for valid top-level section in the path
 	for _, part := range parts {
-		if part == "" || part == "properties" || part == "items" || isNumeric(part) {
+		if part == "" || part == propertiesField || part == itemsField || isNumeric(part) {
 			continue
 		}
 
 		// If this is a valid section, return it
-		if validSections[part] {
+		if _, ok := validSections[part]; ok {
 			return part
 		}
 	}
@@ -200,11 +242,6 @@ func extractSection(path string, validSections map[string]bool) string {
 
 // Output formatting
 // ---------------
-
-const (
-	// minBoxWidth defines the minimum width for the section box.
-	minBoxWidth = 50
-)
 
 // printChangeSummary prints a formatted summary of schema changes.
 func printChangeSummary(summary ChangeSummary, options DiffOptions) {
@@ -290,7 +327,7 @@ func printAllChanges(changes SectionChanges, options DiffOptions) {
 
 		// Handle modifications with array processing
 		if config.header == "MODIFIED CONFIGURATIONS" {
-			printModificationsOptimized(config.changes, options, config.icon, config.prefix)
+			printModifications(config.changes, options, config.icon, config.prefix)
 			continue
 		}
 
@@ -303,48 +340,82 @@ func printAllChanges(changes SectionChanges, options DiffOptions) {
 func printSimpleChanges(changes []SchemaChange, header, icon, prefix string, options DiffOptions) {
 	for _, change := range changes {
 		path := formatPath(change.Path)
-		if options.Verbose {
-			fmt.Fprintf(os.Stdout, "  %s %s\n", icon, path)
-			// Print additional details for additions
-			if header == "NEW CONFIGURATIONS" {
-				printValueProperties(change.Value, options)
-			}
+
+		// Check if this is an array addition/removal and show the array contents
+		if isArrayPath(change.Path) && change.Value != nil {
+			printArrayChange(change, path, header, icon, prefix, options)
 		} else {
-			fmt.Fprintf(os.Stdout, "%s %s\n", prefix, path)
+			printNormalChange(change, path, header, icon, prefix, options)
 		}
 	}
 }
 
-// printModificationsOptimized handles modifications with array optimization.
-func printModificationsOptimized(modifications []SchemaChange, options DiffOptions, icon, prefix string) {
-	processedArrays := make(map[string]bool)
+// printArrayChange handles array additions and removals with content display.
+func printArrayChange(change SchemaChange, path, header, icon, prefix string, options DiffOptions) {
+	if options.Verbose {
+		printArrayChangeVerbose(change, path, header, icon, options)
+		return
+	}
 
-	for _, change := range modifications {
-		// Handle full array changes
-		if isArrayIndex(change.Path) && change.OldFullValue != nil && change.NewFullValue != nil {
-			parentPath := getParentPath(change.Path)
-			if processedArrays[parentPath] {
-				continue // Already processed this array
-			}
-			processedArrays[parentPath] = true
+	printArrayChangeCompact(change, path, prefix)
+}
 
-			displayPath := formatPath(parentPath)
-			if options.Verbose {
-				fmt.Fprintf(os.Stdout, "  %s %s (array changed)\n", icon, displayPath)
-				fmt.Fprintf(os.Stdout, "     → Changed from: %v\n", change.OldFullValue)
-				fmt.Fprintf(os.Stdout, "     → Changed to: %v\n", change.NewFullValue)
-			} else {
-				fmt.Fprintf(os.Stdout, "%s %s (array changed)\n", prefix, displayPath)
-			}
-			continue
+// printArrayChangeVerbose handles verbose array change display.
+func printArrayChangeVerbose(change SchemaChange, path, header, icon string, options DiffOptions) {
+	fmt.Fprintf(os.Stdout, "  %s %s\n", icon, path)
+
+	// For array additions/removals, show the individual item being added/removed
+	if isComplexProperty(change.Value) {
+		fmt.Fprintf(os.Stdout, "     → Array item (complex object):\n")
+		printNestedSchemaRoot(change.Value, "       ", options)
+	} else {
+		fmt.Fprintf(os.Stdout, "     → Array item: %s\n", formatValue(change.Value))
+	}
+
+	// Print additional details for additions (only for simple objects)
+	if header == "NEW CONFIGURATIONS" && !isComplexProperty(change.Value) {
+		printValueProperties(change.Value, options)
+	}
+}
+
+// printArrayChangeCompact handles compact array change display.
+func printArrayChangeCompact(change SchemaChange, path, prefix string) {
+	if isComplexProperty(change.Value) {
+		fmt.Fprintf(os.Stdout, "%s %s: (complex object)\n", prefix, path)
+	} else {
+		fmt.Fprintf(os.Stdout, "%s %s: %s\n", prefix, path, formatValue(change.Value))
+	}
+}
+
+// printNormalChange handles non-array changes.
+func printNormalChange(change SchemaChange, path, header, icon, prefix string, options DiffOptions) {
+	if options.Verbose {
+		fmt.Fprintf(os.Stdout, "  %s %s\n", icon, path)
+		// Print additional details for additions
+		if header == "NEW CONFIGURATIONS" {
+			printValueProperties(change.Value, options)
 		}
+	} else {
+		fmt.Fprintf(os.Stdout, "%s %s\n", prefix, path)
+	}
+}
 
-		// Handle regular modifications
+// printModifications handles modification display.
+func printModifications(modifications []SchemaChange, options DiffOptions, icon, prefix string) {
+	for _, change := range modifications {
 		path := formatPath(change.Path)
+
 		if options.Verbose {
 			fmt.Fprintf(os.Stdout, "  %s %s\n", icon, path)
-			printChangeDetails(change)
-			printValueProperties(change.Value, options)
+
+			// For array changes, show the full array values
+			if isArrayIndex(change.Path) && change.OldFullValue != nil && change.NewFullValue != nil {
+				fmt.Fprintf(os.Stdout, "     → Changed from: %s\n", formatArrayValue(change.OldFullValue))
+				fmt.Fprintf(os.Stdout, "     → Changed to: %s\n", formatArrayValue(change.NewFullValue))
+			} else {
+				printChangeDetails(change)
+				printValueProperties(change.Value, options)
+			}
 		} else {
 			fmt.Fprintf(os.Stdout, "%s %s\n", prefix, path)
 		}
@@ -360,8 +431,8 @@ func printChangeDetails(change SchemaChange) {
 }
 
 // printValueProperties prints properties dynamically without any hardcoding.
-func printValueProperties(value interface{}, options DiffOptions) {
-	propMap, ok := value.(map[string]interface{})
+func printValueProperties(value any, options DiffOptions) {
+	propMap, ok := value.(map[string]any)
 	if !ok {
 		return
 	}
@@ -371,42 +442,187 @@ func printValueProperties(value interface{}, options DiffOptions) {
 		prefix = "     → "
 	}
 
-	// Convert to JSON and back to get a clean, consistent representation
-	jsonBytes, err := json.Marshal(propMap)
-	if err != nil {
-		return
-	}
-
-	var cleanMap map[string]interface{}
-	if jsonMarshalErr := json.Unmarshal(jsonBytes, &cleanMap); jsonMarshalErr != nil {
-		return
-	}
-
 	// Get sorted keys for consistent output
-	keys := make([]string, 0, len(cleanMap))
-	for key := range cleanMap {
+	keys := make([]string, 0, len(propMap))
+	for key := range propMap {
 		keys = append(keys, key)
 	}
 	sort.Strings(keys)
 
 	// Print each property with minimal logic
 	for _, key := range keys {
-		val := cleanMap[key]
+		val := propMap[key]
 
 		// Skip empty values
-		if val == nil || (key == "description" && val == "") {
+		if shouldSkipProperty(key, val) {
 			continue
 		}
 
-		// Skip complex nested objects in non-verbose mode (except for simple properties)
-		if !options.Verbose && isComplexProperty(val) {
+		printSingleProperty(key, val, prefix, options)
+	}
+}
+
+// shouldSkipProperty determines if a property should be skipped during printing.
+func shouldSkipProperty(key string, val any) bool {
+	return val == nil || (key == descriptionField && val == "")
+}
+
+// printSingleProperty prints a single property with appropriate formatting.
+func printSingleProperty(key string, val any, prefix string, options DiffOptions) {
+	displayName := formatKeyName(key)
+
+	// Special handling for complex nested objects like "properties" and "items"
+	if (key == propertiesField || key == itemsField) && isComplexProperty(val) {
+		printComplexNestedProperty(displayName, val, prefix, options)
+		return
+	}
+
+	// Handle other complex properties in compact mode
+	if !options.Verbose && isComplexProperty(val) {
+		fmt.Fprintf(os.Stdout, "%s%s: (complex object)\n", prefix, displayName)
+		return
+	}
+
+	// Print simple property
+	displayValue := formatValue(val)
+	if displayValue != "" {
+		fmt.Fprintf(os.Stdout, "%s%s: %s\n", prefix, displayName, displayValue)
+	}
+}
+
+// printComplexNestedProperty handles printing of complex nested properties.
+func printComplexNestedProperty(displayName string, val any, prefix string, options DiffOptions) {
+	if options.Verbose {
+		fmt.Fprintf(os.Stdout, "%s%s:\n", prefix, displayName)
+		printNestedSchemaRoot(val, prefix+"  ", options)
+	} else {
+		fmt.Fprintf(os.Stdout, "%s%s: (complex object)\n", prefix, displayName)
+	}
+}
+
+// printNestedSchemaRoot is the entry point for printing nested schemas with cycle detection.
+func printNestedSchemaRoot(value any, prefix string, options DiffOptions) {
+	visited := make(map[uintptr]bool)
+	printNestedSchema(value, prefix, options, visited)
+}
+
+// printNestedSchema recursively prints nested schema objects with cycle detection to handle recursive schemas.
+func printNestedSchema(value any, prefix string, options DiffOptions, visited map[uintptr]bool) {
+	obj, ok := value.(map[string]any)
+	if !ok {
+		return
+	}
+
+	// Check for cycles .. our schemas are not expected to have cycles, but we'll check for them anyway.
+	if hasCycle(obj, visited) {
+		fmt.Fprintf(os.Stdout, "%s... (circular reference)\n", prefix)
+		return
+	}
+
+	markVisited(obj, visited)
+	defer unmarkVisited(obj, visited)
+
+	printSchemaObject(obj, prefix, options, visited)
+}
+
+// hasCycle checks if the object creates a cycle in the visited map.
+func hasCycle(obj map[string]any, visited map[uintptr]bool) bool {
+	objPtr := reflect.ValueOf(obj).Pointer()
+	return visited[objPtr]
+}
+
+// markVisited marks an object as visited for cycle detection.
+func markVisited(obj map[string]any, visited map[uintptr]bool) {
+	objPtr := reflect.ValueOf(obj).Pointer()
+	visited[objPtr] = true
+}
+
+// unmarkVisited removes an object from the visited map for cleanup.
+func unmarkVisited(obj map[string]any, visited map[uintptr]bool) {
+	objPtr := reflect.ValueOf(obj).Pointer()
+	delete(visited, objPtr)
+}
+
+// printSchemaObject prints all properties of a schema object.
+func printSchemaObject(obj map[string]any, prefix string, options DiffOptions, visited map[uintptr]bool) {
+	keys := getSortedKeys(obj)
+
+	for _, key := range keys {
+		val := obj[key]
+		if shouldSkipProperty(key, val) {
 			continue
 		}
 
-		// Format key name (camelCase to readable)
-		displayName := formatKeyName(key)
-		displayValue := formatValue(val)
+		printSchemaProperty(key, val, prefix, options, visited)
+	}
+}
 
+// getSortedKeys returns sorted keys from a map for consistent output.
+func getSortedKeys(obj map[string]any) []string {
+	keys := make([]string, 0, len(obj))
+	for key := range obj {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+// printSchemaProperty prints a single schema property with appropriate formatting.
+func printSchemaProperty(key string, val any, prefix string, options DiffOptions, visited map[uintptr]bool) {
+	displayName := formatKeyName(key)
+
+	// Handle nested complex objects
+	if (key == propertiesField || key == itemsField) && isComplexProperty(val) {
+		fmt.Fprintf(os.Stdout, "%s%s:\n", prefix, displayName)
+		printNestedSchema(val, prefix+"  ", options, visited)
+		return
+	}
+
+	// Handle regular property details
+	if propDetails, isMap := val.(map[string]any); isMap {
+		fmt.Fprintf(os.Stdout, "%s%s:\n", prefix, key)
+		printPropertyDetails(propDetails, prefix+"  ", options, visited)
+		return
+	}
+
+	// Handle simple values
+	displayValue := formatValue(val)
+	if displayValue != "" {
+		fmt.Fprintf(os.Stdout, "%s%s: %s\n", prefix, displayName, displayValue)
+	}
+}
+
+// printPropertyDetails prints the details of a single property (type, default, etc.)
+func printPropertyDetails(
+	propDetails map[string]any,
+	prefix string,
+	options DiffOptions,
+	visited map[uintptr]bool,
+) {
+	// Get all detail keys and sort them for consistent output
+	detailKeys := make([]string, 0, len(propDetails))
+	for detailKey := range propDetails {
+		detailKeys = append(detailKeys, detailKey)
+	}
+	sort.Strings(detailKeys)
+
+	// Print all details about this property dynamically
+	for _, detailKey := range detailKeys {
+		detailVal := propDetails[detailKey]
+		if detailVal == nil || (detailKey == descriptionField && detailVal == "") {
+			continue
+		}
+
+		displayName := formatKeyName(detailKey)
+
+		// Recursively handle nested complex objects
+		if (detailKey == propertiesField || detailKey == itemsField) && isComplexProperty(detailVal) {
+			fmt.Fprintf(os.Stdout, "%s%s:\n", prefix, displayName)
+			printNestedSchema(detailVal, prefix+"  ", options, visited)
+			continue
+		}
+
+		displayValue := formatValue(detailVal)
 		if displayValue != "" {
 			fmt.Fprintf(os.Stdout, "%s%s: %s\n", prefix, displayName, displayValue)
 		}
@@ -414,11 +630,11 @@ func printValueProperties(value interface{}, options DiffOptions) {
 }
 
 // isComplexProperty determines if a property is complex and should be hidden in non-verbose mode.
-func isComplexProperty(value interface{}) bool {
+func isComplexProperty(value any) bool {
 	switch v := value.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		return true
-	case []interface{}:
+	case []any:
 		const maxArraySizeForNonVerbose = 3
 		return len(v) > maxArraySizeForNonVerbose // Hide large arrays in non-verbose mode
 	default:
@@ -443,8 +659,8 @@ func formatKeyName(key string) string {
 	}
 }
 
-// formatValue formats any value for display using JSON marshaling for consistency.
-func formatValue(value interface{}) string {
+// formatValue formats any value for display.
+func formatValue(value any) string {
 	if value == nil {
 		return ""
 	}
@@ -462,27 +678,44 @@ func formatValue(value interface{}) string {
 		return v
 	case float64, int, int64:
 		return fmt.Sprintf("%v", v)
-	case []interface{}:
-		// Format arrays compactly
-		if len(v) == 0 {
-			return "[]"
-		}
-		jsonBytes, err := json.Marshal(v)
-		if err != nil {
-			return fmt.Sprintf("%v", v)
-		}
-		return string(jsonBytes)
-	case map[string]interface{}:
-		// For objects, just show that it's an object
+	case []any:
+		return formatArray(v)
+	case map[string]any:
 		return "[object]"
 	default:
 		// Use JSON marshaling for consistent formatting
 		jsonBytes, err := json.Marshal(v)
 		if err != nil {
-			return fmt.Sprintf("%v", v)
+			return "[complex value]"
 		}
 		return string(jsonBytes)
 	}
+}
+
+// formatArray formats array values, with special handling for complex objects.
+func formatArray(arr []any) string {
+	if len(arr) == 0 {
+		return "[]"
+	}
+
+	// Check if array contains complex objects
+	for _, item := range arr {
+		if isComplexProperty(item) {
+			return fmt.Sprintf("[%d items with complex objects]", len(arr))
+		}
+	}
+
+	// For simple arrays, use JSON marshaling
+	jsonBytes, err := json.Marshal(arr)
+	if err != nil {
+		return fmt.Sprintf("[%d items]", len(arr))
+	}
+	return string(jsonBytes)
+}
+
+// formatArrayValue is an alias for formatValue for backward compatibility.
+func formatArrayValue(value any) string {
+	return formatValue(value)
 }
 
 // Utility functions
@@ -532,7 +765,7 @@ func formatPath(path string) string {
 		part := parts[i]
 
 		// Skip empty parts and schema markers
-		if part == "" || part == "properties" || part == "items" {
+		if part == "" || part == propertiesField || part == itemsField {
 			continue
 		}
 
@@ -568,10 +801,10 @@ func isNumeric(s string) bool {
 	return err == nil
 }
 
-// getValueByJSONPath retrieves a value from a map[string]interface{} using a JSON pointer path.
-func getValueByJSONPath(data map[string]interface{}, path string) (interface{}, bool) {
+// getValueByJSONPath retrieves a value from a map[string]any using a JSON pointer path.
+func getValueByJSONPath(data map[string]any, path string) (any, bool) {
 	parts := strings.Split(path, "/")
-	current := interface{}(data)
+	current := any(data)
 
 	for _, part := range parts {
 		if part == "" {
@@ -588,7 +821,7 @@ func getValueByJSONPath(data map[string]interface{}, path string) (interface{}, 
 }
 
 // processPathPart processes a single part of the JSON path.
-func processPathPart(current interface{}, part string) (interface{}, bool) {
+func processPathPart(current any, part string) (any, bool) {
 	if isNumeric(part) {
 		return processArrayIndex(current, part)
 	}
@@ -596,8 +829,8 @@ func processPathPart(current interface{}, part string) (interface{}, bool) {
 }
 
 // processArrayIndex handles array indexing for numeric parts.
-func processArrayIndex(current interface{}, part string) (interface{}, bool) {
-	arr, ok := current.([]interface{})
+func processArrayIndex(current any, part string) (any, bool) {
+	arr, ok := current.([]any)
 	if !ok {
 		return nil, false
 	}
@@ -611,8 +844,8 @@ func processArrayIndex(current interface{}, part string) (interface{}, bool) {
 }
 
 // processMapKey handles map key access.
-func processMapKey(current interface{}, part string) (interface{}, bool) {
-	m, ok := current.(map[string]interface{})
+func processMapKey(current any, part string) (any, bool) {
+	m, ok := current.(map[string]any)
 	if !ok {
 		return nil, false
 	}
@@ -629,6 +862,17 @@ func isArrayIndex(path string) bool {
 	}
 	// Check if the last part is numeric (an array index)
 	return isNumeric(parts[len(parts)-1])
+}
+
+// isArrayPath checks if a path represents an array field (including array additions with "-").
+func isArrayPath(path string) bool {
+	parts := strings.Split(path, "/")
+	if len(parts) < 1 {
+		return false
+	}
+	// Check if the last part is "-" (array addition) or if it's a numeric index
+	lastPart := parts[len(parts)-1]
+	return lastPart == "-" || isNumeric(lastPart)
 }
 
 // getParentPath returns the parent path of a given JSON path.
