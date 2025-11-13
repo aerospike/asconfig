@@ -437,8 +437,8 @@ func printModifications(modifications []SchemaChange, options DiffOptions, icon,
 
 			// For array changes, show the full array values
 			if isArrayIndex(change.Path) && change.OldFullValue != nil && change.NewFullValue != nil {
-				fmt.Fprintf(os.Stdout, "     → Changed from: %s\n", formatArrayValue(change.OldFullValue))
-				fmt.Fprintf(os.Stdout, "     → Changed to: %s\n", formatArrayValue(change.NewFullValue))
+				fmt.Fprintf(os.Stdout, "     → Changed from: %s\n", formatValue(change.OldFullValue))
+				fmt.Fprintf(os.Stdout, "     → Changed to: %s\n", formatValue(change.NewFullValue))
 			} else {
 				printChangeDetails(change)
 				printValueProperties(change.Value, options)
@@ -816,11 +816,6 @@ func formatArray(arr []any) string {
 		return fmt.Sprintf("%#v", arr)
 	}
 	return string(jsonBytes)
-}
-
-// formatArrayValue is an alias for formatValue for backward compatibility.
-func formatArrayValue(value any) string {
-	return formatValue(value)
 }
 
 // Utility functions
