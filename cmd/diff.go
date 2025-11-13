@@ -413,11 +413,11 @@ func runVersionsDiff(cmd *cobra.Command, args []string) error {
 	verbose := !compact // Verbose is the default behavior, compact overrides it
 	filterPath, _ := cmd.Flags().GetString("filter-path")
 
-	filterSections := make(map[string]struct{})
+	var filterSections map[string]struct{}
 	if filterPath != "" {
-		sections := strings.Split(filterPath, ",")
-		for _, s := range sections {
-			filterSections[strings.TrimSpace(s)] = struct{}{}
+		filterSections, err = parseFilterPath(filterPath)
+		if err != nil {
+			return fmt.Errorf("failed to parse filter-path: %w", err)
 		}
 	}
 
@@ -441,6 +441,24 @@ func runVersionsDiff(cmd *cobra.Command, args []string) error {
 	})
 
 	return nil
+}
+
+// parseFilterPath parses the filter-path flag and returns a map of sections to filter.
+func parseFilterPath(filterPath string) (map[string]struct{}, error) {
+	filterSections := make(map[string]struct{})
+	sections := strings.Split(filterPath, ",")
+	for _, s := range sections {
+		trimmed := strings.TrimSpace(s)
+		if trimmed != "" {
+			filterSections[trimmed] = struct{}{}
+		}
+	}
+
+	if len(filterSections) == 0 {
+		return nil, errors.New("filter-path provided but no valid sections found")
+	}
+
+	return filterSections, nil
 }
 
 // diffFlatMaps reports differences between flattened config maps

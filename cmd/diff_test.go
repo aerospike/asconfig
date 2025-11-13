@@ -1505,29 +1505,8 @@ func TestPrintArrayChange(t *testing.T) {
 			output := captureStdout(func() {
 				options := DiffOptions{Verbose: tt.verbose}
 				path := formatPath(tt.change.Path)
-				// Use appropriate prefix based on mode and change type
-				// Verbose uses emoji icons, compact uses ASCII prefixes
-				var prefix string
-				if tt.verbose {
-					switch tt.change.Type {
-					case Addition:
-						prefix = iconAddition
-					case Removal:
-						prefix = iconRemoval
-					case Modification:
-						prefix = iconModification
-					}
-				} else {
-					switch tt.change.Type {
-					case Addition:
-						prefix = additionPrefix
-					case Removal:
-						prefix = removalPrefix
-					case Modification:
-						prefix = modificationPrefix
-					}
-				}
-				printArrayChange(tt.change, path, tt.header, prefix, options)
+				// Icon/prefix selection now handled internally by printArrayChange
+				printArrayChange(tt.change, path, options)
 			})
 
 			// Check expected content
@@ -1547,8 +1526,8 @@ func TestPrintArrayChange(t *testing.T) {
 	}
 }
 
-// TestPrintNormalChange tests non-array (object property) change formatting
-func TestPrintNormalChange(t *testing.T) {
+// TestPrintBasicChange tests non-array (object property) change formatting
+func TestPrintBasicChange(t *testing.T) {
 	tests := []struct {
 		name                string
 		change              SchemaChange
@@ -1739,7 +1718,7 @@ func TestPrintNormalChange(t *testing.T) {
 					if tt.change.Type == Modification {
 						printModifications([]SchemaChange{tt.change}, options, icon, "")
 					} else {
-						printNormalChange(tt.change, path, tt.header, icon, "", options)
+						printBasicChange(tt.change, path, tt.header, icon, "", options)
 					}
 				} else {
 					switch tt.change.Type {
@@ -1753,7 +1732,7 @@ func TestPrintNormalChange(t *testing.T) {
 					if tt.change.Type == Modification {
 						printModifications([]SchemaChange{tt.change}, options, "", prefix)
 					} else {
-						printNormalChange(tt.change, path, tt.header, "", prefix, options)
+						printBasicChange(tt.change, path, tt.header, "", prefix, options)
 					}
 				}
 			})
@@ -2486,36 +2465,38 @@ func TestNoRawMapOutput(t *testing.T) {
 	}
 }
 
-// TestInvalidChangeType tests that invalid change types are handled gracefully
+// TestInvalidChangeType tests that invalid change types cause an error (fail fast)
 func TestInvalidChangeType(t *testing.T) {
 	// Create a mock schema change with invalid type
 	changes := []SchemaChange{
 		{
 			Path: "/test/path",
-			Type: ChangeType("invalid_type"), // This should trigger the default case
+			Type: ChangeType("invalid_type"), // This should trigger an error
 		},
 	}
 
 	validSections := map[string]bool{"test": true}
-	summary := groupChangesBySection(changes, "1.0.0", "2.0.0", validSections)
+	summary, err := groupChangesBySection(changes, "1.0.0", "2.0.0", validSections)
 
-	// The change should be ignored due to invalid type
-	// Total counts should be 0
+	// Should return an error for unknown change type (fail fast)
+	if err == nil {
+		t.Fatal("Expected error for invalid change type, but got nil")
+	}
+
+	// Verify the error message contains relevant information
+	expectedErrMsg := "unknown change type \"invalid_type\""
+	if !strings.Contains(err.Error(), expectedErrMsg) {
+		t.Errorf("Error message should contain %q, got: %v", expectedErrMsg, err)
+	}
+
+	// Summary should be empty due to error
 	if summary.TotalAdditions != 0 || summary.TotalRemovals != 0 || summary.TotalModified != 0 {
 		t.Errorf(
-			"Expected all totals to be 0 for invalid change type, got: additions=%d, removals=%d, modifications=%d",
+			"Expected empty summary on error, got: additions=%d, removals=%d, modifications=%d",
 			summary.TotalAdditions,
 			summary.TotalRemovals,
 			summary.TotalModified,
 		)
-	}
-
-	// The change should not appear in any section
-	for _, sectionChanges := range summary.Sections {
-		if len(sectionChanges.Additions) > 0 || len(sectionChanges.Removals) > 0 ||
-			len(sectionChanges.Modifications) > 0 {
-			t.Error("Invalid change type should not be added to any section")
-		}
 	}
 }
 
@@ -2580,6 +2561,88 @@ func TestInvalidFilterValidation(t *testing.T) {
 			} else {
 				if err != nil {
 					t.Errorf("Expected no error but got: %v", err)
+				}
+			}
+		})
+	}
+}
+
+// TestUnwrapParentheses tests the unwrapParentheses helper function for edge cases
+func TestUnwrapParentheses(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{name: "empty string", input: "", expected: ""},
+		{name: "single character", input: "x", expected: "x"},
+		{name: "two characters not parens", input: "ab", expected: "ab"},
+		{name: "only opening paren", input: "(", expected: "("},
+		{name: "only closing paren", input: ")", expected: ")"},
+		{name: "empty parens", input: "()", expected: ""},
+		{name: "wrapped string", input: "(hello)", expected: "hello"},
+		{name: "nested parens", input: "((nested))", expected: "(nested)"},
+		{name: "only opening at start", input: "(hello", expected: "(hello"},
+		{name: "only closing at end", input: "hello)", expected: "hello)"},
+		{name: "parens in middle", input: "hel(lo", expected: "hel(lo"},
+		{name: "multiple pairs", input: "()()", expected: ")("}, // Only unwraps outer pair
+		{name: "long wrapped string", input: "(this is a long string)", expected: "this is a long string"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := unwrapParentheses(tt.input)
+			if result != tt.expected {
+				t.Errorf("unwrapParentheses(%q) = %q, want %q", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestCalculateBoxPadding tests the calculateBoxPadding helper function for edge cases
+func TestCalculateBoxPadding(t *testing.T) {
+	tests := []struct {
+		name          string
+		textLen       int
+		boxWidth      int
+		expectedLeft  int
+		expectedRight int
+	}{
+		{name: "exact fit", textLen: 10, boxWidth: 10, expectedLeft: 0, expectedRight: 0},
+		{name: "one space total", textLen: 10, boxWidth: 11, expectedLeft: 0, expectedRight: 1},
+		{name: "two spaces evenly split", textLen: 10, boxWidth: 12, expectedLeft: 1, expectedRight: 1},
+		{name: "three spaces (odd)", textLen: 10, boxWidth: 13, expectedLeft: 1, expectedRight: 2},
+		{name: "four spaces evenly split", textLen: 10, boxWidth: 14, expectedLeft: 2, expectedRight: 2},
+		{name: "large padding", textLen: 10, boxWidth: 50, expectedLeft: 20, expectedRight: 20},
+		{name: "zero text length", textLen: 0, boxWidth: 10, expectedLeft: 5, expectedRight: 5},
+		{name: "zero box width", textLen: 0, boxWidth: 0, expectedLeft: 0, expectedRight: 0},
+		{name: "defensive: box smaller than text", textLen: 20, boxWidth: 10, expectedLeft: 0, expectedRight: 0},
+		{name: "defensive: negative box width", textLen: 10, boxWidth: -5, expectedLeft: 0, expectedRight: 0},
+		{name: "defensive: both zero", textLen: 0, boxWidth: 0, expectedLeft: 0, expectedRight: 0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			left, right := calculateBoxPadding(tt.textLen, tt.boxWidth)
+			if left != tt.expectedLeft || right != tt.expectedRight {
+				t.Errorf("calculateBoxPadding(%d, %d) = (%d, %d), want (%d, %d)",
+					tt.textLen, tt.boxWidth, left, right, tt.expectedLeft, tt.expectedRight)
+			}
+
+			// Verify non-negative values
+			if left < 0 {
+				t.Errorf("Left padding is negative: %d", left)
+			}
+			if right < 0 {
+				t.Errorf("Right padding is negative: %d", right)
+			}
+
+			// Verify that padding + textLen doesn't exceed boxWidth (unless defensive case)
+			if tt.boxWidth >= tt.textLen {
+				total := left + right + tt.textLen
+				if total != tt.boxWidth {
+					t.Errorf("Total width mismatch: left(%d) + right(%d) + text(%d) = %d, want %d",
+						left, right, tt.textLen, total, tt.boxWidth)
 				}
 			}
 		})
