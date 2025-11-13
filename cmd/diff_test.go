@@ -201,6 +201,10 @@ func TestRunServerDiff(t *testing.T) {
 }
 
 func TestDiffFlatMaps(t *testing.T) {
+	if err := InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
+
 	testCases := []struct {
 		name     string
 		m1       map[string]any

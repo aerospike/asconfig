@@ -12,6 +12,32 @@ import (
 	"github.com/aerospike/asconfig/schema"
 )
 
+// captureStdout captures stdout while executing the provided function and returns the output.
+// It handles concurrent reading from the pipe to avoid deadlocks when output is large.
+func captureStdout(fn func()) string {
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	// Read from pipe concurrently to avoid deadlock
+	var buf bytes.Buffer
+	done := make(chan struct{})
+	go func() {
+		buf.ReadFrom(r)
+		close(done)
+	}()
+
+	// Execute the function
+	fn()
+
+	// Restore stdout and get output
+	w.Close()
+	os.Stdout = oldStdout
+	<-done // Wait for reader to finish
+
+	return buf.String()
+}
+
 // TestVersionsDiffEndToEnd tests the complete diff versions functionality
 // with real version comparisons to ensure no schema differences are missed
 func TestVersionsDiffEndToEnd(t *testing.T) {
@@ -63,7 +89,7 @@ func TestVersionsDiffEndToEnd(t *testing.T) {
 			version2: lastVersion,
 			flags:    []string{},
 			mustContain: []string{
-				"AEROSPIKE SCHEMA CHANGES SUMMARY",
+				"AEROSPIKE CONFIGURATION CHANGES SUMMARY",
 				"Comparing: " + firstVersion + " → " + lastVersion,
 				"Total changes:",
 				"additions",
@@ -82,7 +108,7 @@ func TestVersionsDiffEndToEnd(t *testing.T) {
 			version2: thirdVersion,
 			flags:    []string{},
 			mustContain: []string{
-				"AEROSPIKE SCHEMA CHANGES SUMMARY",
+				"AEROSPIKE CONFIGURATION CHANGES SUMMARY",
 				"Comparing: " + secondVersion + " → " + thirdVersion,
 				"Total changes:",
 			},
@@ -94,7 +120,7 @@ func TestVersionsDiffEndToEnd(t *testing.T) {
 			version2: lastVersion,
 			flags:    []string{"--compact"},
 			mustContain: []string{
-				"AEROSPIKE SCHEMA CHANGES SUMMARY",
+				"AEROSPIKE CONFIGURATION CHANGES SUMMARY",
 				"Comparing: " + firstVersion + " → " + lastVersion,
 				"[SECTION: GENERAL]",
 			},
@@ -114,7 +140,7 @@ func TestVersionsDiffEndToEnd(t *testing.T) {
 			version2: lastVersion,
 			flags:    []string{"--filter-path", "service"},
 			mustContain: []string{
-				"AEROSPIKE SCHEMA CHANGES SUMMARY",
+				"AEROSPIKE CONFIGURATION CHANGES SUMMARY",
 				"Comparing: " + firstVersion + " → " + lastVersion,
 			},
 			mustNotContain: []string{
@@ -130,7 +156,7 @@ func TestVersionsDiffEndToEnd(t *testing.T) {
 			version2: firstVersion,
 			flags:    []string{},
 			mustContain: []string{
-				"AEROSPIKE SCHEMA CHANGES SUMMARY",
+				"AEROSPIKE CONFIGURATION CHANGES SUMMARY",
 				"Comparing: " + firstVersion + " → " + firstVersion,
 				"Total changes: 0",
 			},
@@ -157,7 +183,7 @@ func TestVersionsDiffEndToEnd(t *testing.T) {
 			version2: "8.0.0",
 			flags:    []string{},
 			mustContain: []string{
-				"AEROSPIKE SCHEMA CHANGES SUMMARY",
+				"AEROSPIKE CONFIGURATION CHANGES SUMMARY",
 				"Comparing: 7.0.0 → 8.0.0",
 				"Total changes:",
 			},
@@ -169,7 +195,7 @@ func TestVersionsDiffEndToEnd(t *testing.T) {
 			version2: "8.1.0",
 			flags:    []string{},
 			mustContain: []string{
-				"AEROSPIKE SCHEMA CHANGES SUMMARY",
+				"AEROSPIKE CONFIGURATION CHANGES SUMMARY",
 				"Comparing: 8.0.0 → 8.1.0",
 				"Total changes:",
 			},
@@ -181,7 +207,7 @@ func TestVersionsDiffEndToEnd(t *testing.T) {
 			version2: "8.1.0",
 			flags:    []string{},
 			mustContain: []string{
-				"AEROSPIKE SCHEMA CHANGES SUMMARY",
+				"AEROSPIKE CONFIGURATION CHANGES SUMMARY",
 				"Comparing: 7.0.0 → 8.1.0",
 				"Total changes:",
 				"NEW CONFIGURATIONS:",
@@ -196,7 +222,7 @@ func TestVersionsDiffEndToEnd(t *testing.T) {
 			version2: "8.0.0",
 			flags:    []string{"--compact"},
 			mustContain: []string{
-				"AEROSPIKE SCHEMA CHANGES SUMMARY",
+				"AEROSPIKE CONFIGURATION CHANGES SUMMARY",
 				"Comparing: 7.0.0 → 8.0.0",
 			},
 			mustNotContain: []string{
@@ -213,22 +239,12 @@ func TestVersionsDiffEndToEnd(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Capture output
-			oldStdout := os.Stdout
-			r, w, _ := os.Pipe()
-			os.Stdout = w
-
-			// Create command and run
-			cmd := newDiffVersionsCmd()
-			cmd.ParseFlags(tc.flags)
-			err := runVersionsDiff(cmd, []string{tc.version1, tc.version2})
-
-			// Restore stdout and get output
-			w.Close()
-			os.Stdout = oldStdout
-			var buf bytes.Buffer
-			buf.ReadFrom(r)
-			output := buf.String()
+			var err error
+			output := captureStdout(func() {
+				cmd := newDiffVersionsCmd()
+				cmd.ParseFlags(tc.flags)
+				err = runVersionsDiff(cmd, []string{tc.version1, tc.version2})
+			})
 
 			// Check error expectation
 			if tc.expectError {
@@ -462,21 +478,11 @@ func TestVersionsDiffSpecificChanges(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Capture output
-			oldStdout := os.Stdout
-			r, w, _ := os.Pipe()
-			os.Stdout = w
-
-			// Run diff
-			cmd := newDiffVersionsCmd()
-			err := runVersionsDiff(cmd, []string{tc.version1, tc.version2})
-
-			// Restore stdout and get output
-			w.Close()
-			os.Stdout = oldStdout
-			var buf bytes.Buffer
-			buf.ReadFrom(r)
-			output := buf.String()
+			var err error
+			output := captureStdout(func() {
+				cmd := newDiffVersionsCmd()
+				err = runVersionsDiff(cmd, []string{tc.version1, tc.version2})
+			})
 
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
@@ -512,11 +518,6 @@ func TestVersionsDiffSectionCoverage(t *testing.T) {
 		t.Fatalf("Failed to initialize globals for testing: %v", err)
 	}
 
-	// Capture output
-	oldStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
 	// Get available versions for section coverage test
 	schemaMap, err := schema.NewSchemaMap()
 	if err != nil {
@@ -536,16 +537,11 @@ func TestVersionsDiffSectionCoverage(t *testing.T) {
 	firstVersion := availableVersions[0]
 	lastVersion := availableVersions[len(availableVersions)-1]
 
-	// Run a comprehensive diff with dynamic versions
-	cmd := newDiffVersionsCmd()
-	err = runVersionsDiff(cmd, []string{firstVersion, lastVersion})
-
-	// Restore stdout and get output
-	w.Close()
-	os.Stdout = oldStdout
-	var buf bytes.Buffer
-	buf.ReadFrom(r)
-	output := buf.String()
+	// Run a comprehensive diff with dynamic versions and capture output
+	output := captureStdout(func() {
+		cmd := newDiffVersionsCmd()
+		err = runVersionsDiff(cmd, []string{firstVersion, lastVersion})
+	})
 
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
@@ -584,21 +580,11 @@ func TestVersionsDiffSectionCoverage(t *testing.T) {
 
 	// Also test with stable hardcoded versions to ensure they remain intact
 	t.Run("stable_versions_7.0.0_to_8.1.0", func(t *testing.T) {
-		// Capture output
-		oldStdout := os.Stdout
-		r, w, _ := os.Pipe()
-		os.Stdout = w
-
-		// Run stable version diff
-		cmd := newDiffVersionsCmd()
-		err := runVersionsDiff(cmd, []string{"7.0.0", "8.1.0"})
-
-		// Restore stdout and get output
-		w.Close()
-		os.Stdout = oldStdout
-		var buf bytes.Buffer
-		buf.ReadFrom(r)
-		output := buf.String()
+		var err error
+		output := captureStdout(func() {
+			cmd := newDiffVersionsCmd()
+			err = runVersionsDiff(cmd, []string{"7.0.0", "8.1.0"})
+		})
 
 		if err != nil {
 			t.Fatalf("Stable version diff failed: %v", err)
@@ -677,29 +663,19 @@ func TestVersionsDiffOutputConsistency(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Capture output
-			oldStdout := os.Stdout
-			r, w, _ := os.Pipe()
-			os.Stdout = w
-
-			// Run diff
-			cmd := newDiffVersionsCmd()
-			cmd.ParseFlags(tc.flags)
-			err := runVersionsDiff(cmd, []string{tc.version1, tc.version2})
-
-			// Restore stdout and get output
-			w.Close()
-			os.Stdout = oldStdout
-			var buf bytes.Buffer
-			buf.ReadFrom(r)
-			output := buf.String()
+			var err error
+			output := captureStdout(func() {
+				cmd := newDiffVersionsCmd()
+				cmd.ParseFlags(tc.flags)
+				err = runVersionsDiff(cmd, []string{tc.version1, tc.version2})
+			})
 
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
 
 			// Basic format checks
-			if !strings.Contains(output, "AEROSPIKE SCHEMA CHANGES SUMMARY") {
+			if !strings.Contains(output, "AEROSPIKE CONFIGURATION CHANGES SUMMARY") {
 				t.Error("Missing summary header")
 			}
 
@@ -799,7 +775,7 @@ func TestFormatValue(t *testing.T) {
 		{
 			name:     "complex object",
 			input:    map[string]any{"key": "value"},
-			expected: "[object]",
+			expected: `{"key":"value"}`,
 		},
 	}
 
@@ -838,7 +814,7 @@ func TestFormatArrayValue(t *testing.T) {
 		{
 			name:     "array with complex objects",
 			input:    []any{map[string]any{"type": "object"}, "simple"},
-			expected: "[2 items with complex objects]",
+			expected: `[{"type":"object"},"simple"]`,
 		},
 		{
 			name: "array with only complex objects",
@@ -846,7 +822,7 @@ func TestFormatArrayValue(t *testing.T) {
 				map[string]any{"type": "object"},
 				map[string]any{"another": "object"},
 			},
-			expected: "[2 items with complex objects]",
+			expected: `[{"type":"object"},{"another":"object"}]`,
 		},
 		{
 			name:     "non-array input",
@@ -903,7 +879,7 @@ func TestPrintArrayChange(t *testing.T) {
 			header:  "NEW CONFIGURATIONS",
 			verbose: false,
 			expectedContains: []string{
-				"required[+]: Bang!",
+				"required[+] (array item: Bang!)",
 			},
 			expectedNotContains: []string{
 				"[object]",
@@ -929,10 +905,9 @@ func TestPrintArrayChange(t *testing.T) {
 			header:  "NEW CONFIGURATIONS",
 			verbose: true,
 			expectedContains: []string{
-				"Array item (complex object):",
+				"Array item:",
 				"Type: object",
 				"Properties:",
-				"test:",
 			},
 			expectedNotContains: []string{
 				"map[",
@@ -957,7 +932,7 @@ func TestPrintArrayChange(t *testing.T) {
 			header:  "NEW CONFIGURATIONS",
 			verbose: false,
 			expectedContains: []string{
-				"required[+]: (complex object)",
+				"required[+] (array item: object, 1 properties)",
 			},
 			expectedNotContains: []string{
 				"map[",
@@ -969,22 +944,17 @@ func TestPrintArrayChange(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Capture stdout
-			oldStdout := os.Stdout
-			r, w, _ := os.Pipe()
-			os.Stdout = w
-
-			// Run the function
-			options := DiffOptions{Verbose: tt.verbose}
-			path := formatPath(tt.change.Path)
-			printArrayChange(tt.change, path, tt.header, "✅", "+", options)
-
-			// Restore stdout and get output
-			w.Close()
-			os.Stdout = oldStdout
-			var buf bytes.Buffer
-			buf.ReadFrom(r)
-			output := buf.String()
+			output := captureStdout(func() {
+				options := DiffOptions{Verbose: tt.verbose}
+				path := formatPath(tt.change.Path)
+				var prefix string
+				if tt.verbose {
+					prefix = "✅"
+				} else {
+					prefix = "+"
+				}
+				printArrayChange(tt.change, path, tt.header, prefix, options)
+			})
 
 			// Check expected content
 			for _, expected := range tt.expectedContains {
@@ -1060,18 +1030,10 @@ func TestNoRawMapOutput(t *testing.T) {
 			}
 
 			// Test printNestedSchema output
-			oldStdout := os.Stdout
-			r, w, _ := os.Pipe()
-			os.Stdout = w
-
-			options := DiffOptions{Verbose: true}
-			printNestedSchemaRoot(tc.schema, "  ", options)
-
-			w.Close()
-			os.Stdout = oldStdout
-			var buf bytes.Buffer
-			buf.ReadFrom(r)
-			output := buf.String()
+			output := captureStdout(func() {
+				options := DiffOptions{Verbose: true}
+				printValueProperties(tc.schema, options)
+			})
 
 			if strings.Contains(output, "map[") {
 				t.Errorf("printNestedSchema output contains raw map:\n%s", output)
