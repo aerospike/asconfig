@@ -384,6 +384,13 @@ func printArrayChange(change SchemaChange, path, icon, prefix string, options Di
 func printArrayChangeVerbose(change SchemaChange, path, icon string, options DiffOptions) {
 	fmt.Fprintf(os.Stdout, "  %s %s\n", icon, path)
 
+	// Handle modifications differently - show old and new values
+	if change.Type == Modification && change.OldFullValue != nil && change.NewFullValue != nil {
+		fmt.Fprintf(os.Stdout, "     → Changed from: %s\n", formatValue(change.OldFullValue))
+		fmt.Fprintf(os.Stdout, "     → Changed to: %s\n", formatValue(change.NewFullValue))
+		return
+	}
+
 	// For array additions/removals, show the individual item being added/removed
 	if itemMap, isMap := change.Value.(map[string]any); isMap {
 		// Complex object - show as formatted metadata, not recursive traversal
@@ -397,6 +404,13 @@ func printArrayChangeVerbose(change SchemaChange, path, icon string, options Dif
 
 // printArrayChangeCompact handles compact array change display.
 func printArrayChangeCompact(change SchemaChange, path, prefix string) {
+	// Handle modifications differently - show old → new
+	if change.Type == Modification && change.OldFullValue != nil && change.NewFullValue != nil {
+		fmt.Fprintf(os.Stdout, "%s %s (%s → %s)\n", prefix, path,
+			formatCompactValue(change.OldFullValue), formatCompactValue(change.NewFullValue))
+		return
+	}
+
 	summary := getValueSummary(change.Value)
 	// For array changes, clarify it's an array item
 	// Remove leading '(' and trailing ')' if present
@@ -592,18 +606,45 @@ func printNestedDataArray(arr []any, prefix string) {
 
 // formatKeyName converts camelCase keys to human-readable format.
 func formatKeyName(key string) string {
-	// Handle common special cases
+	// Only format known metadata field names for display
+	// DO NOT modify actual configuration property names (they must match the schema exactly)
 	switch key {
+	case "type":
+		return "Type"
+	case "default":
+		return "Default"
+	case "description":
+		return "Description"
+	case "minimum":
+		return "Minimum"
+	case "maximum":
+		return "Maximum"
+	case "minLength":
+		return "Min Length"
+	case "maxLength":
+		return "Max Length"
+	case "pattern":
+		return "Pattern"
+	case "format":
+		return "Format"
+	case "required":
+		return "Required"
+	case "additionalProperties":
+		return "AdditionalProperties"
 	case "enterpriseOnly":
 		return enterpriseOnlyText
 	case "enum":
 		return allowedValuesText
+	case "properties":
+		return "Properties"
+	case "items":
+		return "Items"
+	case "dynamic":
+		return "Dynamic"
 	default:
-		// Simple camelCase to Title Case conversion
-		if len(key) == 0 {
-			return key
-		}
-		return strings.ToUpper(key[:1]) + key[1:]
+		// For actual configuration property names, return as-is
+		// DO NOT capitalize or modify them
+		return key
 	}
 }
 

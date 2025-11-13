@@ -4,6 +4,7 @@ package cmd
 
 import (
 	"bytes"
+	"regexp"
 	"sort"
 	"strings"
 	"testing"
@@ -304,10 +305,12 @@ func TestListVersionsCount(t *testing.T) {
 		t.Error("Verbose output should contain total count")
 	}
 
-	// Count numbered lines in verbose output
+	// Count numbered lines in verbose output using a more specific pattern
+	// Match lines that start with optional whitespace, digits, period, and space
+	numberedLinePattern := regexp.MustCompile(`^\s*\d+\.\s+`)
 	numberedLines := 0
 	for _, line := range strings.Split(verboseOutput, "\n") {
-		if strings.Contains(line, ". ") && len(strings.TrimSpace(line)) > 3 {
+		if numberedLinePattern.MatchString(line) {
 			numberedLines++
 		}
 	}
