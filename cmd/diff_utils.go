@@ -818,9 +818,9 @@ func formatNumber(value any) string {
 	// Handle integer types directly to avoid float64 precision loss
 	switch v := value.(type) {
 	case int:
-		return fmt.Sprintf("%d", v)
+		return strconv.Itoa(v)
 	case int64:
-		return fmt.Sprintf("%d", v)
+		return strconv.FormatInt(v, 10)
 	case float64:
 		// Handle special cases for zero
 		if v == 0 {
