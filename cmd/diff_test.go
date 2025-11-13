@@ -1939,12 +1939,12 @@ func TestFormatNumber(t *testing.T) {
 		{
 			name:     "max int64",
 			input:    int64(math.MaxInt64),
-			expected: "9223372036854775808", // float64 precision loss at this magnitude
+			expected: "9223372036854775807", // Now formatted directly without float64 conversion
 		},
 		{
 			name:     "min int64",
 			input:    int64(math.MinInt64),
-			expected: "-9223372036854775808",
+			expected: "-9223372036854775808", // Now formatted directly without float64 conversion
 		},
 	}
 

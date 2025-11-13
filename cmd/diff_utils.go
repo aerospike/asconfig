@@ -815,36 +815,33 @@ func formatValue(value any) string {
 
 // formatNumber formats numeric values avoiding scientific notation while keeping raw numbers.
 func formatNumber(value any) string {
-	var num float64
-
+	// Handle integer types directly to avoid float64 precision loss
 	switch v := value.(type) {
-	case float64:
-		num = v
 	case int:
-		num = float64(v)
+		return fmt.Sprintf("%d", v)
 	case int64:
-		num = float64(v)
+		return fmt.Sprintf("%d", v)
+	case float64:
+		// Handle special cases for zero
+		if v == 0 {
+			return "0"
+		}
+
+		// For very small decimal numbers, use limited precision
+		if v < 1 && v > -1 && v != 0 {
+			return fmt.Sprintf("%.6g", v)
+		}
+
+		// For integers (whole numbers), show them as integers without scientific notation
+		if v == float64(int64(v)) {
+			return fmt.Sprintf("%.0f", v)
+		}
+
+		// For decimal numbers, show with limited precision to avoid scientific notation
+		return fmt.Sprintf("%.6g", v)
 	default:
 		return fmt.Sprintf("%v", value)
 	}
-
-	// Handle special cases for zero
-	if num == 0 {
-		return "0"
-	}
-
-	// For very small decimal numbers, use limited precision
-	if num < 1 && num > -1 && num != 0 {
-		return fmt.Sprintf("%.6g", num)
-	}
-
-	// For integers (whole numbers), show them as integers
-	if num == float64(int64(num)) {
-		return fmt.Sprintf("%.0f", num)
-	}
-
-	// For decimal numbers, show with limited precision to avoid scientific notation
-	return fmt.Sprintf("%.6g", num)
 }
 
 // formatArray formats array values using JSON marshaling - no hiding, no abstractions.
