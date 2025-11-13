@@ -1718,7 +1718,7 @@ func TestPrintBasicChange(t *testing.T) {
 					if tt.change.Type == Modification {
 						printModifications([]SchemaChange{tt.change}, options, icon, "")
 					} else {
-						printBasicChange(tt.change, path, tt.header, icon, "", options)
+						printBasicChange(tt.change, path, tt.header, options)
 					}
 				} else {
 					switch tt.change.Type {
@@ -1732,7 +1732,7 @@ func TestPrintBasicChange(t *testing.T) {
 					if tt.change.Type == Modification {
 						printModifications([]SchemaChange{tt.change}, options, "", prefix)
 					} else {
-						printBasicChange(tt.change, path, tt.header, "", prefix, options)
+						printBasicChange(tt.change, path, tt.header, options)
 					}
 				}
 			})
