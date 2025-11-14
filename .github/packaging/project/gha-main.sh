@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -xeuo pipefail
 DISTRO="$1"
-env
 cd local
 git fetch --unshallow --tags --no-recurse-submodules
 git submodule update --init
