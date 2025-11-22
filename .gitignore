@@ -28,3 +28,9 @@ pkg/*
 # Meta files
 .DS_Store
 testdata/*.log
+
+# Build directory
+build/
+
+# Intellij
+.idea/
