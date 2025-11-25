@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	lib "github.com/aerospike/aerospike-management-lib"
 	"github.com/aerospike/asconfig/schema"
 	"github.com/spf13/cobra"
 )
@@ -47,8 +48,16 @@ func newListVersionsCmd() *cobra.Command {
 				versions = append(versions, version)
 			}
 
-			// Sort versions
-			sort.Strings(versions)
+			// Sort versions using semantic version comparison
+			sort.Slice(versions, func(i, j int) bool {
+				cmp, compErr := lib.CompareVersions(versions[i], versions[j])
+				if compErr != nil {
+					// Fall back to lexical order if comparison fails
+					logger.Warnf("Falling back to lexical version sort: %v", compErr)
+					return versions[i] < versions[j]
+				}
+				return cmp < 0
+			})
 
 			// Get output format
 			verbose, _ := cmd.Flags().GetBool("verbose")
