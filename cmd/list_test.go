@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	lib "github.com/aerospike/aerospike-management-lib"
 	"github.com/aerospike/asconfig/schema"
 )
 
@@ -39,6 +40,16 @@ var testListArgs = []runTestList{
 		arguments:   []string{"versions"},
 		expectError: false,
 	},
+}
+
+func sortVersionsInPlace(versions []string) {
+	sort.Slice(versions, func(i, j int) bool {
+		cmp, err := lib.CompareVersions(versions[i], versions[j])
+		if err != nil {
+			return versions[i] < versions[j]
+		}
+		return cmp < 0
+	})
 }
 
 func TestRunEList(t *testing.T) {
@@ -120,7 +131,7 @@ func TestListVersionsOutput(t *testing.T) {
 	}
 
 	// Sort to get consistent test versions
-	sort.Strings(availableVersions)
+	sortVersionsInPlace(availableVersions)
 
 	// Take a sample of versions for testing (first few and last few)
 	var testVersions []string
