@@ -217,8 +217,17 @@ func groupChangesBySection(
 	}
 
 	// Capture the complete list of available sections (including those without changes)
+	availableSet := make(map[string]struct{}, len(validSections))
 	for section := range validSections {
 		summary.AvailableSections = append(summary.AvailableSections, section)
+		availableSet[section] = struct{}{}
+	}
+
+	// Ensure the synthetic general section is available for filtering when present
+	if _, exists := summary.Sections[defaultSectionName]; exists {
+		if _, alreadyIncluded := availableSet[defaultSectionName]; !alreadyIncluded {
+			summary.AvailableSections = append(summary.AvailableSections, defaultSectionName)
+		}
 	}
 	sort.Strings(summary.AvailableSections)
 
