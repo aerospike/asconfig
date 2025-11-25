@@ -9,7 +9,7 @@ on:
     branches:
       - 'dev/*'
       - 'hotfix/*'
-      - 'pvinh/SERVER-216'
+      - 'pvinh/SERVER-475'
     tags:
       - '*'
 
