@@ -3,7 +3,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -24,6 +23,14 @@ const (
 	Addition     ChangeType = "add"
 	Removal      ChangeType = "remove"
 	Modification ChangeType = "replace"
+)
+
+// ChangeTarget represents what type of element is being changed.
+type ChangeTarget int
+
+const (
+	Property ChangeTarget = iota
+	ArrayItem
 )
 
 // Schema field constants.
@@ -261,13 +268,235 @@ func extractSection(path string, validSections map[string]bool) string {
 	return defaultSectionName
 }
 
-// Output formatting
-// ---------------
+// ============================================================================
+// FORMATTING FUNCTIONS (Pure functions that return strings)
+// ============================================================================
 
-// printChangeSummary prints a formatted summary of schema changes.
-func printChangeSummary(summary ChangeSummary, options DiffOptions) {
-	// Print header with versions
-	printHeader(summary, options)
+// formatChange is the master dispatcher that routes changes to appropriate formatters.
+// This is the single decision point for all change formatting.
+func formatChange(change SchemaChange, verbose bool) (string, error) {
+	target := getChangeTarget(change)
+
+	switch change.Type {
+	case Addition:
+		if target == ArrayItem {
+			return formatArrayItemAddition(change, verbose), nil
+		}
+		return formatPropertyAddition(change, verbose), nil
+	case Removal:
+		if target == ArrayItem {
+			return formatArrayItemRemoval(change, verbose), nil
+		}
+		return formatPropertyRemoval(change, verbose), nil
+	case Modification:
+		if target == ArrayItem {
+			return formatArrayItemModification(change, verbose), nil
+		}
+		return formatPropertyModification(change, verbose), nil
+	default:
+		return "", fmt.Errorf("unknown change type %q at path %s", change.Type, change.Path)
+	}
+}
+
+// getChangeTarget determines if a change affects a property or an array item.
+func getChangeTarget(change SchemaChange) ChangeTarget {
+	if isArrayPath(change.Path) {
+		return ArrayItem
+	}
+	return Property
+}
+
+// formatPropertyAddition formats the addition of a new configuration property.
+func formatPropertyAddition(change SchemaChange, verbose bool) string {
+	path := formatPath(change.Path)
+
+	if verbose {
+		icon := iconAddition
+		var result strings.Builder
+		result.WriteString(fmt.Sprintf("  %s %s\n", icon, path))
+		if change.Value != nil {
+			result.WriteString(formatValueDetails(change.Value))
+		}
+		return result.String()
+	}
+
+	prefix := additionPrefix
+	summary := getValueSummary(change.Value)
+	return fmt.Sprintf("%s %s %s\n", prefix, path, summary)
+}
+
+// formatPropertyRemoval formats the removal of a configuration property.
+func formatPropertyRemoval(change SchemaChange, verbose bool) string {
+	path := formatPath(change.Path)
+
+	if verbose {
+		icon := iconRemoval
+		return fmt.Sprintf("  %s %s\n", icon, path)
+	}
+
+	prefix := removalPrefix
+	return fmt.Sprintf("%s %s (removed)\n", prefix, path)
+}
+
+// formatPropertyModification formats the modification of a configuration property.
+func formatPropertyModification(change SchemaChange, verbose bool) string {
+	path := formatPath(change.Path)
+
+	if verbose {
+		icon := iconModification
+		var result strings.Builder
+		result.WriteString(fmt.Sprintf("  %s %s\n", icon, path))
+		result.WriteString(formatModificationDetails(change))
+		if change.Value != nil {
+			result.WriteString(formatValueDetails(change.Value))
+		}
+		return result.String()
+	}
+
+	prefix := modificationPrefix
+	oldVal := formatCompactValue(change.OldValue)
+	newVal := formatCompactValue(change.Value)
+	return fmt.Sprintf("%s %s (%s → %s)\n", prefix, path, oldVal, newVal)
+}
+
+// formatArrayItemAddition formats the addition of an array item.
+func formatArrayItemAddition(change SchemaChange, verbose bool) string {
+	path := formatPath(change.Path)
+
+	if verbose {
+		icon := iconAddition
+		var result strings.Builder
+		result.WriteString(fmt.Sprintf("  %s %s\n", icon, path))
+
+		if itemMap, isMap := change.Value.(map[string]any); isMap {
+			result.WriteString("     → Array item:\n")
+			result.WriteString(formatValueDetails(itemMap))
+		} else {
+			result.WriteString(fmt.Sprintf("     → Array item: %s\n", formatValue(change.Value)))
+		}
+		return result.String()
+	}
+
+	prefix := additionPrefix
+	summary := getValueSummary(change.Value)
+	summaryContent := unwrapParentheses(summary)
+	return fmt.Sprintf("%s %s (array item: %s)\n", prefix, path, summaryContent)
+}
+
+// formatArrayItemRemoval formats the removal of an array item.
+func formatArrayItemRemoval(change SchemaChange, verbose bool) string {
+	path := formatPath(change.Path)
+
+	if verbose {
+		icon := iconRemoval
+		var result strings.Builder
+		result.WriteString(fmt.Sprintf("  %s %s\n", icon, path))
+
+		if itemMap, isMap := change.Value.(map[string]any); isMap {
+			result.WriteString("     → Array item:\n")
+			result.WriteString(formatValueDetails(itemMap))
+		} else {
+			result.WriteString(fmt.Sprintf("     → Array item: %s\n", formatValue(change.Value)))
+		}
+		return result.String()
+	}
+
+	prefix := removalPrefix
+	summary := getValueSummary(change.Value)
+	summaryContent := unwrapParentheses(summary)
+	return fmt.Sprintf("%s %s (array item: %s)\n", prefix, path, summaryContent)
+}
+
+// formatArrayItemModification formats the modification of an array item.
+func formatArrayItemModification(change SchemaChange, verbose bool) string {
+	path := formatPath(change.Path)
+
+	if verbose {
+		icon := iconModification
+		var result strings.Builder
+		result.WriteString(fmt.Sprintf("  %s %s\n", icon, path))
+
+		// For array modifications, show the full array values if available
+		if change.OldFullValue != nil && change.NewFullValue != nil {
+			result.WriteString(fmt.Sprintf("     → Changed from: %s\n", formatValue(change.OldFullValue)))
+			result.WriteString(fmt.Sprintf("     → Changed to: %s\n", formatValue(change.NewFullValue)))
+		} else {
+			result.WriteString(formatModificationDetails(change))
+		}
+		return result.String()
+	}
+
+	prefix := modificationPrefix
+	oldVal := formatCompactValue(change.OldFullValue)
+	newVal := formatCompactValue(change.NewFullValue)
+	if oldVal == "" {
+		oldVal = formatCompactValue(change.OldValue)
+	}
+	if newVal == "" {
+		newVal = formatCompactValue(change.Value)
+	}
+	return fmt.Sprintf("%s %s (%s → %s)\n", prefix, path, oldVal, newVal)
+}
+
+// formatModificationDetails formats the details of a modification change.
+func formatModificationDetails(change SchemaChange) string {
+	prefix := "     → "
+	if strings.Contains(change.Path, "minimum") || strings.Contains(change.Path, "maximum") {
+		if change.OldValue != nil && change.Value != nil {
+			return fmt.Sprintf("%sConfiguration limit changed from: %s to: %s\n", prefix,
+				formatValue(change.OldValue), formatValue(change.Value))
+		}
+		return fmt.Sprintf("%sConfiguration limit changed\n", prefix)
+	}
+
+	if change.OldValue != nil && change.Value != nil {
+		return fmt.Sprintf("%sChanged from: %s to: %s\n", prefix,
+			formatValue(change.OldValue), formatValue(change.Value))
+	}
+
+	return ""
+}
+
+// formatValueDetails formats detailed information about a value for verbose output.
+func formatValueDetails(value any) string {
+	propMap, ok := value.(map[string]any)
+	if !ok {
+		return ""
+	}
+
+	prefix := "     → "
+	var result strings.Builder
+
+	// Get sorted keys for consistent output
+	keys := make([]string, 0, len(propMap))
+	for key := range propMap {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	// Format each property
+	for _, key := range keys {
+		val := propMap[key]
+
+		// Skip empty values
+		if shouldSkipProperty(key, val) {
+			continue
+		}
+
+		result.WriteString(formatSingleProperty(key, val, prefix))
+	}
+
+	return result.String()
+}
+
+// ============================================================================
+// RENDERING FUNCTIONS
+// ============================================================================
+
+// renderChangeSummary renders a formatted summary of schema changes.
+func renderChangeSummary(summary ChangeSummary, options DiffOptions) {
+	// Render header with versions
+	renderHeader(summary, options)
 
 	// Get all sections and sort them alphabetically
 	var sections []string
@@ -276,7 +505,7 @@ func printChangeSummary(summary ChangeSummary, options DiffOptions) {
 	}
 	sort.Strings(sections)
 
-	// Print changes by section in alphabetical order
+	// Render changes by section in alphabetical order
 	for _, section := range sections {
 		changes := summary.Sections[section]
 
@@ -287,12 +516,12 @@ func printChangeSummary(summary ChangeSummary, options DiffOptions) {
 			}
 		}
 
-		printSectionChanges(section, changes, options)
+		renderSectionChanges(section, changes, options)
 	}
 }
 
-// printHeader prints the header information for the schema changes.
-func printHeader(summary ChangeSummary, options DiffOptions) {
+// renderHeader renders the header information for the schema changes.
+func renderHeader(summary ChangeSummary, options DiffOptions) {
 	if options.Verbose {
 		// Use dynamic box sizing for the header
 		headerText := "AEROSPIKE CONFIGURATION CHANGES SUMMARY"
@@ -301,7 +530,7 @@ func printHeader(summary ChangeSummary, options DiffOptions) {
 		const minPadding = 2 // Total: 1 space on each side minimum
 		requiredWidth := len(headerText) + minPadding
 
-		// Use the same minimum box width as printSectionBox for consistency
+		// Use the same minimum box width as renderSectionBox for consistency
 		boxWidth := minBoxWidth
 		if requiredWidth > minBoxWidth {
 			boxWidth = requiredWidth
@@ -313,47 +542,88 @@ func printHeader(summary ChangeSummary, options DiffOptions) {
 		// Create the box borders
 		border := strings.Repeat("═", boxWidth)
 
-		// Print the header box
-		fmt.Fprintf(os.Stdout, "\n╔%s╗\n", border)
-		fmt.Fprintf(os.Stdout, "║%s%s%s║\n",
+		// Render the header box
+		headerBox := fmt.Sprintf("\n╔%s╗\n║%s%s%s║\n╚%s╝\n\n",
+			border,
 			strings.Repeat(" ", leftPadding),
 			headerText,
-			strings.Repeat(" ", rightPadding))
-		fmt.Fprintf(os.Stdout, "╚%s╝\n\n", border)
+			strings.Repeat(" ", rightPadding),
+			border)
+		renderOutput("%s", headerBox)
 	} else {
-		fmt.Fprintf(os.Stdout, "AEROSPIKE CONFIGURATION CHANGES SUMMARY\n\n")
+		renderOutput("AEROSPIKE CONFIGURATION CHANGES SUMMARY\n\n")
 	}
 
-	fmt.Fprintf(os.Stdout, "Comparing: %s → %s\n", summary.LowerVersion, summary.UpperVersion)
-	fmt.Fprintf(os.Stdout, "Total changes: %d (%d additions, %d removals, %d modifications)\n\n",
-		summary.TotalChanges, summary.TotalAdditions, summary.TotalRemovals, summary.TotalModified)
+	summaryInfo := fmt.Sprintf(
+		"Comparing: %s → %s\nTotal changes: %d (%d additions, %d removals, %d modifications)\n\n",
+		summary.LowerVersion,
+		summary.UpperVersion,
+		summary.TotalChanges,
+		summary.TotalAdditions,
+		summary.TotalRemovals,
+		summary.TotalModified,
+	)
+	renderOutput("%s", summaryInfo)
 }
 
-// printSectionChanges prints changes for a specific section.
-func printSectionChanges(section string, changes SectionChanges, options DiffOptions) {
+// renderSectionChanges renders changes for a specific section.
+func renderSectionChanges(section string, changes SectionChanges, options DiffOptions) {
 	// Section header
 	if options.Verbose {
-		printSectionBox(section)
+		renderSectionBox(section)
 	} else {
-		fmt.Fprintf(os.Stdout, "\n[SECTION: %s]\n", strings.ToUpper(section))
+		renderOutput("\n[SECTION: %s]\n", strings.ToUpper(section))
 	}
 
-	// Print all changes for this section in a unified way
-	printAllChanges(changes, options)
+	// Render all changes for this section
+	renderAllChanges(changes, options)
 }
 
-// printAllChanges prints all types of changes in a unified, optimized way.
-func printAllChanges(changes SectionChanges, options DiffOptions) {
+// renderSectionBox renders a dynamically-sized box around the section name.
+// The box width adjusts to accommodate the section name while maintaining a minimum width.
+// The box will never be smaller than minBoxWidth or the text + minimum padding, whichever is larger.
+func renderSectionBox(section string) {
+	upperSection := strings.ToUpper(section)
+	sectionText := "SECTION: " + upperSection
+
+	// Calculate the required width (text + minimum padding on each side)
+	const minPadding = 2 // Total: 1 space on each side minimum
+	requiredWidth := len(sectionText) + minPadding
+
+	// Use the larger of minimum width or required width
+	// This ensures: boxWidth >= requiredWidth >= len(sectionText) + minPadding
+	boxWidth := minBoxWidth
+	if requiredWidth > boxWidth {
+		boxWidth = requiredWidth
+	}
+
+	// Calculate padding for centering (with defensive checks)
+	leftPadding, rightPadding := calculateBoxPadding(len(sectionText), boxWidth)
+
+	// Create the box borders
+	topBorder := "╭" + strings.Repeat("─", boxWidth) + "╮"
+	bottomBorder := "╰" + strings.Repeat("─", boxWidth) + "╯"
+
+	// Render the box
+	sectionBox := fmt.Sprintf("\n%s\n│%s%s%s│\n%s\n",
+		topBorder,
+		strings.Repeat(" ", leftPadding),
+		sectionText,
+		strings.Repeat(" ", rightPadding),
+		bottomBorder)
+	renderOutput("%s", sectionBox)
+}
+
+// renderAllChanges renders all types of changes in a unified way.
+func renderAllChanges(changes SectionChanges, options DiffOptions) {
 	// Define change configurations
 	changeConfigs := []struct {
 		changes []SchemaChange
 		header  string
-		icon    string
-		prefix  string
 	}{
-		{changes.Removals, removedConfigHeader, iconRemoval, removalPrefix},
-		{changes.Additions, newConfigHeader, iconAddition, additionPrefix},
-		{changes.Modifications, modifiedConfigHeader, iconModification, modificationPrefix},
+		{changes.Removals, removedConfigHeader},
+		{changes.Additions, newConfigHeader},
+		{changes.Modifications, modifiedConfigHeader},
 	}
 
 	// Process each change type
@@ -362,270 +632,66 @@ func printAllChanges(changes SectionChanges, options DiffOptions) {
 			continue
 		}
 
-		// Print header
+		// Render header
 		if options.Verbose {
-			fmt.Fprintf(os.Stdout, "\n  %s:\n", config.header)
+			renderOutput("\n  %s:\n", config.header)
 		} else {
-			fmt.Fprintf(os.Stdout, "%s:\n", config.header)
+			renderOutput("%s:\n", config.header)
 		}
 
-		// Handle modifications with array processing
-		if config.header == modifiedConfigHeader {
-			printModifications(config.changes, options, config.icon, config.prefix)
-			continue
-		}
-
-		// Handle removals and additions
-		printSimpleChanges(config.changes, config.header, options)
-	}
-}
-
-// printSimpleChanges handles removals and additions.
-func printSimpleChanges(changes []SchemaChange, header string, options DiffOptions) {
-	for _, change := range changes {
-		path := formatPath(change.Path)
-
-		// Check if this is an array addition/removal and show the array contents
-		if isArrayPath(change.Path) && change.Value != nil {
-			printArrayChange(change, path, options)
-		} else {
-			printBasicChange(change, path, header, options)
-		}
-	}
-}
-
-// printArrayChange handles array additions and removals with content display.
-// Routes array change display to the appropriate formatter based on mode.
-func printArrayChange(change SchemaChange, path string, options DiffOptions) {
-	if options.Verbose {
-		printArrayChangeVerbose(change, path, options)
-	} else {
-		printArrayChangeCompact(change, path)
-	}
-}
-
-// getIconForChangeType returns the appropriate emoji icon for a change type.
-func getIconForChangeType(changeType ChangeType) string {
-	switch changeType {
-	case Addition:
-		return iconAddition
-	case Removal:
-		return iconRemoval
-	case Modification:
-		return iconModification
-	default:
-		return "" // Should never happen
-	}
-}
-
-// getPrefixForChangeType returns the appropriate ASCII prefix for a change type.
-func getPrefixForChangeType(changeType ChangeType) string {
-	switch changeType {
-	case Addition:
-		return additionPrefix
-	case Removal:
-		return removalPrefix
-	case Modification:
-		return modificationPrefix
-	default:
-		return "" // Should never happen
-	}
-}
-
-// isModificationWithValues checks if a change is a modification with both old and new values.
-func isModificationWithValues(change SchemaChange) bool {
-	return change.Type == Modification && change.OldFullValue != nil && change.NewFullValue != nil
-}
-
-// printArrayChangeVerbose handles verbose array change display.
-func printArrayChangeVerbose(change SchemaChange, path string, options DiffOptions) {
-	icon := getIconForChangeType(change.Type)
-	fmt.Fprintf(os.Stdout, "  %s %s\n", icon, path)
-
-	// Handle modifications differently - show old and new values
-	if isModificationWithValues(change) {
-		fmt.Fprintf(os.Stdout, "     → Changed from: %s\n", formatValue(change.OldFullValue))
-		fmt.Fprintf(os.Stdout, "     → Changed to: %s\n", formatValue(change.NewFullValue))
-		return
-	}
-
-	// For array additions/removals, show the individual item being added/removed
-	if itemMap, isMap := change.Value.(map[string]any); isMap {
-		// Complex object - show as formatted metadata, not recursive traversal
-		fmt.Fprintf(os.Stdout, "     → Array item:\n")
-		printValueProperties(itemMap, options)
-	} else {
-		// Simple value - show as single line
-		fmt.Fprintf(os.Stdout, "     → Array item: %s\n", formatValue(change.Value))
-	}
-}
-
-// unwrapParentheses removes leading '(' and trailing ')' from a string if both are present.
-func unwrapParentheses(s string) string {
-	// Check length before accessing indices to prevent panic
-	if len(s) >= 2 && s[0] == '(' && s[len(s)-1] == ')' {
-		return s[1 : len(s)-1]
-	}
-	return s
-}
-
-// printArrayChangeCompact handles compact array change display.
-func printArrayChangeCompact(change SchemaChange, path string) {
-	prefix := getPrefixForChangeType(change.Type)
-
-	// Handle modifications differently - show old → new
-	if isModificationWithValues(change) {
-		fmt.Fprintf(os.Stdout, "%s %s (%s → %s)\n", prefix, path,
-			formatCompactValue(change.OldFullValue), formatCompactValue(change.NewFullValue))
-		return
-	}
-
-	summary := getValueSummary(change.Value)
-	// For array changes, clarify it's an array item - unwrap any parentheses from summary
-	summaryContent := unwrapParentheses(summary)
-	fmt.Fprintf(os.Stdout, "%s %s (array item: %s)\n", prefix, path, summaryContent)
-}
-
-// printBasicChange handles non-array changes.
-// Routes basic change display to the appropriate formatter based on mode.
-func printBasicChange(change SchemaChange, path, header string, options DiffOptions) {
-	if options.Verbose {
-		printBasicChangeVerbose(change, path, header, options)
-	} else {
-		printBasicChangeCompact(change, path, header)
-	}
-}
-
-// printBasicChangeVerbose handles verbose basic change display.
-func printBasicChangeVerbose(change SchemaChange, path, header string, options DiffOptions) {
-	icon := getIconForChangeType(change.Type)
-	fmt.Fprintf(os.Stdout, "  %s %s\n", icon, path)
-	// Print additional details for additions
-	if header == newConfigHeader {
-		printValueProperties(change.Value, options)
-	}
-}
-
-// printBasicChangeCompact handles compact basic change display.
-func printBasicChangeCompact(change SchemaChange, path, header string) {
-	prefix := getPrefixForChangeType(change.Type)
-
-	// Compact mode: one line per change with summary
-	if header == newConfigHeader {
-		summary := getValueSummary(change.Value)
-		fmt.Fprintf(os.Stdout, "%s %s %s\n", prefix, path, summary)
-	} else {
-		// Removal
-		fmt.Fprintf(os.Stdout, "%s %s (removed)\n", prefix, path)
-	}
-}
-
-// printModifications handles modification display.
-func printModifications(modifications []SchemaChange, options DiffOptions, icon, prefix string) {
-	for _, change := range modifications {
-		path := formatPath(change.Path)
-
-		if options.Verbose {
-			fmt.Fprintf(os.Stdout, "  %s %s\n", icon, path)
-
-			// For array changes, show the full array values
-			if isArrayIndex(change.Path) && change.OldFullValue != nil && change.NewFullValue != nil {
-				fmt.Fprintf(os.Stdout, "     → Changed from: %s\n", formatValue(change.OldFullValue))
-				fmt.Fprintf(os.Stdout, "     → Changed to: %s\n", formatValue(change.NewFullValue))
-			} else {
-				printChangeDetails(change)
-				printValueProperties(change.Value, options)
+		// Format and render each change
+		for _, change := range config.changes {
+			formattedChange, err := formatChange(change, options.Verbose)
+			if err != nil {
+				renderError("Error formatting change: %v\n", err)
+				continue
 			}
-		} else {
-			// Compact mode: one line with old → new values
-			oldVal := formatCompactValue(change.OldValue)
-			newVal := formatCompactValue(change.Value)
-			fmt.Fprintf(os.Stdout, "%s %s (%s → %s)\n", prefix, path, oldVal, newVal)
+			renderOutput("%s", formattedChange)
 		}
 	}
 }
 
-// printChangeDetails prints details about a specific change.
-func printChangeDetails(change SchemaChange) {
-	prefix := "     → "
-	if strings.Contains(change.Path, "minimum") || strings.Contains(change.Path, "maximum") {
-		if change.OldValue != nil && change.Value != nil {
-			fmt.Fprintf(os.Stdout, "%sConfiguration limit changed from: %s to: %s\n", prefix,
-				formatValue(change.OldValue), formatValue(change.Value))
-		} else {
-			fmt.Fprintf(os.Stdout, "%sConfiguration limit changed\n", prefix)
-		}
-	} else if change.OldValue != nil && change.Value != nil {
-		// Show the actual change for other modifications
-		fmt.Fprintf(os.Stdout, "%sChanged from: %s to: %s\n", prefix,
-			formatValue(change.OldValue), formatValue(change.Value))
-	}
-}
+// ============================================================================
+// FORMATTING HELPERS - Value & Property Formatting
+// ============================================================================
 
-// printValueProperties prints properties dynamically without any hardcoding.
-func printValueProperties(value any, options DiffOptions) {
-	propMap, ok := value.(map[string]any)
-	if !ok {
-		return
-	}
-
-	prefix := "  "
-	if options.Verbose {
-		prefix = "     → "
-	}
-
-	// Get sorted keys for consistent output
-	keys := make([]string, 0, len(propMap))
-	for key := range propMap {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-
-	// Print each property with minimal logic
-	for _, key := range keys {
-		val := propMap[key]
-
-		// Skip empty values
-		if shouldSkipProperty(key, val) {
-			continue
-		}
-
-		printSingleProperty(key, val, prefix)
-	}
-}
-
-// shouldSkipProperty determines if a property should be skipped during printing.
+// shouldSkipProperty determines if a property should be skipped during rendering.
 func shouldSkipProperty(key string, val any) bool {
 	return val == nil || (key == descriptionField && val == "")
 }
 
-// printSingleProperty prints a single property with appropriate formatting.
-func printSingleProperty(key string, val any, prefix string) {
+// formatSingleProperty formats a single property with appropriate formatting.
+func formatSingleProperty(key string, val any, prefix string) string {
 	displayName := formatKeyName(key)
 
 	// Handle complex nested structures (maps and arrays) - expand them hierarchically
-	// but do NOT call schema traversal functions (to avoid infinite recursion)
 	switch v := val.(type) {
 	case map[string]any:
-		// Print the key and expand the map hierarchically
-		fmt.Fprintf(os.Stdout, "%s%s:\n", prefix, displayName)
-		printNestedData(v, prefix+"  ")
+		// Render the key and expand the map hierarchically
+		var result strings.Builder
+		result.WriteString(fmt.Sprintf("%s%s:\n", prefix, displayName))
+		result.WriteString(formatNestedData(v, prefix+"  "))
+		return result.String()
 	case []any:
-		// Print the key and expand the array hierarchically
-		fmt.Fprintf(os.Stdout, "%s%s:\n", prefix, displayName)
-		printNestedDataArray(v, prefix+"  ")
+		// Render the key and expand the array hierarchically
+		var result strings.Builder
+		result.WriteString(fmt.Sprintf("%s%s:\n", prefix, displayName))
+		result.WriteString(formatNestedDataArray(v, prefix+"  "))
+		return result.String()
 	default:
 		// Simple value - format as string
 		displayValue := formatValue(val)
 		if displayValue != "" {
-			fmt.Fprintf(os.Stdout, "%s%s: %s\n", prefix, displayName, displayValue)
+			return fmt.Sprintf("%s%s: %s\n", prefix, displayName, displayValue)
 		}
+		return ""
 	}
 }
 
-// printNestedData prints a map hierarchically without schema traversal.
-// This is used for displaying metadata structures like "properties" fields.
-func printNestedData(data map[string]any, prefix string) {
+// formatNestedData formats a map hierarchically without schema traversal.
+func formatNestedData(data map[string]any, prefix string) string {
+	var result strings.Builder
+
 	// Get sorted keys for consistent output
 	keys := make([]string, 0, len(data))
 	for key := range data {
@@ -633,7 +699,7 @@ func printNestedData(data map[string]any, prefix string) {
 	}
 	sort.Strings(keys)
 
-	// Print each key-value pair
+	// Format each key-value pair
 	for _, key := range keys {
 		val := data[key]
 		if val == nil {
@@ -645,42 +711,48 @@ func printNestedData(data map[string]any, prefix string) {
 		switch v := val.(type) {
 		case map[string]any:
 			// Nested map - recurse
-			fmt.Fprintf(os.Stdout, "%s%s:\n", prefix, displayName)
-			printNestedData(v, prefix+"  ")
+			result.WriteString(fmt.Sprintf("%s%s:\n", prefix, displayName))
+			result.WriteString(formatNestedData(v, prefix+"  "))
 		case []any:
-			// Array - print elements
-			fmt.Fprintf(os.Stdout, "%s%s:\n", prefix, displayName)
-			printNestedDataArray(v, prefix+"  ")
+			// Array - format elements
+			result.WriteString(fmt.Sprintf("%s%s:\n", prefix, displayName))
+			result.WriteString(formatNestedDataArray(v, prefix+"  "))
 		default:
 			// Simple value
 			displayValue := formatValue(v)
 			if displayValue != "" {
-				fmt.Fprintf(os.Stdout, "%s%s: %s\n", prefix, displayName, displayValue)
+				result.WriteString(fmt.Sprintf("%s%s: %s\n", prefix, displayName, displayValue))
 			}
 		}
 	}
+
+	return result.String()
 }
 
-// printNestedDataArray prints an array hierarchically.
-func printNestedDataArray(arr []any, prefix string) {
+// formatNestedDataArray formats an array hierarchically.
+func formatNestedDataArray(arr []any, prefix string) string {
+	var result strings.Builder
+
 	for i, item := range arr {
 		switch v := item.(type) {
 		case map[string]any:
 			// Object in array
-			fmt.Fprintf(os.Stdout, "%s[%d]:\n", prefix, i)
-			printNestedData(v, prefix+"  ")
+			result.WriteString(fmt.Sprintf("%s[%d]:\n", prefix, i))
+			result.WriteString(formatNestedData(v, prefix+"  "))
 		case []any:
 			// Nested array
-			fmt.Fprintf(os.Stdout, "%s[%d]:\n", prefix, i)
-			printNestedDataArray(v, prefix+"  ")
+			result.WriteString(fmt.Sprintf("%s[%d]:\n", prefix, i))
+			result.WriteString(formatNestedDataArray(v, prefix+"  "))
 		default:
 			// Simple value
 			displayValue := formatValue(item)
 			if displayValue != "" {
-				fmt.Fprintf(os.Stdout, "%s[%d]: %s\n", prefix, i, displayValue)
+				result.WriteString(fmt.Sprintf("%s[%d]: %s\n", prefix, i, displayValue))
 			}
 		}
 	}
+
+	return result.String()
 }
 
 // formatKeyName converts camelCase keys to human-readable format.
@@ -876,7 +948,7 @@ func formatValue(value any) string {
 		jsonBytes, err := json.Marshal(v)
 		if err != nil {
 			// If JSON marshaling fails, show the raw Go representation
-			fmt.Fprintf(os.Stderr, "Warning: Failed to marshal map to JSON: %v\n", err)
+			renderWarning("Failed to marshal map to JSON: %v\n", err)
 			return fmt.Sprintf("%#v", v)
 		}
 		return string(jsonBytes)
@@ -885,7 +957,7 @@ func formatValue(value any) string {
 		jsonBytes, err := json.Marshal(v)
 		if err != nil {
 			// If JSON marshaling fails, show the raw Go representation
-			fmt.Fprintf(os.Stderr, "Warning: Failed to marshal value to JSON: %v\n", err)
+			renderWarning("Failed to marshal value to JSON: %v\n", err)
 			return fmt.Sprintf("%#v", v)
 		}
 		return string(jsonBytes)
@@ -929,77 +1001,20 @@ func formatArray(arr []any) string {
 	jsonBytes, err := json.Marshal(arr)
 	if err != nil {
 		// If JSON marshaling fails, show the raw Go representation instead of hiding content
-		fmt.Fprintf(os.Stderr, "Warning: Failed to marshal array to JSON: %v\n", err)
+		renderWarning("Failed to marshal array to JSON: %v\n", err)
 		return fmt.Sprintf("%#v", arr)
 	}
 	return string(jsonBytes)
 }
 
-// Utility functions
-// ---------------
-
-// calculateBoxPadding calculates left and right padding for centering text in a box.
-// Returns (leftPadding, rightPadding) ensuring both are non-negative.
-func calculateBoxPadding(textLen, boxWidth int) (int, int) {
-	// Defensive check: ensure boxWidth is at least as wide as the text
-	if boxWidth < textLen {
-		// If somehow boxWidth is too small, return minimal padding
-		return 0, 0
-	}
-	const halves = 2 // Divide by 2 to split padding evenly
-	totalPadding := boxWidth - textLen
-	leftPadding := totalPadding / halves
-	rightPadding := totalPadding - leftPadding
-
-	// Defensive check: ensure non-negative values (should never happen with above logic, but safe)
-	if leftPadding < 0 {
-		leftPadding = 0
-	}
-	if rightPadding < 0 {
-		rightPadding = 0
-	}
-
-	return leftPadding, rightPadding
-}
-
-// printSectionBox prints a dynamically-sized box around the section name.
-// The box width adjusts to accommodate the section name while maintaining a minimum width.
-// The box will never be smaller than minBoxWidth or the text + minimum padding, whichever is larger.
-func printSectionBox(section string) {
-	upperSection := strings.ToUpper(section)
-	sectionText := "SECTION: " + upperSection
-
-	// Calculate the required width (text + minimum padding on each side)
-	const minPadding = 2 // Total: 1 space on each side minimum
-	requiredWidth := len(sectionText) + minPadding
-
-	// Use the larger of minimum width or required width
-	// This ensures: boxWidth >= requiredWidth >= len(sectionText) + minPadding
-	boxWidth := minBoxWidth
-	if requiredWidth > boxWidth {
-		boxWidth = requiredWidth
-	}
-
-	// Calculate padding for centering (with defensive checks)
-	leftPadding, rightPadding := calculateBoxPadding(len(sectionText), boxWidth)
-
-	// Create the box borders
-	topBorder := "╭" + strings.Repeat("─", boxWidth) + "╮"
-	bottomBorder := "╰" + strings.Repeat("─", boxWidth) + "╯"
-
-	// Print the box
-	fmt.Fprintf(os.Stdout, "\n%s\n", topBorder)
-	fmt.Fprintf(os.Stdout, "│%s%s%s│\n",
-		strings.Repeat(" ", leftPadding),
-		sectionText,
-		strings.Repeat(" ", rightPadding))
-	fmt.Fprintf(os.Stdout, "%s\n", bottomBorder)
-}
+// ============================================================================
+// PATH UTILITIES - JSON Path Processing
+// ============================================================================
 
 // formatPath formats a JSON path into a more human-readable form.
 func formatPath(path string) string {
 	parts := strings.Split(path, "/")
-	var result []string
+	result := make([]string, 0, len(parts)) // Pre-allocate with capacity
 
 	// Process each part
 	for i := 0; i < len(parts); i++ {
@@ -1060,9 +1075,6 @@ func getValueByJSONPath(data map[string]any, path string) (any, bool) {
 	}
 	return current, true
 }
-
-// Path utilities
-// -------------
 
 // processPathPart processes a single part of the JSON path.
 func processPathPart(current any, part string) (any, bool) {
@@ -1128,4 +1140,41 @@ func getParentPath(path string) string {
 	}
 	// Remove the last part (the array index)
 	return strings.Join(parts[:len(parts)-1], "/")
+}
+
+// ============================================================================
+// GENERAL UTILITIES - Miscellaneous Helpers
+// ============================================================================
+
+// unwrapParentheses removes leading '(' and trailing ')' from a string if both are present.
+func unwrapParentheses(s string) string {
+	// Check length before accessing indices to prevent panic
+	if len(s) >= 2 && s[0] == '(' && s[len(s)-1] == ')' {
+		return s[1 : len(s)-1]
+	}
+	return s
+}
+
+// calculateBoxPadding calculates left and right padding for centering text in a box.
+// Returns (leftPadding, rightPadding) ensuring both are non-negative.
+func calculateBoxPadding(textLen, boxWidth int) (int, int) {
+	// Defensive check: ensure boxWidth is at least as wide as the text
+	if boxWidth < textLen {
+		// If somehow boxWidth is too small, return minimal padding
+		return 0, 0
+	}
+	const halves = 2 // Divide by 2 to split padding evenly
+	totalPadding := boxWidth - textLen
+	leftPadding := totalPadding / halves
+	rightPadding := totalPadding - leftPadding
+
+	// Defensive check: ensure non-negative values (should never happen with above logic, but safe)
+	if leftPadding < 0 {
+		leftPadding = 0
+	}
+	if rightPadding < 0 {
+		rightPadding = 0
+	}
+
+	return leftPadding, rightPadding
 }
