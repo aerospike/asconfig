@@ -364,6 +364,11 @@ func runVersionsDiff(cmd *cobra.Command, args []string) error {
 	version1 := args[0]
 	version2 := args[1]
 
+	// Check if both versions are the same
+	if version1 == version2 {
+		return fmt.Errorf("cannot compare identical versions: both versions are %s", version1)
+	}
+
 	// Use lib.CompareVersions to determine order and auto-reverse if needed
 	compareResult, err := lib.CompareVersions(version1, version2)
 	if err != nil {
@@ -435,7 +440,7 @@ func runVersionsDiff(cmd *cobra.Command, args []string) error {
 	}
 
 	// Output the results
-	printChangeSummary(summary, DiffOptions{
+	renderChangeSummary(summary, DiffOptions{
 		Verbose:        verbose,
 		FilterSections: filterSections,
 	})
