@@ -84,13 +84,14 @@ type SchemaChange struct {
 
 // ChangeSummary groups changes by section and type.
 type ChangeSummary struct {
-	Sections       map[string]SectionChanges
-	TotalChanges   int
-	TotalAdditions int
-	TotalRemovals  int
-	TotalModified  int
-	LowerVersion   string
-	UpperVersion   string
+	Sections          map[string]SectionChanges
+	AvailableSections []string
+	TotalChanges      int
+	TotalAdditions    int
+	TotalRemovals     int
+	TotalModified     int
+	LowerVersion      string
+	UpperVersion      string
 }
 
 // SectionChanges groups changes by operation type.
@@ -184,10 +185,11 @@ func groupChangesBySection(
 	validSections map[string]bool,
 ) (ChangeSummary, error) {
 	summary := ChangeSummary{
-		Sections:     make(map[string]SectionChanges),
-		LowerVersion: lowerVersion,
-		UpperVersion: upperVersion,
-		TotalChanges: len(changes),
+		Sections:          make(map[string]SectionChanges),
+		LowerVersion:      lowerVersion,
+		UpperVersion:      upperVersion,
+		TotalChanges:      len(changes),
+		AvailableSections: make([]string, 0, len(validSections)),
 	}
 
 	// Group changes by section and type
@@ -214,23 +216,31 @@ func groupChangesBySection(
 		summary.Sections[section] = sectionChanges
 	}
 
+	// Capture the complete list of available sections (including those without changes)
+	for section := range validSections {
+		summary.AvailableSections = append(summary.AvailableSections, section)
+	}
+	sort.Strings(summary.AvailableSections)
+
 	return summary, nil
 }
 
 // validateFilterSections validates that the provided filter sections exist in the available sections.
-func validateFilterSections(filterSections map[string]struct{}, availableSections map[string]SectionChanges) error {
+func validateFilterSections(filterSections map[string]struct{}, availableSections []string) error {
 	var invalidSections []string
-	var validSections []string
+
+	availableLookup := make(map[string]struct{}, len(availableSections))
+	for _, section := range availableSections {
+		availableLookup[section] = struct{}{}
+	}
 
 	// Collect all available section names
-	for section := range availableSections {
-		validSections = append(validSections, section)
-	}
-	sort.Strings(validSections)
+	validSections := make([]string, len(availableSections))
+	copy(validSections, availableSections)
 
 	// Check each filter section
 	for filterSection := range filterSections {
-		if _, exists := availableSections[filterSection]; !exists {
+		if _, exists := availableLookup[filterSection]; !exists {
 			invalidSections = append(invalidSections, filterSection)
 		}
 	}

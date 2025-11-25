@@ -2506,12 +2506,7 @@ func TestInvalidFilterValidation(t *testing.T) {
 	}
 
 	// Create mock available sections
-	availableSections := map[string]SectionChanges{
-		"namespaces": {},
-		"service":    {},
-		"network":    {},
-		"logging":    {},
-	}
+	availableSections := []string{"namespaces", "service", "network", "logging"}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {

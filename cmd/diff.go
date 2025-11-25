@@ -434,7 +434,7 @@ func runVersionsDiff(cmd *cobra.Command, args []string) error {
 
 	// Validate filter sections if provided
 	if len(filterSections) > 0 {
-		if validFilterErr := validateFilterSections(filterSections, summary.Sections); validFilterErr != nil {
+		if validFilterErr := validateFilterSections(filterSections, summary.AvailableSections); validFilterErr != nil {
 			return validFilterErr
 		}
 	}
