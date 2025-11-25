@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -207,4 +208,26 @@ func ParseFmtString(in string) (asConf.Format, error) {
 	default:
 		return asConf.Invalid, fmt.Errorf("%w: %s", asConf.ErrInvalidFormat, in)
 	}
+}
+
+// ============================================================================
+// RENDERING FUNCTIONS (I/O operations)
+// ============================================================================
+
+// renderOutput safely writes to stdout with error handling.
+func renderOutput(format string, args ...any) {
+	if _, err := fmt.Fprintf(os.Stdout, format, args...); err != nil {
+		// Use renderError for consistency
+		renderError("Error rendering output: %v\n", err)
+	}
+}
+
+// renderError writes error messages to stderr.
+func renderError(format string, args ...any) {
+	fmt.Fprintf(os.Stderr, format, args...)
+}
+
+// renderWarning writes warning messages to stderr.
+func renderWarning(format string, args ...any) {
+	fmt.Fprintf(os.Stderr, "Warning: "+format, args...)
 }
