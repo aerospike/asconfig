@@ -46,4 +46,4 @@ service:
     cluster-name: the_cluster_name
     feature-key-file: /etc/aerospike/features.conf
     node-id: 1a0
-    proto-fd-max: 90000
+    proto-fd-max: 65536
