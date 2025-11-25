@@ -612,16 +612,11 @@ func TestVersionsDiffEndToEnd(t *testing.T) {
 			minChanges: 0,
 		},
 		{
-			name:     "same version comparison",
-			version1: firstVersion,
-			version2: firstVersion,
-			flags:    []string{},
-			mustContain: []string{
-				"AEROSPIKE CONFIGURATION CHANGES SUMMARY",
-				"Comparing: " + firstVersion + " → " + firstVersion,
-				"Total changes: 0",
-			},
-			minChanges: 0,
+			name:        "same version comparison",
+			version1:    firstVersion,
+			version2:    firstVersion,
+			flags:       []string{},
+			expectError: true, // Should fail - cannot compare identical versions
 		},
 		{
 			name:        "invalid version",
@@ -1332,7 +1327,7 @@ func TestFormatArray(t *testing.T) {
 }
 
 // TestPrintArrayChange tests array change formatting to ensure no raw maps are displayed
-func TestPrintArrayChange(t *testing.T) {
+func TestFormatArrayItemChange(t *testing.T) {
 	tests := []struct {
 		name                string
 		change              SchemaChange
@@ -1503,10 +1498,12 @@ func TestPrintArrayChange(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			output := captureStdout(func() {
-				options := DiffOptions{Verbose: tt.verbose}
-				path := formatPath(tt.change.Path)
-				// Icon/prefix selection now handled internally by printArrayChange
-				printArrayChange(tt.change, path, options)
+				// Use the new formatChange dispatcher and render the output
+				formattedChange, err := formatChange(tt.change, tt.verbose)
+				if err != nil {
+					t.Fatalf("formatChange failed: %v", err)
+				}
+				renderOutput("%s", formattedChange)
 			})
 
 			// Check expected content
@@ -1526,8 +1523,8 @@ func TestPrintArrayChange(t *testing.T) {
 	}
 }
 
-// TestPrintBasicChange tests non-array (object property) change formatting
-func TestPrintBasicChange(t *testing.T) {
+// TestFormatPropertyChange tests non-array (object property) change formatting
+func TestFormatPropertyChange(t *testing.T) {
 	tests := []struct {
 		name                string
 		change              SchemaChange
@@ -1702,39 +1699,12 @@ func TestPrintBasicChange(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			output := captureStdout(func() {
-				options := DiffOptions{Verbose: tt.verbose}
-				path := formatPath(tt.change.Path)
-				// Use appropriate icon/prefix based on change type and mode
-				var icon, prefix string
-				if tt.verbose {
-					switch tt.change.Type {
-					case Addition:
-						icon = iconAddition
-					case Removal:
-						icon = iconRemoval
-					case Modification:
-						icon = iconModification
-					}
-					if tt.change.Type == Modification {
-						printModifications([]SchemaChange{tt.change}, options, icon, "")
-					} else {
-						printBasicChange(tt.change, path, tt.header, options)
-					}
-				} else {
-					switch tt.change.Type {
-					case Addition:
-						prefix = additionPrefix
-					case Removal:
-						prefix = removalPrefix
-					case Modification:
-						prefix = modificationPrefix
-					}
-					if tt.change.Type == Modification {
-						printModifications([]SchemaChange{tt.change}, options, "", prefix)
-					} else {
-						printBasicChange(tt.change, path, tt.header, options)
-					}
+				// Use the new formatChange dispatcher and render the output
+				formattedChange, err := formatChange(tt.change, tt.verbose)
+				if err != nil {
+					t.Fatalf("formatChange failed: %v", err)
 				}
+				renderOutput("%s", formattedChange)
 			})
 
 			// Check expected content
@@ -2449,11 +2419,8 @@ func TestNoRawMapOutput(t *testing.T) {
 				t.Errorf("formatValue returned raw map: %s", arrayResult)
 			}
 
-			// Test printNestedSchema output
-			output := captureStdout(func() {
-				options := DiffOptions{Verbose: true}
-				printValueProperties(tc.schema, options)
-			})
+			// Test formatValueDetails output
+			output := formatValueDetails(tc.schema)
 
 			if strings.Contains(output, "map[") {
 				t.Errorf("printNestedSchema output contains raw map:\n%s", output)
