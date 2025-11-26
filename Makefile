@@ -43,18 +43,18 @@ uninstall:
 
 # fpm is needed to build these artifacts
 .PHONY: all
-all: deb rpm tar
+all: $(ACONFIG_BIN) deb rpm tar
 
 .PHONY: deb
-deb: asconfig
+deb: $(ACONFIG_BIN)
 	$(MAKE) -C $(ROOT_DIR)/pkg/ $@
 
 .PHONY: rpm
-rpm: asconfig
+rpm: $(ACONFIG_BIN)
 	$(MAKE) -C $(ROOT_DIR)/pkg/ $@
 
 .PHONY: tar
-tar: asconfig
+tar: $(ACONFIG_BIN)
 	$(MAKE) -C $(ROOT_DIR)/pkg/ $@
 
 .PHONY: help
