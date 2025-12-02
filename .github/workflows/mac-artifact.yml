@@ -19,21 +19,26 @@ jobs:
         os: [macos-14, macos-15, macos-26]
     runs-on: ${{ matrix.os }}
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@df199fb7be9f65074067a9eb93f12bb4c5547cf2 # v2.13.3
+        with:
+          egress-policy: audit
+
       - name: Get checkout directory
-        uses: haya14busa/action-cond@v1
+        uses: step-security/action-cond@45aa5a709bd075f11c74285d8b0ca4d527e5fbcf # v1.2.4
         id: checkout-dir
         with:
           cond: ${{ inputs.submodule != '' }}
           if_true: aerospike-tools # In this case we are expecting to checkout the tools package.
           if_false: asconfig
       - name: Get asconfig working directory
-        uses: haya14busa/action-cond@v1
+        uses: step-security/action-cond@45aa5a709bd075f11c74285d8b0ca4d527e5fbcf # v1.2.4
         id: working-dir
         with:
           cond: ${{ inputs.submodule != '' }}
           if_true: aerospike-tools/${{ inputs.submodule }} # In this case we are expecting to checkout the tools package.
           if_false: asconfig
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           path: ${{ steps.checkout-dir.outputs.value }}
           fetch-depth: 0
@@ -57,16 +62,16 @@ jobs:
         working-directory: ${{ steps.working-dir.outputs.value }}
         run: |
           echo "GO_VERSION=$(grep '^go ' go.mod | cut -d " " -f 2)" >> $GITHUB_ENV
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@19bb51245e9c80abacb2e91cc42b33fa478b8639 # v4.2.1
         with:
           go-version: ${{ env.GO_VERSION }}
           check-latest: true
           cache: true
           cache-dependency-path: ${{ steps.working-dir.outputs.value }}/go.sum
-      - uses: kenchan0130/actions-system-info@v1.3.0
+      - uses: kenchan0130/actions-system-info@b98fe44bc35efcc60a9828cf4a04783a8b370bde # v1.3.0
         id: system-info
       - name: Cache asconfig
-        uses: actions/cache@v3
+        uses: actions/cache@6f8efc29b200d32929f49075959781ed54ec270c # v3.5.0
         id: cache-asconfig
         env:
           cache-name: cache-asconfig
@@ -85,7 +90,7 @@ jobs:
         run: |
           sudo make install
           asconfig --version 2>&1 | grep "Aerospike Config"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: ${{ steps.system-info.outputs.platform }}-${{ runner.arch }}-${{ matrix.os }}-${{ steps.system-info.outputs.release }}-asconfig
           path: ${{ steps.working-dir.outputs.value }}/bin/asconfig
