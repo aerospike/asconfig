@@ -1,17 +1,17 @@
 module github.com/aerospike/asconfig
 
-go 1.24.10
+go 1.25
 
 require (
-	github.com/aerospike/aerospike-client-go/v8 v8.4.2
+	github.com/aerospike/aerospike-client-go/v8 v8.5.0
 	github.com/aerospike/aerospike-management-lib v1.8.1-0.20251114122505-c5d5241d8594
-	github.com/aerospike/tools-common-go v0.4.0
+	github.com/aerospike/tools-common-go v0.4.1
 	github.com/bombsimon/logrusr/v4 v4.1.0
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/go-logr/logr v1.4.3
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/sirupsen/logrus v1.9.3
-	github.com/spf13/cobra v1.10.1
+	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.11.1
 	github.com/wI2L/jsondiff v0.7.0
