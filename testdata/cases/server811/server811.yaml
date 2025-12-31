@@ -1,7 +1,6 @@
 logging:
     - namespace: info
-      name: console
-    - masking: info
+      masking: info
       name: console
 namespaces:
     - default-read-touch-ttl-pct: 0
