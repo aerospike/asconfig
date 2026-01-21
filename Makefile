@@ -1,6 +1,6 @@
 # Variables required for this Makefile
 ROOT_DIR = $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
-VERSION = $(shell git describe --tags --always)
+VERSION = $(shell git describe --tags --always --abbrev=9)
 GO_ENV_VARS =
 INSTALL_DIR = /usr/local/bin
 TESTDATA_DIR = $(ROOT_DIR)/testdata
