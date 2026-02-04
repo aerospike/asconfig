@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -xeuo pipefail
 
-export GOLANG_VERSION="1.25.6"
+export GOLANG_VERSION="1.25.7"
 export FPM_VERSION="1.17.0"
 
 export CURL_RETRY_OPTS=(--retry 5 --retry-delay 5)
