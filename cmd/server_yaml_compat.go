@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"math/big"
@@ -19,7 +20,37 @@ const (
 	flagServerYAMLOutput = "server-yaml-output"
 
 	minServerYAMLOutputVersion = "8.1.1"
+
+	unitSecond           int64 = 1
+	unitMinute           int64 = 60
+	unitHour             int64 = 3_600
+	unitDay              int64 = 86_400
+	unitKilo             int64 = 1_000
+	unitMega             int64 = 1_000_000
+	unitGiga             int64 = 1_000_000_000
+	unitTera             int64 = 1_000_000_000_000
+	unitPeta             int64 = 1_000_000_000_000_000
+	unitKibi             int64 = 1_024
+	unitMebi             int64 = 1_048_576
+	unitGibi             int64 = 1_073_741_824
+	unitTebi             int64 = 1_099_511_627_776
+	unitPebi             int64 = 1_125_899_906_842_624
+	loggingFieldType           = "type"
+	loggingFieldName           = "name"
+	loggingFieldPath           = "path"
+	loggingFieldFacility       = "facility"
+	loggingFieldTag            = "tag"
+	loggingFieldContexts       = "contexts"
 )
+
+var loggingReservedFields = map[string]struct{}{
+	loggingFieldType:     {},
+	loggingFieldName:     {},
+	loggingFieldPath:     {},
+	loggingFieldFacility: {},
+	loggingFieldTag:      {},
+	loggingFieldContexts: {},
+}
 
 // maybeTranslateServerYAMLInput translates YAML input to the legacy asconfig
 // YAML shape when the user enables --server-yaml.
@@ -149,20 +180,20 @@ func translateLegacyYAMLStructure(root map[string]any) error {
 }
 
 func translateLegacyNamespaces(root map[string]any) error {
-	rawNamespaces, ok := root["namespaces"]
-	if !ok {
+	rawNamespaces, found := root["namespaces"]
+	if !found {
 		return nil
 	}
 
-	namespaceSlice, ok := rawNamespaces.([]any)
-	if !ok {
+	namespaceSlice, isSlice := rawNamespaces.([]any)
+	if !isSlice {
 		// Already in server map form (or unknown shape). Leave unchanged.
 		return nil
 	}
 
 	for i, rawNamespace := range namespaceSlice {
-		namespaceMap, ok := rawNamespace.(map[string]any)
-		if !ok {
+		namespaceMap, isNamespaceMap := rawNamespace.(map[string]any)
+		if !isNamespaceMap {
 			return fmt.Errorf("namespaces.%d must be an object, found %T", i, rawNamespace)
 		}
 
@@ -186,13 +217,13 @@ func translateLegacyNamespaces(root map[string]any) error {
 }
 
 func translateLegacyNetworkTLS(root map[string]any) error {
-	rawNetwork, ok := root["network"]
-	if !ok {
+	rawNetwork, found := root["network"]
+	if !found {
 		return nil
 	}
 
-	networkMap, ok := rawNetwork.(map[string]any)
-	if !ok {
+	networkMap, isMap := rawNetwork.(map[string]any)
+	if !isMap {
 		return fmt.Errorf("network must be an object, found %T", rawNetwork)
 	}
 
@@ -200,30 +231,30 @@ func translateLegacyNetworkTLS(root map[string]any) error {
 }
 
 func translateLegacyXDR(root map[string]any) error {
-	rawXDR, ok := root["xdr"]
-	if !ok {
+	rawXDR, found := root["xdr"]
+	if !found {
 		return nil
 	}
 
-	xdrMap, ok := rawXDR.(map[string]any)
-	if !ok {
+	xdrMap, isMap := rawXDR.(map[string]any)
+	if !isMap {
 		return fmt.Errorf("xdr must be an object, found %T", rawXDR)
 	}
 
-	rawDCs, ok := xdrMap["dcs"]
-	if !ok {
+	rawDCs, hasDCs := xdrMap["dcs"]
+	if !hasDCs {
 		return nil
 	}
 
-	dcSlice, ok := rawDCs.([]any)
-	if !ok {
+	dcSlice, isSlice := rawDCs.([]any)
+	if !isSlice {
 		// Already in server map form (or unknown shape). Leave unchanged.
 		return nil
 	}
 
 	for i, rawDC := range dcSlice {
-		dcMap, ok := rawDC.(map[string]any)
-		if !ok {
+		dcMap, isDCMap := rawDC.(map[string]any)
+		if !isDCMap {
 			return fmt.Errorf("xdr.dcs.%d must be an object, found %T", i, rawDC)
 		}
 
@@ -247,81 +278,23 @@ func translateLegacyXDR(root map[string]any) error {
 }
 
 func translateLegacyLogging(root map[string]any) error {
-	rawLogging, ok := root["logging"]
-	if !ok {
+	rawLogging, found := root["logging"]
+	if !found {
 		return nil
 	}
 
-	loggingSlice, ok := rawLogging.([]any)
-	if !ok {
+	loggingSlice, isSlice := rawLogging.([]any)
+	if !isSlice {
 		return nil
-	}
-
-	const (
-		loggingFieldType     = "type"
-		loggingFieldName     = "name"
-		loggingFieldPath     = "path"
-		loggingFieldFacility = "facility"
-		loggingFieldTag      = "tag"
-		loggingFieldContexts = "contexts"
-	)
-
-	reservedFields := map[string]struct{}{
-		loggingFieldType:     {},
-		loggingFieldName:     {},
-		loggingFieldPath:     {},
-		loggingFieldFacility: {},
-		loggingFieldTag:      {},
-		loggingFieldContexts: {},
 	}
 
 	for i, rawSink := range loggingSlice {
-		sinkMap, ok := rawSink.(map[string]any)
-		if !ok {
-			return fmt.Errorf("logging.%d must be an object, found %T", i, rawSink)
+		translatedSink, err := translateLegacyLogSink(rawSink, i)
+		if err != nil {
+			return err
 		}
 
-		if rawName, hasName := sinkMap[loggingFieldName]; hasName {
-			name, ok := rawName.(string)
-			if !ok {
-				return fmt.Errorf("logging.%d.name must be a string, found %T", i, rawName)
-			}
-
-			if _, hasType := sinkMap[loggingFieldType]; !hasType {
-				sinkMap[loggingFieldType] = name
-			}
-
-			delete(sinkMap, loggingFieldName)
-		}
-
-		contexts := map[string]any{}
-		if rawContexts, hasContexts := sinkMap[loggingFieldContexts]; hasContexts {
-			existingContexts, ok := rawContexts.(map[string]any)
-			if !ok {
-				return fmt.Errorf("logging.%d.contexts must be an object, found %T", i, rawContexts)
-			}
-
-			for key, value := range existingContexts {
-				contexts[key] = value
-			}
-		}
-
-		for key, value := range sinkMap {
-			if _, reserved := reservedFields[key]; reserved {
-				continue
-			}
-
-			if isLoggingLevelValue(value) {
-				contexts[key] = value
-				delete(sinkMap, key)
-			}
-		}
-
-		if len(contexts) > 0 {
-			sinkMap[loggingFieldContexts] = contexts
-		}
-
-		loggingSlice[i] = sinkMap
+		loggingSlice[i] = translatedSink
 	}
 
 	root["logging"] = loggingSlice
@@ -329,14 +302,84 @@ func translateLegacyLogging(root map[string]any) error {
 	return nil
 }
 
-func translateNamedSliceInObjectToMap(parent map[string]any, key string, path []string) error {
-	rawValue, ok := parent[key]
-	if !ok {
+func translateLegacyLogSink(rawSink any, index int) (map[string]any, error) {
+	sinkMap, isSinkMap := rawSink.(map[string]any)
+	if !isSinkMap {
+		return nil, fmt.Errorf("logging.%d must be an object, found %T", index, rawSink)
+	}
+
+	if err := setLegacyLoggingType(sinkMap, index); err != nil {
+		return nil, err
+	}
+
+	contexts, err := collectLegacyLoggingContexts(sinkMap, index)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(contexts) > 0 {
+		sinkMap[loggingFieldContexts] = contexts
+	}
+
+	return sinkMap, nil
+}
+
+func setLegacyLoggingType(sinkMap map[string]any, index int) error {
+	rawName, hasName := sinkMap[loggingFieldName]
+	if !hasName {
 		return nil
 	}
 
-	namedSlice, ok := rawValue.([]any)
-	if !ok {
+	name, isString := rawName.(string)
+	if !isString {
+		return fmt.Errorf("logging.%d.name must be a string, found %T", index, rawName)
+	}
+
+	if _, hasType := sinkMap[loggingFieldType]; !hasType {
+		sinkMap[loggingFieldType] = name
+	}
+
+	delete(sinkMap, loggingFieldName)
+
+	return nil
+}
+
+func collectLegacyLoggingContexts(sinkMap map[string]any, index int) (map[string]any, error) {
+	contexts := map[string]any{}
+
+	if rawContexts, hasContexts := sinkMap[loggingFieldContexts]; hasContexts {
+		existingContexts, isMap := rawContexts.(map[string]any)
+		if !isMap {
+			return nil, fmt.Errorf("logging.%d.contexts must be an object, found %T", index, rawContexts)
+		}
+
+		for key, value := range existingContexts {
+			contexts[key] = value
+		}
+	}
+
+	for key, value := range sinkMap {
+		if _, reserved := loggingReservedFields[key]; reserved {
+			continue
+		}
+
+		if isLoggingLevelValue(value) {
+			contexts[key] = value
+			delete(sinkMap, key)
+		}
+	}
+
+	return contexts, nil
+}
+
+func translateNamedSliceInObjectToMap(parent map[string]any, key string, path []string) error {
+	rawValue, found := parent[key]
+	if !found {
+		return nil
+	}
+
+	namedSlice, isSlice := rawValue.([]any)
+	if !isSlice {
 		// Already in server map form (or unknown shape). Leave unchanged.
 		return nil
 	}
@@ -355,18 +398,18 @@ func namedSliceToNamedMap(namedSlice []any, path []string) (map[string]any, erro
 	res := make(map[string]any, len(namedSlice))
 
 	for i, rawItem := range namedSlice {
-		itemMap, ok := rawItem.(map[string]any)
-		if !ok {
+		itemMap, isMap := rawItem.(map[string]any)
+		if !isMap {
 			return nil, fmt.Errorf("%s.%d must be an object, found %T", formatNodePath(path), i, rawItem)
 		}
 
-		rawName, ok := itemMap["name"]
-		if !ok {
+		rawName, hasName := itemMap["name"]
+		if !hasName {
 			return nil, fmt.Errorf("%s.%d missing required name field", formatNodePath(path), i)
 		}
 
-		name, ok := rawName.(string)
-		if !ok {
+		name, isString := rawName.(string)
+		if !isString {
 			return nil, fmt.Errorf("%s.%d.name must be a string, found %T", formatNodePath(path), i, rawName)
 		}
 
@@ -407,20 +450,20 @@ func translateServerYAMLStructure(root map[string]any) error {
 }
 
 func translateNamespaces(root map[string]any) error {
-	rawNamespaces, ok := root["namespaces"]
-	if !ok {
+	rawNamespaces, found := root["namespaces"]
+	if !found {
 		return nil
 	}
 
-	namespacesMap, ok := rawNamespaces.(map[string]any)
-	if !ok {
+	namespacesMap, isMap := rawNamespaces.(map[string]any)
+	if !isMap {
 		// Already in legacy array form (or unknown shape). Leave unchanged.
 		return nil
 	}
 
 	for namespaceName, rawNamespace := range namespacesMap {
-		namespaceMap, ok := rawNamespace.(map[string]any)
-		if !ok {
+		namespaceMap, isNamespaceMap := rawNamespace.(map[string]any)
+		if !isNamespaceMap {
 			return fmt.Errorf("namespaces.%s must be an object, found %T", namespaceName, rawNamespace)
 		}
 
@@ -444,13 +487,13 @@ func translateNamespaces(root map[string]any) error {
 }
 
 func translateNetworkTLS(root map[string]any) error {
-	rawNetwork, ok := root["network"]
-	if !ok {
+	rawNetwork, found := root["network"]
+	if !found {
 		return nil
 	}
 
-	networkMap, ok := rawNetwork.(map[string]any)
-	if !ok {
+	networkMap, isMap := rawNetwork.(map[string]any)
+	if !isMap {
 		return fmt.Errorf("network must be an object, found %T", rawNetwork)
 	}
 
@@ -458,30 +501,30 @@ func translateNetworkTLS(root map[string]any) error {
 }
 
 func translateXDR(root map[string]any) error {
-	rawXDR, ok := root["xdr"]
-	if !ok {
+	rawXDR, found := root["xdr"]
+	if !found {
 		return nil
 	}
 
-	xdrMap, ok := rawXDR.(map[string]any)
-	if !ok {
+	xdrMap, isMap := rawXDR.(map[string]any)
+	if !isMap {
 		return fmt.Errorf("xdr must be an object, found %T", rawXDR)
 	}
 
-	rawDCs, ok := xdrMap["dcs"]
-	if !ok {
+	rawDCs, hasDCs := xdrMap["dcs"]
+	if !hasDCs {
 		return nil
 	}
 
-	dcMap, ok := rawDCs.(map[string]any)
-	if !ok {
+	dcMap, isDCMap := rawDCs.(map[string]any)
+	if !isDCMap {
 		// Already in legacy array form (or unknown shape). Leave unchanged.
 		return nil
 	}
 
 	for dcName, rawDC := range dcMap {
-		dcObj, ok := rawDC.(map[string]any)
-		if !ok {
+		dcObj, isDCObject := rawDC.(map[string]any)
+		if !isDCObject {
 			return fmt.Errorf("xdr.dcs.%s must be an object, found %T", dcName, rawDC)
 		}
 
@@ -505,57 +548,23 @@ func translateXDR(root map[string]any) error {
 }
 
 func translateLogging(root map[string]any) error {
-	rawLogging, ok := root["logging"]
-	if !ok {
+	rawLogging, found := root["logging"]
+	if !found {
 		return nil
 	}
 
-	loggingSlice, ok := rawLogging.([]any)
-	if !ok {
+	loggingSlice, isSlice := rawLogging.([]any)
+	if !isSlice {
 		return nil
 	}
 
 	for i, rawLogSink := range loggingSlice {
-		logSinkMap, ok := rawLogSink.(map[string]any)
-		if !ok {
-			return fmt.Errorf("logging.%d must be an object, found %T", i, rawLogSink)
+		translatedSink, err := translateServerLogSink(rawLogSink, i)
+		if err != nil {
+			return err
 		}
 
-		if rawType, exists := logSinkMap["type"]; exists {
-			if _, hasName := logSinkMap["name"]; !hasName {
-				typeName, ok := rawType.(string)
-				if !ok {
-					return fmt.Errorf("logging.%d.type must be a string, found %T", i, rawType)
-				}
-
-				logSinkMap["name"] = typeName
-			}
-
-			delete(logSinkMap, "type")
-		}
-
-		if rawContexts, exists := logSinkMap["contexts"]; exists {
-			contextsMap, ok := rawContexts.(map[string]any)
-			if !ok {
-				return fmt.Errorf("logging.%d.contexts must be an object, found %T", i, rawContexts)
-			}
-
-			for contextName, contextValue := range contextsMap {
-				if _, exists := logSinkMap[contextName]; exists {
-					return fmt.Errorf(
-						"logging.%d context %q conflicts with existing sink field",
-						i,
-						contextName,
-					)
-				}
-
-				logSinkMap[contextName] = contextValue
-			}
-
-			delete(logSinkMap, "contexts")
-		}
-
-		loggingSlice[i] = logSinkMap
+		loggingSlice[i] = translatedSink
 	}
 
 	root["logging"] = loggingSlice
@@ -563,14 +572,75 @@ func translateLogging(root map[string]any) error {
 	return nil
 }
 
-func translateNamedMapInObjectToSlice(parent map[string]any, key string, path []string) error {
-	rawValue, ok := parent[key]
-	if !ok {
+func translateServerLogSink(rawLogSink any, index int) (map[string]any, error) {
+	logSinkMap, isMap := rawLogSink.(map[string]any)
+	if !isMap {
+		return nil, fmt.Errorf("logging.%d must be an object, found %T", index, rawLogSink)
+	}
+
+	if err := setServerLoggingName(logSinkMap, index); err != nil {
+		return nil, err
+	}
+
+	if err := flattenServerLoggingContexts(logSinkMap, index); err != nil {
+		return nil, err
+	}
+
+	return logSinkMap, nil
+}
+
+func setServerLoggingName(logSinkMap map[string]any, index int) error {
+	rawType, hasType := logSinkMap[loggingFieldType]
+	if !hasType {
 		return nil
 	}
 
-	typedMap, ok := rawValue.(map[string]any)
-	if !ok {
+	if _, hasName := logSinkMap[loggingFieldName]; !hasName {
+		typeName, isString := rawType.(string)
+		if !isString {
+			return fmt.Errorf("logging.%d.type must be a string, found %T", index, rawType)
+		}
+
+		logSinkMap[loggingFieldName] = typeName
+	}
+
+	delete(logSinkMap, loggingFieldType)
+
+	return nil
+}
+
+func flattenServerLoggingContexts(logSinkMap map[string]any, index int) error {
+	rawContexts, hasContexts := logSinkMap[loggingFieldContexts]
+	if !hasContexts {
+		return nil
+	}
+
+	contextsMap, isMap := rawContexts.(map[string]any)
+	if !isMap {
+		return fmt.Errorf("logging.%d.contexts must be an object, found %T", index, rawContexts)
+	}
+
+	for contextName, contextValue := range contextsMap {
+		if _, hasField := logSinkMap[contextName]; hasField {
+			return fmt.Errorf("logging.%d context %q conflicts with existing sink field", index, contextName)
+		}
+
+		logSinkMap[contextName] = contextValue
+	}
+
+	delete(logSinkMap, loggingFieldContexts)
+
+	return nil
+}
+
+func translateNamedMapInObjectToSlice(parent map[string]any, key string, path []string) error {
+	rawValue, found := parent[key]
+	if !found {
+		return nil
+	}
+
+	typedMap, isMap := rawValue.(map[string]any)
+	if !isMap {
 		// Already in legacy array form (or unknown shape). Leave unchanged.
 		return nil
 	}
@@ -596,8 +666,8 @@ func namedMapToNamedSlice(namedMap map[string]any, path []string) ([]any, error)
 	items := make([]any, 0, len(names))
 	for _, name := range names {
 		rawItem := namedMap[name]
-		itemMap, ok := rawItem.(map[string]any)
-		if !ok {
+		itemMap, isMap := rawItem.(map[string]any)
+		if !isMap {
 			return nil, fmt.Errorf("%s.%s must be an object, found %T", formatNodePath(path), name, rawItem)
 		}
 
@@ -678,35 +748,35 @@ func tryConvertUnitObject(obj map[string]any, path []string) (int64, bool, error
 func getUnitMultiplier(unit string, path []string) (int64, error) {
 	switch strings.ToLower(unit) {
 	case "s":
-		return 1, nil
+		return unitSecond, nil
 	case "m":
 		if isDurationPath(path) {
-			return 60, nil
+			return unitMinute, nil
 		}
 
-		return 1_000_000, nil
+		return unitMega, nil
 	case "h":
-		return 3_600, nil
+		return unitHour, nil
 	case "d":
-		return 86_400, nil
+		return unitDay, nil
 	case "k":
-		return 1_000, nil
+		return unitKilo, nil
 	case "g":
-		return 1_000_000_000, nil
+		return unitGiga, nil
 	case "t":
-		return 1_000_000_000_000, nil
+		return unitTera, nil
 	case "p":
-		return 1_000_000_000_000_000, nil
+		return unitPeta, nil
 	case "ki":
-		return 1_024, nil
+		return unitKibi, nil
 	case "mi":
-		return 1_048_576, nil
+		return unitMebi, nil
 	case "gi":
-		return 1_073_741_824, nil
+		return unitGibi, nil
 	case "ti":
-		return 1_099_511_627_776, nil
+		return unitTebi, nil
 	case "pi":
-		return 1_125_899_906_842_624, nil
+		return unitPebi, nil
 	default:
 		return 0, fmt.Errorf("%s: unsupported unit %q", formatNodePath(path), unit)
 	}
@@ -759,7 +829,7 @@ func currentFieldName(path []string) string {
 func multiplyInt64Checked(value, multiplier int64) (int64, error) {
 	product := new(big.Int).Mul(big.NewInt(value), big.NewInt(multiplier))
 	if !product.IsInt64() {
-		return 0, fmt.Errorf("converted value overflows int64")
+		return 0, errors.New("converted value overflows int64")
 	}
 
 	return product.Int64(), nil
