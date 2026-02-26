@@ -3,6 +3,7 @@
 package cmd
 
 import (
+	"os"
 	"testing"
 )
 
@@ -75,5 +76,63 @@ func TestRunEValidate(t *testing.T) {
 		if test.expectError == (err == nil) {
 			t.Fatalf("case: %d, expectError: %v does not match err: %v", i, test.expectError, err)
 		}
+	}
+}
+
+func TestRunEValidateServerYAMLCompat(t *testing.T) {
+	if err := InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
+
+	serverYAML := `
+service:
+  cluster-name: compat-cluster
+network:
+  service:
+    port: 3000
+  heartbeat:
+    mode: mesh
+    port: 3002
+    interval: 150
+    timeout: 10
+  fabric:
+    port: 3001
+logging:
+  - type: console
+    contexts:
+      any: info
+namespaces:
+  test:
+    replication-factor: 2
+    storage-engine:
+      type: memory
+      data-size:
+        value: 4
+        unit: g
+`
+
+	tmpFile, err := os.CreateTemp("", "asconfig-server-yaml-*.yaml")
+	if err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	if _, err := tmpFile.WriteString(serverYAML); err != nil {
+		t.Fatalf("failed to write temp yaml file: %v", err)
+	}
+
+	if err := tmpFile.Close(); err != nil {
+		t.Fatalf("failed to close temp yaml file: %v", err)
+	}
+
+	cmd := newValidateCmd()
+	cmd.ParseFlags([]string{
+		"--aerospike-version", "8.1.0",
+		"--format", "yaml",
+		"--server-yaml",
+	})
+
+	if err := cmd.RunE(cmd, []string{tmpFile.Name()}); err != nil {
+		t.Fatalf("expected translated server yaml to validate, got error: %v", err)
 	}
 }

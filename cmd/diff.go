@@ -55,6 +55,11 @@ func newDiffCmd() *cobra.Command {
 	}
 
 	res.Version = VERSION
+	res.Flags().Bool(
+		flagServerYAML,
+		false,
+		"Interpret YAML input as server experimental YAML and translate it to legacy asconfig YAML before diffing",
+	)
 	res.Flags().
 		StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
 
@@ -87,6 +92,11 @@ func newDiffFilesCmd() *cobra.Command {
 		},
 	}
 	cmd.Version = VERSION
+	cmd.Flags().Bool(
+		flagServerYAML,
+		false,
+		"Interpret YAML input as server experimental YAML and translate it to legacy asconfig YAML before diffing",
+	)
 	cmd.Flags().
 		StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
 
@@ -112,6 +122,11 @@ func newDiffServerCmd() *cobra.Command {
 	// Add format flag but hide it from help output as it will be automatically detected
 	cmd.Flags().
 		StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
+	cmd.Flags().Bool(
+		flagServerYAML,
+		false,
+		"Interpret YAML input as server experimental YAML and translate it to legacy asconfig YAML before diffing",
+	)
 
 	if err := cmd.Flags().MarkHidden("format"); err != nil {
 		logger.Errorf("Unable to hide format flag: %v", err)
@@ -215,6 +230,16 @@ func runFileDiff(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	f1, err = maybeTranslateServerYAMLInput(cmd, fmt1, f1)
+	if err != nil {
+		return err
+	}
+
+	f2, err = maybeTranslateServerYAMLInput(cmd, fmt2, f2)
+	if err != nil {
+		return err
+	}
+
 	// not performing any validation so server version is "" (not needed)
 	// won't be marshaling these configs to text so use Invalid output format
 	// TODO decouple output format from asconf, probably pass it as an
@@ -279,6 +304,11 @@ func runServerDiff(cmd *cobra.Command, args []string) error {
 	logger.Debugf("Local file format is %v", localFormat)
 
 	localFile, err := os.ReadFile(localPath)
+	if err != nil {
+		return err
+	}
+
+	localFile, err = maybeTranslateServerYAMLInput(cmd, localFormat, localFile)
 	if err != nil {
 		return err
 	}
