@@ -46,6 +46,12 @@ logging:
     contexts:
       any: info
       misc: warning
+  - type: syslog
+    facility: local0
+    path: /dev/log
+    tag: asd
+    contexts:
+      any: detail
 namespaces:
   nsB:
     replication-factor: 2
@@ -143,20 +149,30 @@ xdr:
 	assertString(t, xdrNS2["name"], "ns2", "xdr.dcs[1].namespaces[1].name")
 
 	logging := mustSlice(t, translated["logging"], "logging")
-	if len(logging) != 1 {
-		t.Fatalf("expected 1 logging sink, got %d", len(logging))
+	if len(logging) != 2 {
+		t.Fatalf("expected 2 logging sinks, got %d", len(logging))
 	}
 
-	logSink := mustMap(t, logging[0], "logging[0]")
-	assertString(t, logSink["name"], "file", "logging[0].name")
-	if _, ok := logSink["type"]; ok {
+	fileLogSink := mustMap(t, logging[0], "logging[0]")
+	assertString(t, fileLogSink["name"], "/var/log/aerospike.log", "logging[0].name")
+	if _, ok := fileLogSink["type"]; ok {
 		t.Fatalf("expected logging[0].type to be removed")
 	}
-	if _, ok := logSink["contexts"]; ok {
+	if _, ok := fileLogSink["contexts"]; ok {
 		t.Fatalf("expected logging[0].contexts to be flattened")
 	}
-	assertString(t, logSink["any"], "info", "logging[0].any")
-	assertString(t, logSink["misc"], "warning", "logging[0].misc")
+	if _, ok := fileLogSink["path"]; ok {
+		t.Fatalf("expected logging[0].path to be folded into logging[0].name")
+	}
+	assertString(t, fileLogSink["any"], "info", "logging[0].any")
+	assertString(t, fileLogSink["misc"], "warning", "logging[0].misc")
+
+	syslogSink := mustMap(t, logging[1], "logging[1]")
+	assertString(t, syslogSink["name"], "syslog", "logging[1].name")
+	assertString(t, syslogSink["facility"], "local0", "logging[1].facility")
+	assertString(t, syslogSink["path"], "/dev/log", "logging[1].path")
+	assertString(t, syslogSink["tag"], "asd", "logging[1].tag")
+	assertString(t, syslogSink["any"], "detail", "logging[1].any")
 
 	service := mustMap(t, translated["service"], "service")
 	assertInt64(t, service["nsup-period"], 60, "service.nsup-period")
@@ -242,6 +258,13 @@ func TestTranslateLegacyYAMLToServerYAML(t *testing.T) {
 logging:
   - name: console
     any: info
+  - name: /var/log/aerospike.log
+    namespace: detail
+  - name: syslog
+    any: warning
+    facility: local0
+    path: /dev/log
+    tag: asd
 network:
   service:
     port: 3000
@@ -280,14 +303,31 @@ xdr:
 	}
 
 	logging := mustSlice(t, translated["logging"], "logging")
-	logSink := mustMap(t, logging[0], "logging[0]")
-	assertString(t, logSink["type"], "console", "logging[0].type")
-	if _, ok := logSink["name"]; ok {
-		t.Fatalf("expected logging[0].name to be removed")
+	if len(logging) != 3 {
+		t.Fatalf("expected 3 logging sinks, got %d", len(logging))
 	}
 
-	contexts := mustMap(t, logSink["contexts"], "logging[0].contexts")
-	assertString(t, contexts["any"], "info", "logging[0].contexts.any")
+	consoleSink := mustMap(t, logging[0], "logging[0]")
+	assertString(t, consoleSink["type"], "console", "logging[0].type")
+	if _, ok := consoleSink["name"]; ok {
+		t.Fatalf("expected logging[0].name to be removed")
+	}
+	consoleContexts := mustMap(t, consoleSink["contexts"], "logging[0].contexts")
+	assertString(t, consoleContexts["any"], "info", "logging[0].contexts.any")
+
+	fileSink := mustMap(t, logging[1], "logging[1]")
+	assertString(t, fileSink["type"], "file", "logging[1].type")
+	assertString(t, fileSink["path"], "/var/log/aerospike.log", "logging[1].path")
+	fileContexts := mustMap(t, fileSink["contexts"], "logging[1].contexts")
+	assertString(t, fileContexts["namespace"], "detail", "logging[1].contexts.namespace")
+
+	syslogSink := mustMap(t, logging[2], "logging[2]")
+	assertString(t, syslogSink["type"], "syslog", "logging[2].type")
+	assertString(t, syslogSink["facility"], "local0", "logging[2].facility")
+	assertString(t, syslogSink["path"], "/dev/log", "logging[2].path")
+	assertString(t, syslogSink["tag"], "asd", "logging[2].tag")
+	syslogContexts := mustMap(t, syslogSink["contexts"], "logging[2].contexts")
+	assertString(t, syslogContexts["any"], "warning", "logging[2].contexts.any")
 
 	namespaces := mustMap(t, translated["namespaces"], "namespaces")
 	ns := mustMap(t, namespaces["test"], "namespaces.test")
@@ -341,6 +381,68 @@ func TestMaybeTranslateServerYAMLOutputGuards(t *testing.T) {
 
 	if !strings.Contains(string(out), "type: console") {
 		t.Fatalf("expected translated output to include server logging type, got:\n%s", string(out))
+	}
+}
+
+func TestMaybeTranslateServerYAMLOutputMapsLegacyFileSink(t *testing.T) {
+	cmd := &cobra.Command{}
+	cmd.Flags().Bool(flagServerYAMLOutput, false, "")
+	if err := cmd.ParseFlags([]string{"--server-yaml-output"}); err != nil {
+		t.Fatalf("failed to parse flags: %v", err)
+	}
+
+	out, err := maybeTranslateServerYAMLOutput(
+		cmd,
+		asConf.YAML,
+		"8.1.1",
+		[]byte("logging:\n  - name: /var/log/aerospike/aerospike.log\n    any: info\n"),
+	)
+	if err != nil {
+		t.Fatalf("expected successful output translation, got: %v", err)
+	}
+
+	outText := string(out)
+	if !strings.Contains(outText, "type: file") {
+		t.Fatalf("expected translated output to include file logging type, got:\n%s", outText)
+	}
+
+	if !strings.Contains(outText, "path: /var/log/aerospike/aerospike.log") {
+		t.Fatalf("expected translated output to include file logging path, got:\n%s", outText)
+	}
+
+	if strings.Contains(outText, "type: /var/log/aerospike/aerospike.log") {
+		t.Fatalf("expected legacy file path not to be emitted as logging type, got:\n%s", outText)
+	}
+}
+
+func TestMaybeTranslateServerYAMLOutputMapsLegacyTypePathSink(t *testing.T) {
+	cmd := &cobra.Command{}
+	cmd.Flags().Bool(flagServerYAMLOutput, false, "")
+	if err := cmd.ParseFlags([]string{"--server-yaml-output"}); err != nil {
+		t.Fatalf("failed to parse flags: %v", err)
+	}
+
+	out, err := maybeTranslateServerYAMLOutput(
+		cmd,
+		asConf.YAML,
+		"8.1.1",
+		[]byte("logging:\n  - type: /var/log/aerospike/aerospike.log\n    any: info\n"),
+	)
+	if err != nil {
+		t.Fatalf("expected successful output translation, got: %v", err)
+	}
+
+	outText := string(out)
+	if !strings.Contains(outText, "type: file") {
+		t.Fatalf("expected translated output to include file logging type, got:\n%s", outText)
+	}
+
+	if !strings.Contains(outText, "path: /var/log/aerospike/aerospike.log") {
+		t.Fatalf("expected translated output to include file logging path, got:\n%s", outText)
+	}
+
+	if strings.Contains(outText, "type: /var/log/aerospike/aerospike.log") {
+		t.Fatalf("expected legacy type path not to be emitted as logging type, got:\n%s", outText)
 	}
 }
 

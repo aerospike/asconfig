@@ -21,26 +21,29 @@ const (
 
 	minServerYAMLOutputVersion = "8.1.1"
 
-	unitSecond           int64 = 1
-	unitMinute           int64 = 60
-	unitHour             int64 = 3_600
-	unitDay              int64 = 86_400
-	unitKilo             int64 = 1_000
-	unitMega             int64 = 1_000_000
-	unitGiga             int64 = 1_000_000_000
-	unitTera             int64 = 1_000_000_000_000
-	unitPeta             int64 = 1_000_000_000_000_000
-	unitKibi             int64 = 1_024
-	unitMebi             int64 = 1_048_576
-	unitGibi             int64 = 1_073_741_824
-	unitTebi             int64 = 1_099_511_627_776
-	unitPebi             int64 = 1_125_899_906_842_624
-	loggingFieldType           = "type"
-	loggingFieldName           = "name"
-	loggingFieldPath           = "path"
-	loggingFieldFacility       = "facility"
-	loggingFieldTag            = "tag"
-	loggingFieldContexts       = "contexts"
+	unitSecond             int64 = 1
+	unitMinute             int64 = 60
+	unitHour               int64 = 3_600
+	unitDay                int64 = 86_400
+	unitKilo               int64 = 1_000
+	unitMega               int64 = 1_000_000
+	unitGiga               int64 = 1_000_000_000
+	unitTera               int64 = 1_000_000_000_000
+	unitPeta               int64 = 1_000_000_000_000_000
+	unitKibi               int64 = 1_024
+	unitMebi               int64 = 1_048_576
+	unitGibi               int64 = 1_073_741_824
+	unitTebi               int64 = 1_099_511_627_776
+	unitPebi               int64 = 1_125_899_906_842_624
+	loggingFieldType             = "type"
+	loggingFieldName             = "name"
+	loggingFieldPath             = "path"
+	loggingFieldFacility         = "facility"
+	loggingFieldTag              = "tag"
+	loggingFieldContexts         = "contexts"
+	loggingSinkTypeConsole       = "console"
+	loggingSinkTypeFile          = "file"
+	loggingSinkTypeSyslog        = "syslog"
 )
 
 var loggingReservedFields = map[string]struct{}{
@@ -325,9 +328,13 @@ func translateLegacyLogSink(rawSink any, index int) (map[string]any, error) {
 }
 
 func setLegacyLoggingType(sinkMap map[string]any, index int) error {
+	if err := normalizeExistingLegacyLoggingType(sinkMap, index); err != nil {
+		return err
+	}
+
 	rawName, hasName := sinkMap[loggingFieldName]
 	if !hasName {
-		return nil
+		return ensureLegacyFileSinkHasPath(sinkMap, index)
 	}
 
 	name, isString := rawName.(string)
@@ -335,13 +342,94 @@ func setLegacyLoggingType(sinkMap map[string]any, index int) error {
 		return fmt.Errorf("logging.%d.name must be a string, found %T", index, rawName)
 	}
 
+	sinkType := legacyLoggingSinkTypeFromName(name)
 	if _, hasType := sinkMap[loggingFieldType]; !hasType {
-		sinkMap[loggingFieldType] = name
+		sinkMap[loggingFieldType] = sinkType
+	}
+
+	resolvedType, _ := sinkMap[loggingFieldType].(string)
+	if resolvedType == loggingSinkTypeFile {
+		if _, hasPath := sinkMap[loggingFieldPath]; !hasPath && !isLegacyLoggingNamedType(name) {
+			sinkMap[loggingFieldPath] = name
+		}
 	}
 
 	delete(sinkMap, loggingFieldName)
 
+	return ensureLegacyFileSinkHasPath(sinkMap, index)
+}
+
+func normalizeExistingLegacyLoggingType(sinkMap map[string]any, index int) error {
+	rawType, hasType := sinkMap[loggingFieldType]
+	if !hasType {
+		return nil
+	}
+
+	typeName, isString := rawType.(string)
+	if !isString {
+		return fmt.Errorf("logging.%d.type must be a string, found %T", index, rawType)
+	}
+
+	normalizedType := normalizeLoggingSinkType(typeName)
+	if isLegacyLoggingNamedType(normalizedType) {
+		sinkMap[loggingFieldType] = normalizedType
+
+		return nil
+	}
+
+	// Some legacy payloads encode file sink paths in `type`; normalize to
+	// server-native `type: file` plus explicit `path`.
+	sinkMap[loggingFieldType] = loggingSinkTypeFile
+	if _, hasPath := sinkMap[loggingFieldPath]; !hasPath {
+		sinkMap[loggingFieldPath] = typeName
+	}
+
 	return nil
+}
+
+func ensureLegacyFileSinkHasPath(sinkMap map[string]any, index int) error {
+	rawType, hasType := sinkMap[loggingFieldType]
+	if !hasType {
+		return nil
+	}
+
+	sinkType, isString := rawType.(string)
+	if !isString {
+		return fmt.Errorf("logging.%d.type must be a string, found %T", index, rawType)
+	}
+
+	if sinkType != loggingSinkTypeFile {
+		return nil
+	}
+
+	if _, hasPath := sinkMap[loggingFieldPath]; !hasPath {
+		return fmt.Errorf("logging.%d.file sink missing required path", index)
+	}
+
+	return nil
+}
+
+func normalizeLoggingSinkType(rawType string) string {
+	return strings.ToLower(strings.TrimSpace(rawType))
+}
+
+func legacyLoggingSinkTypeFromName(name string) string {
+	normalizedName := normalizeLoggingSinkType(name)
+	switch normalizedName {
+	case loggingSinkTypeConsole, loggingSinkTypeFile, loggingSinkTypeSyslog:
+		return normalizedName
+	default:
+		// Legacy asconfig models file sinks as name: "/path/to/file.log".
+		return loggingSinkTypeFile
+	}
+}
+
+func isLegacyLoggingNamedType(name string) bool {
+	normalizedName := normalizeLoggingSinkType(name)
+
+	return normalizedName == loggingSinkTypeConsole ||
+		normalizedName == loggingSinkTypeFile ||
+		normalizedName == loggingSinkTypeSyslog
 }
 
 func collectLegacyLoggingContexts(sinkMap map[string]any, index int) (map[string]any, error) {
@@ -595,18 +683,44 @@ func setServerLoggingName(logSinkMap map[string]any, index int) error {
 		return nil
 	}
 
-	if _, hasName := logSinkMap[loggingFieldName]; !hasName {
-		typeName, isString := rawType.(string)
-		if !isString {
-			return fmt.Errorf("logging.%d.type must be a string, found %T", index, rawType)
-		}
+	typeName, isString := rawType.(string)
+	if !isString {
+		return fmt.Errorf("logging.%d.type must be a string, found %T", index, rawType)
+	}
 
-		logSinkMap[loggingFieldName] = typeName
+	normalizedType := normalizeLoggingSinkType(typeName)
+
+	if _, hasName := logSinkMap[loggingFieldName]; !hasName {
+		if normalizedType == loggingSinkTypeFile {
+			pathValue, err := requiredLoggingPath(logSinkMap, index)
+			if err != nil {
+				return err
+			}
+
+			logSinkMap[loggingFieldName] = pathValue
+			delete(logSinkMap, loggingFieldPath)
+		} else {
+			logSinkMap[loggingFieldName] = normalizedType
+		}
 	}
 
 	delete(logSinkMap, loggingFieldType)
 
 	return nil
+}
+
+func requiredLoggingPath(logSinkMap map[string]any, index int) (string, error) {
+	rawPath, hasPath := logSinkMap[loggingFieldPath]
+	if !hasPath {
+		return "", fmt.Errorf("logging.%d.file sink missing required path", index)
+	}
+
+	pathValue, isString := rawPath.(string)
+	if !isString {
+		return "", fmt.Errorf("logging.%d.path must be a string, found %T", index, rawPath)
+	}
+
+	return pathValue, nil
 }
 
 func flattenServerLoggingContexts(logSinkMap map[string]any, index int) error {
