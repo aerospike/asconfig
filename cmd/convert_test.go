@@ -5,6 +5,8 @@ package cmd
 import (
 	"errors"
 	"testing"
+
+	asConf "github.com/aerospike/aerospike-management-lib/asconfig"
 )
 
 type preTestConvert struct {
@@ -75,5 +77,22 @@ func TestPreRunConvert(t *testing.T) {
 				t.Errorf("actual err: %v\n is not expected err: %v", err, expectedErr)
 			}
 		}
+	}
+}
+
+func TestConvertServerYAMLOutputGuards(t *testing.T) {
+	cmd := newConvertCmd()
+	if err := cmd.ParseFlags([]string{"--server-yaml-output"}); err != nil {
+		t.Fatalf("failed to parse convert flags: %v", err)
+	}
+
+	_, err := maybeTranslateServerYAMLOutput(cmd, asConf.AeroConfig, "8.1.1", []byte("logging: []"))
+	if !errors.Is(err, errServerYAMLOutputRequiresYAML) {
+		t.Fatalf("expected YAML output guard error, got: %v", err)
+	}
+
+	_, err = maybeTranslateServerYAMLOutput(cmd, asConf.YAML, "8.1.0", []byte("logging: []"))
+	if !errors.Is(err, errServerYAMLOutputUnsupportedVersion) {
+		t.Fatalf("expected version guard error, got: %v", err)
 	}
 }

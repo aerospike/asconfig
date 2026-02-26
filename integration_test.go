@@ -33,17 +33,17 @@ import (
 )
 
 const (
-	sourcePath       = "testdata/sources"
-	expectedPath     = "testdata/expected"
-	destinationPath  = "testdata/destinations"
-	coveragePath     = "testdata/coverage/integration"
-	binPath          = "testdata/bin"
-	
+	sourcePath      = "testdata/sources"
+	expectedPath    = "testdata/expected"
+	destinationPath = "testdata/destinations"
+	coveragePath    = "testdata/coverage/integration"
+	binPath         = "testdata/bin"
+
 	// File permissions
 	directoryPermissions = 0o777
 	tempFilePermissions  = 0o644
-	extraTestPath    = "testdata/cases"
-	tmpServerLogPath = "testdata/tmp_server.log"
+	extraTestPath        = "testdata/cases"
+	tmpServerLogPath     = "testdata/tmp_server.log"
 )
 
 var featKeyDir string
@@ -306,6 +306,16 @@ func TestYamlToConf(t *testing.T) {
 		// test that the converted config works with an Aerospike server
 		if !tf.SkipServerTest {
 			version := getVersion(tf.Arguments)
+
+			if tf.ServerExperimental {
+				id, _ := runServerWithOptions(version, tf.ServerImage, tf.Source, tf.DockerAuth, true, dockerClient, t)
+
+				time.Sleep(time.Second * 3) // need this to allow logs to accumulate
+				checkContainerLogs(id, t, tf, tmpServerLogPath)
+
+				stopServer(id, dockerClient)
+			}
+
 			id, _ := runServer(version, tf.ServerImage, confPath, tf.DockerAuth, dockerClient, t)
 
 			time.Sleep(time.Second * 3) // need this to allow logs to accumulate
@@ -378,6 +388,18 @@ func getDockerAuthFromEnv(auth testutils.DockerAuth) (string, error) {
 }
 
 func runServer(version string, serverVersion string, confPath string, auth testutils.DockerAuth, dockerClient *client.Client, t *testing.T) (string, string) {
+	return runServerWithOptions(version, serverVersion, confPath, auth, false, dockerClient, t)
+}
+
+func runServerWithOptions(
+	version string,
+	serverVersion string,
+	confPath string,
+	auth testutils.DockerAuth,
+	experimental bool,
+	dockerClient *client.Client,
+	t *testing.T,
+) (string, string) {
 	containerName := "aerospike:" + version
 	if serverVersion != "" {
 		containerName = serverVersion
@@ -386,6 +408,9 @@ func runServer(version string, serverVersion string, confPath string, auth testu
 	var err error
 	serverConfPath := "/opt/aerospike/work/" + filepath.Base(confPath)
 	cmd := fmt.Sprintf("/usr/bin/asd --foreground --config-file %s", serverConfPath)
+	if experimental {
+		cmd = fmt.Sprintf("/usr/bin/asd --foreground --experimental --config-file %s", serverConfPath)
+	}
 	// cmd = fmt.Sprintf("/bin/bash")
 
 	containerConf := &container.Config{
@@ -685,12 +710,21 @@ func TestConfToYaml(t *testing.T) {
 		}
 
 		// verify that the generated yaml matches the expected yaml
-		if _, err := diff(confPath, tf.Expected); err != nil {
+		diffArgs := []string{confPath, tf.Expected}
+		if tf.ServerExperimental {
+			diffArgs = append([]string{"--server-yaml"}, diffArgs...)
+		}
+		if _, err := diff(diffArgs...); err != nil {
 			t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf, err)
 		}
 
 		finalConfPath := filepath.Join(destinationPath, "tmp.conf")
-		test = exec.Command(binPath+"/asconfig.test", "convert", "-f", "--format", "yaml", "--output", finalConfPath, confPath)
+		convertBackArgs := []string{"convert", "-f", "--format", "yaml", "--output", finalConfPath}
+		if tf.ServerExperimental {
+			convertBackArgs = append(convertBackArgs, "--server-yaml")
+		}
+		convertBackArgs = append(convertBackArgs, confPath)
+		test = exec.Command(binPath+"/asconfig.test", convertBackArgs...)
 		test.Env = []string{"GOCOVERDIR=" + coveragePath}
 		_, err = test.Output()
 		if err != nil {
@@ -705,6 +739,16 @@ func TestConfToYaml(t *testing.T) {
 		// test that the converted config works with an Aerospike server
 		if !tf.SkipServerTest {
 			version := getVersion(tf.Arguments)
+
+			if tf.ServerExperimental {
+				id, _ := runServerWithOptions(version, tf.ServerImage, confPath, tf.DockerAuth, true, dockerClient, t)
+
+				time.Sleep(time.Second * 3) // need this to allow logs to accumulate
+				checkContainerLogs(id, t, tf, tmpServerLogPath)
+
+				stopServer(id, dockerClient)
+			}
+
 			id, _ := runServer(version, tf.ServerImage, finalConfPath, tf.DockerAuth, dockerClient, t)
 
 			time.Sleep(time.Second * 3) // need this to allow logs to accumulate

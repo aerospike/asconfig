@@ -57,6 +57,16 @@ func newConvertCmd() *cobra.Command {
 	asCommonFlags := getCommonFlags()
 	res.Flags().AddFlagSet(asCommonFlags)
 	res.Flags().BoolP("force", "f", false, "Override checks for supported server version and config validation")
+	res.Flags().Bool(
+		flagServerYAML,
+		false,
+		"Interpret YAML input as server experimental YAML and translate it to legacy asconfig YAML before processing",
+	)
+	res.Flags().Bool(
+		flagServerYAMLOutput,
+		false,
+		"Write YAML output in server experimental native format (requires Aerospike version 8.1.1+)",
+	)
 	res.Flags().StringP("output", "o", os.Stdout.Name(), "File path to write output to")
 	res.Flags().
 		StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
@@ -112,8 +122,13 @@ func convertConfig(cmd *cobra.Command, args []string, cfgData []byte) error {
 		}
 	}
 
+	cfgDataToParse, err := maybeTranslateServerYAMLInput(cmd, srcFormat, cfgData)
+	if err != nil {
+		return err
+	}
+
 	// load, validate, and convert
-	out, err := processConfigConversion(cfgData, srcFormat, outFmt, asVersion, force)
+	out, err := processConfigConversion(cfgDataToParse, cfgData, srcFormat, outFmt, asVersion, force, cmd)
 	if err != nil {
 		return err
 	}
@@ -138,10 +153,11 @@ func determineOutputFormat(srcFormat asConf.Format) (asConf.Format, error) {
 
 // processConfigConversion handles loading, validation, and conversion.
 func processConfigConversion(
-	cfgData []byte,
+	cfgData, metadataSrc []byte,
 	srcFormat, outFmt asConf.Format,
 	asVersion string,
 	force bool,
+	cmd *cobra.Command,
 ) ([]byte, error) {
 	// load
 	asconfig, err := asConf.NewASConfigFromBytes(mgmtLibLogger, cfgData, srcFormat)
@@ -170,9 +186,18 @@ func processConfigConversion(
 		return nil, err
 	}
 
+	out, err = maybeTranslateServerYAMLOutput(cmd, outFmt, asVersion, out)
+	if err != nil {
+		return nil, err
+	}
+
 	// prepend metadata to the config output
+	if len(metadataSrc) == 0 {
+		metadataSrc = cfgData
+	}
+
 	mtext, err := genMetaDataText(
-		cfgData,
+		metadataSrc,
 		nil,
 		map[string]string{
 			metaKeyAerospikeVersion: asVersion,
