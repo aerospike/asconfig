@@ -3,9 +3,12 @@
 package cmd
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
+	asConf "github.com/aerospike/aerospike-management-lib/asconfig"
+	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
 
@@ -231,6 +234,113 @@ namespaces:
 
 	if !strings.Contains(err.Error(), "overflows int64") {
 		t.Fatalf("expected overflow error, got: %v", err)
+	}
+}
+
+func TestTranslateLegacyYAMLToServerYAML(t *testing.T) {
+	input := `
+logging:
+  - name: console
+    any: info
+network:
+  service:
+    port: 3000
+  heartbeat:
+    mode: mesh
+    port: 3002
+    interval: 150
+    timeout: 10
+  fabric:
+    port: 3001
+  tls:
+    - name: tls1
+      cert-file: /a.crt
+namespaces:
+  - name: test
+    replication-factor: 2
+    sets:
+      - name: set1
+        enable-index: true
+xdr:
+  dcs:
+    - name: dc1
+      namespaces:
+        - name: test
+          forward: true
+`
+
+	out, err := TranslateLegacyYAMLToServerYAML([]byte(input))
+	if err != nil {
+		t.Fatalf("TranslateLegacyYAMLToServerYAML returned error: %v", err)
+	}
+
+	translated := map[string]any{}
+	if err := yaml.Unmarshal(out, translated); err != nil {
+		t.Fatalf("unable to unmarshal translated yaml: %v", err)
+	}
+
+	logging := mustSlice(t, translated["logging"], "logging")
+	logSink := mustMap(t, logging[0], "logging[0]")
+	assertString(t, logSink["type"], "console", "logging[0].type")
+	if _, ok := logSink["name"]; ok {
+		t.Fatalf("expected logging[0].name to be removed")
+	}
+
+	contexts := mustMap(t, logSink["contexts"], "logging[0].contexts")
+	assertString(t, contexts["any"], "info", "logging[0].contexts.any")
+
+	namespaces := mustMap(t, translated["namespaces"], "namespaces")
+	ns := mustMap(t, namespaces["test"], "namespaces.test")
+	sets := mustMap(t, ns["sets"], "namespaces.test.sets")
+	set := mustMap(t, sets["set1"], "namespaces.test.sets.set1")
+	if enabled, ok := set["enable-index"].(bool); !ok || !enabled {
+		t.Fatalf("expected namespaces.test.sets.set1.enable-index to be true")
+	}
+
+	network := mustMap(t, translated["network"], "network")
+	tls := mustMap(t, network["tls"], "network.tls")
+	tls1 := mustMap(t, tls["tls1"], "network.tls.tls1")
+	assertString(t, tls1["cert-file"], "/a.crt", "network.tls.tls1.cert-file")
+
+	xdr := mustMap(t, translated["xdr"], "xdr")
+	dcs := mustMap(t, xdr["dcs"], "xdr.dcs")
+	dc := mustMap(t, dcs["dc1"], "xdr.dcs.dc1")
+	dcNamespaces := mustMap(t, dc["namespaces"], "xdr.dcs.dc1.namespaces")
+	dcNS := mustMap(t, dcNamespaces["test"], "xdr.dcs.dc1.namespaces.test")
+	if forward, ok := dcNS["forward"].(bool); !ok || !forward {
+		t.Fatalf("expected xdr.dcs.dc1.namespaces.test.forward to be true")
+	}
+}
+
+func TestMaybeTranslateServerYAMLOutputGuards(t *testing.T) {
+	cmd := &cobra.Command{}
+	cmd.Flags().Bool(flagServerYAMLOutput, false, "")
+	if err := cmd.ParseFlags([]string{"--server-yaml-output"}); err != nil {
+		t.Fatalf("failed to parse flags: %v", err)
+	}
+
+	_, err := maybeTranslateServerYAMLOutput(cmd, asConf.AeroConfig, "8.1.1", []byte("logging: []"))
+	if !errors.Is(err, errServerYAMLOutputRequiresYAML) {
+		t.Fatalf("expected YAML output guard error, got: %v", err)
+	}
+
+	_, err = maybeTranslateServerYAMLOutput(cmd, asConf.YAML, "8.1.0", []byte("logging: []"))
+	if !errors.Is(err, errServerYAMLOutputUnsupportedVersion) {
+		t.Fatalf("expected version guard error, got: %v", err)
+	}
+
+	out, err := maybeTranslateServerYAMLOutput(
+		cmd,
+		asConf.YAML,
+		"8.1.1",
+		[]byte("logging:\n  - name: console\n    any: info\n"),
+	)
+	if err != nil {
+		t.Fatalf("expected successful output translation, got: %v", err)
+	}
+
+	if !strings.Contains(string(out), "type: console") {
+		t.Fatalf("expected translated output to include server logging type, got:\n%s", string(out))
 	}
 }
 

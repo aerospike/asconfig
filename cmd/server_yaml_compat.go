@@ -8,12 +8,18 @@ import (
 	"strconv"
 	"strings"
 
+	lib "github.com/aerospike/aerospike-management-lib"
 	asConf "github.com/aerospike/aerospike-management-lib/asconfig"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
 
-const flagServerYAML = "server-yaml"
+const (
+	flagServerYAML       = "server-yaml"
+	flagServerYAMLOutput = "server-yaml-output"
+
+	minServerYAMLOutputVersion = "8.1.1"
+)
 
 // maybeTranslateServerYAMLInput translates YAML input to the legacy asconfig
 // YAML shape when the user enables --server-yaml.
@@ -32,6 +38,58 @@ func maybeTranslateServerYAMLInput(cmd *cobra.Command, srcFormat asConf.Format, 
 	}
 
 	return TranslateServerYAMLToLegacy(cfgData)
+}
+
+// maybeTranslateServerYAMLOutput translates YAML output from legacy asconfig YAML
+// to server experimental YAML when --server-yaml-output is enabled.
+func maybeTranslateServerYAMLOutput(
+	cmd *cobra.Command,
+	outFormat asConf.Format,
+	asVersion string,
+	cfgData []byte,
+) ([]byte, error) {
+	if cmd == nil {
+		return cfgData, nil
+	}
+
+	translate, err := cmd.Flags().GetBool(flagServerYAMLOutput)
+	if err != nil {
+		return nil, err
+	}
+
+	if !translate {
+		return cfgData, nil
+	}
+
+	if outFormat != asConf.YAML {
+		return nil, errServerYAMLOutputRequiresYAML
+	}
+
+	if asVersion == "" {
+		return nil, errMissingAerospikeVersion
+	}
+
+	supportedVersion, err := isServerYAMLOutputVersionSupported(asVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	if !supportedVersion {
+		return nil, fmt.Errorf("%w: got %s", errServerYAMLOutputUnsupportedVersion, asVersion)
+	}
+
+	return TranslateLegacyYAMLToServerYAML(cfgData)
+}
+
+func isServerYAMLOutputVersionSupported(version string) (bool, error) {
+	version = strings.TrimPrefix(version, "ee-")
+
+	compareResult, err := lib.CompareVersions(version, minServerYAMLOutputVersion)
+	if err != nil {
+		return false, err
+	}
+
+	return compareResult >= 0, nil
 }
 
 // TranslateServerYAMLToLegacy converts server experimental YAML to the legacy
@@ -57,6 +115,279 @@ func TranslateServerYAMLToLegacy(cfgData []byte) ([]byte, error) {
 	}
 
 	return yaml.Marshal(res)
+}
+
+// TranslateLegacyYAMLToServerYAML converts legacy asconfig YAML to server
+// experimental YAML shape.
+func TranslateLegacyYAMLToServerYAML(cfgData []byte) ([]byte, error) {
+	parsed := map[string]any{}
+	if err := yaml.Unmarshal(cfgData, parsed); err != nil {
+		return nil, err
+	}
+
+	if err := translateLegacyYAMLStructure(parsed); err != nil {
+		return nil, err
+	}
+
+	return yaml.Marshal(parsed)
+}
+
+func translateLegacyYAMLStructure(root map[string]any) error {
+	if err := translateLegacyNamespaces(root); err != nil {
+		return err
+	}
+
+	if err := translateLegacyNetworkTLS(root); err != nil {
+		return err
+	}
+
+	if err := translateLegacyXDR(root); err != nil {
+		return err
+	}
+
+	return translateLegacyLogging(root)
+}
+
+func translateLegacyNamespaces(root map[string]any) error {
+	rawNamespaces, ok := root["namespaces"]
+	if !ok {
+		return nil
+	}
+
+	namespaceSlice, ok := rawNamespaces.([]any)
+	if !ok {
+		// Already in server map form (or unknown shape). Leave unchanged.
+		return nil
+	}
+
+	for i, rawNamespace := range namespaceSlice {
+		namespaceMap, ok := rawNamespace.(map[string]any)
+		if !ok {
+			return fmt.Errorf("namespaces.%d must be an object, found %T", i, rawNamespace)
+		}
+
+		if err := translateNamedSliceInObjectToMap(
+			namespaceMap,
+			"sets",
+			[]string{"namespaces", strconv.Itoa(i), "sets"},
+		); err != nil {
+			return err
+		}
+	}
+
+	namespaceMap, err := namedSliceToNamedMap(namespaceSlice, []string{"namespaces"})
+	if err != nil {
+		return err
+	}
+
+	root["namespaces"] = namespaceMap
+
+	return nil
+}
+
+func translateLegacyNetworkTLS(root map[string]any) error {
+	rawNetwork, ok := root["network"]
+	if !ok {
+		return nil
+	}
+
+	networkMap, ok := rawNetwork.(map[string]any)
+	if !ok {
+		return fmt.Errorf("network must be an object, found %T", rawNetwork)
+	}
+
+	return translateNamedSliceInObjectToMap(networkMap, "tls", []string{"network", "tls"})
+}
+
+func translateLegacyXDR(root map[string]any) error {
+	rawXDR, ok := root["xdr"]
+	if !ok {
+		return nil
+	}
+
+	xdrMap, ok := rawXDR.(map[string]any)
+	if !ok {
+		return fmt.Errorf("xdr must be an object, found %T", rawXDR)
+	}
+
+	rawDCs, ok := xdrMap["dcs"]
+	if !ok {
+		return nil
+	}
+
+	dcSlice, ok := rawDCs.([]any)
+	if !ok {
+		// Already in server map form (or unknown shape). Leave unchanged.
+		return nil
+	}
+
+	for i, rawDC := range dcSlice {
+		dcMap, ok := rawDC.(map[string]any)
+		if !ok {
+			return fmt.Errorf("xdr.dcs.%d must be an object, found %T", i, rawDC)
+		}
+
+		if err := translateNamedSliceInObjectToMap(
+			dcMap,
+			"namespaces",
+			[]string{"xdr", "dcs", strconv.Itoa(i), "namespaces"},
+		); err != nil {
+			return err
+		}
+	}
+
+	dcMap, err := namedSliceToNamedMap(dcSlice, []string{"xdr", "dcs"})
+	if err != nil {
+		return err
+	}
+
+	xdrMap["dcs"] = dcMap
+
+	return nil
+}
+
+func translateLegacyLogging(root map[string]any) error {
+	rawLogging, ok := root["logging"]
+	if !ok {
+		return nil
+	}
+
+	loggingSlice, ok := rawLogging.([]any)
+	if !ok {
+		return nil
+	}
+
+	const (
+		loggingFieldType     = "type"
+		loggingFieldName     = "name"
+		loggingFieldPath     = "path"
+		loggingFieldFacility = "facility"
+		loggingFieldTag      = "tag"
+		loggingFieldContexts = "contexts"
+	)
+
+	reservedFields := map[string]struct{}{
+		loggingFieldType:     {},
+		loggingFieldName:     {},
+		loggingFieldPath:     {},
+		loggingFieldFacility: {},
+		loggingFieldTag:      {},
+		loggingFieldContexts: {},
+	}
+
+	for i, rawSink := range loggingSlice {
+		sinkMap, ok := rawSink.(map[string]any)
+		if !ok {
+			return fmt.Errorf("logging.%d must be an object, found %T", i, rawSink)
+		}
+
+		if rawName, hasName := sinkMap[loggingFieldName]; hasName {
+			name, ok := rawName.(string)
+			if !ok {
+				return fmt.Errorf("logging.%d.name must be a string, found %T", i, rawName)
+			}
+
+			if _, hasType := sinkMap[loggingFieldType]; !hasType {
+				sinkMap[loggingFieldType] = name
+			}
+
+			delete(sinkMap, loggingFieldName)
+		}
+
+		contexts := map[string]any{}
+		if rawContexts, hasContexts := sinkMap[loggingFieldContexts]; hasContexts {
+			existingContexts, ok := rawContexts.(map[string]any)
+			if !ok {
+				return fmt.Errorf("logging.%d.contexts must be an object, found %T", i, rawContexts)
+			}
+
+			for key, value := range existingContexts {
+				contexts[key] = value
+			}
+		}
+
+		for key, value := range sinkMap {
+			if _, reserved := reservedFields[key]; reserved {
+				continue
+			}
+
+			if isLoggingLevelValue(value) {
+				contexts[key] = value
+				delete(sinkMap, key)
+			}
+		}
+
+		if len(contexts) > 0 {
+			sinkMap[loggingFieldContexts] = contexts
+		}
+
+		loggingSlice[i] = sinkMap
+	}
+
+	root["logging"] = loggingSlice
+
+	return nil
+}
+
+func translateNamedSliceInObjectToMap(parent map[string]any, key string, path []string) error {
+	rawValue, ok := parent[key]
+	if !ok {
+		return nil
+	}
+
+	namedSlice, ok := rawValue.([]any)
+	if !ok {
+		// Already in server map form (or unknown shape). Leave unchanged.
+		return nil
+	}
+
+	asMap, err := namedSliceToNamedMap(namedSlice, path)
+	if err != nil {
+		return err
+	}
+
+	parent[key] = asMap
+
+	return nil
+}
+
+func namedSliceToNamedMap(namedSlice []any, path []string) (map[string]any, error) {
+	res := make(map[string]any, len(namedSlice))
+
+	for i, rawItem := range namedSlice {
+		itemMap, ok := rawItem.(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("%s.%d must be an object, found %T", formatNodePath(path), i, rawItem)
+		}
+
+		rawName, ok := itemMap["name"]
+		if !ok {
+			return nil, fmt.Errorf("%s.%d missing required name field", formatNodePath(path), i)
+		}
+
+		name, ok := rawName.(string)
+		if !ok {
+			return nil, fmt.Errorf("%s.%d.name must be a string, found %T", formatNodePath(path), i, rawName)
+		}
+
+		if _, duplicate := res[name]; duplicate {
+			return nil, fmt.Errorf("%s contains duplicate name %q", formatNodePath(path), name)
+		}
+
+		delete(itemMap, "name")
+		res[name] = itemMap
+	}
+
+	return res, nil
+}
+
+func isLoggingLevelValue(value any) bool {
+	level, ok := value.(string)
+	if !ok {
+		return false
+	}
+
+	return LoggingEnum[strings.ToLower(level)]
 }
 
 func translateServerYAMLStructure(root map[string]any) error {

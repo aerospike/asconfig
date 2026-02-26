@@ -710,12 +710,21 @@ func TestConfToYaml(t *testing.T) {
 		}
 
 		// verify that the generated yaml matches the expected yaml
-		if _, err := diff(confPath, tf.Expected); err != nil {
+		diffArgs := []string{confPath, tf.Expected}
+		if tf.ServerExperimental {
+			diffArgs = append([]string{"--server-yaml"}, diffArgs...)
+		}
+		if _, err := diff(diffArgs...); err != nil {
 			t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf, err)
 		}
 
 		finalConfPath := filepath.Join(destinationPath, "tmp.conf")
-		test = exec.Command(binPath+"/asconfig.test", "convert", "-f", "--format", "yaml", "--output", finalConfPath, confPath)
+		convertBackArgs := []string{"convert", "-f", "--format", "yaml", "--output", finalConfPath}
+		if tf.ServerExperimental {
+			convertBackArgs = append(convertBackArgs, "--server-yaml")
+		}
+		convertBackArgs = append(convertBackArgs, confPath)
+		test = exec.Command(binPath+"/asconfig.test", convertBackArgs...)
 		test.Env = []string{"GOCOVERDIR=" + coveragePath}
 		_, err = test.Output()
 		if err != nil {
@@ -730,6 +739,16 @@ func TestConfToYaml(t *testing.T) {
 		// test that the converted config works with an Aerospike server
 		if !tf.SkipServerTest {
 			version := getVersion(tf.Arguments)
+
+			if tf.ServerExperimental {
+				id, _ := runServerWithOptions(version, tf.ServerImage, confPath, tf.DockerAuth, true, dockerClient, t)
+
+				time.Sleep(time.Second * 3) // need this to allow logs to accumulate
+				checkContainerLogs(id, t, tf, tmpServerLogPath)
+
+				stopServer(id, dockerClient)
+			}
+
 			id, _ := runServer(version, tf.ServerImage, finalConfPath, tf.DockerAuth, dockerClient, t)
 
 			time.Sleep(time.Second * 3) // need this to allow logs to accumulate

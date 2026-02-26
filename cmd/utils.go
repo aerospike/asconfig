@@ -65,6 +65,9 @@ var (
 	errValidateTooManyArguments = fmt.Errorf("expected a maximum of %d arguments", convertArgMax)
 
 	errMetadataDoesNotContain = errors.New("metadata does not contain key")
+
+	errServerYAMLOutputRequiresYAML      = errors.New("server native yaml output requires yaml output format")
+	errServerYAMLOutputUnsupportedVersion = errors.New("server native yaml output requires aerospike version 8.1.1 or newer")
 )
 
 // LoggingEnum is a map of valid logging levels - collated from schema.
