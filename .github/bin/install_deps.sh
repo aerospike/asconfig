@@ -10,7 +10,7 @@ function install_deps_debian11() {
   rm -rf /var/lib/apt/lists/*
   apt-get clean
   apt-get update -o Acquire::Retries=5
-  apt -y install ruby-rubygems make rpm git snapd curl binutils
+  apt -y install ruby-rubygems make rpm git curl binutils
 
   if [ "$(uname -m)" = "x86_64" ]; then
       curl -L "${CURL_RETRY_OPTS[@]}" https://go.dev/dl/go"$GOLANG_VERSION".linux-amd64.tar.gz -o /tmp/go"$GOLANG_VERSION".linux-amd64.tar.gz
@@ -31,7 +31,7 @@ function install_deps_debian12() {
   rm -rf /var/lib/apt/lists/*
   apt-get clean
   apt-get update -o Acquire::Retries=5
-  apt -y install ruby-rubygems make rpm git snapd curl binutils
+  apt -y install ruby-rubygems make rpm git curl binutils
 
   if [ "$(uname -m)" = "x86_64" ]; then
       curl -L "${CURL_RETRY_OPTS[@]}" https://go.dev/dl/go"$GOLANG_VERSION".linux-amd64.tar.gz -o /tmp/go"$GOLANG_VERSION".linux-amd64.tar.gz
@@ -52,7 +52,7 @@ function install_deps_debian13() {
   rm -rf /var/lib/apt/lists/*
   apt-get clean
   apt-get update -o Acquire::Retries=5
-  apt -y install ruby-rubygems make rpm git snapd curl binutils
+  apt -y install ruby-rubygems make rpm git curl binutils
 
   if [ "$(uname -m)" = "x86_64" ]; then
       curl -L "${CURL_RETRY_OPTS[@]}" https://go.dev/dl/go"$GOLANG_VERSION".linux-amd64.tar.gz -o /tmp/go"$GOLANG_VERSION".linux-amd64.tar.gz
@@ -73,7 +73,7 @@ function install_deps_ubuntu20.04() {
   rm -rf /var/lib/apt/lists/*
   apt-get clean
   apt-get update -o Acquire::Retries=5
-  apt -y install ruby make rpm git snapd curl binutils
+  apt -y install ruby make rpm git curl binutils
 
   if [ "$(uname -m)" = "x86_64" ]; then
       curl -L "${CURL_RETRY_OPTS[@]}" https://go.dev/dl/go"$GOLANG_VERSION".linux-amd64.tar.gz -o /tmp/go"$GOLANG_VERSION".linux-amd64.tar.gz
@@ -94,7 +94,7 @@ function install_deps_ubuntu22.04() {
   rm -rf /var/lib/apt/lists/*
   apt-get clean
   apt-get update -o Acquire::Retries=5
-  apt -y install ruby-rubygems make rpm git snapd curl binutils
+  apt -y install ruby-rubygems make rpm git curl binutils
 
   if [ "$(uname -m)" = "x86_64" ]; then
       curl -L "${CURL_RETRY_OPTS[@]}" https://go.dev/dl/go"$GOLANG_VERSION".linux-amd64.tar.gz -o /tmp/go"$GOLANG_VERSION".linux-amd64.tar.gz
@@ -115,7 +115,7 @@ function install_deps_ubuntu24.04() {
   rm -rf /var/lib/apt/lists/*
   apt-get clean
   apt-get update -o Acquire::Retries=5
-  apt -y install ruby-rubygems make rpm git snapd curl binutils
+  apt -y install ruby-rubygems make rpm git curl binutils
 
   if [ "$(uname -m)" = "x86_64" ]; then
       curl -L "${CURL_RETRY_OPTS[@]}" https://go.dev/dl/go"$GOLANG_VERSION".linux-amd64.tar.gz -o /tmp/go"$GOLANG_VERSION".linux-amd64.tar.gz
