@@ -14,14 +14,10 @@ on:
         required: false
         type: string
         default: ""
-  pull_request:
-    # yamllint disable-line rule:quoted-strings
-    branches:
-      - "*"
   push:
     branches:
       # yamllint disable-line rule:quoted-strings
-      - "main"
+      - 'pvinh/TOOLS-3297-addMacOS'
 
 jobs:
   validate-inputs:
