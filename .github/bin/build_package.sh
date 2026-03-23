@@ -6,7 +6,10 @@ function build_packages(){
     echo "ENV_DISTRO is not set"
     return
   fi
-  export PATH=$PATH:/opt/golang/go/bin
+  if [ -d /opt/golang/go ]; then
+    export GOROOT=/opt/golang/go
+    export PATH="/opt/golang/go/bin:$PATH"
+  fi
   GIT_DIR=$(git rev-parse --show-toplevel)
 
   # build

@@ -5,6 +5,8 @@ export GOLANG_VERSION="1.25.7"
 export FPM_VERSION="1.17.0"
 
 export CURL_RETRY_OPTS=(--retry 5 --retry-delay 5)
+# Official Linux Go tarballs ship a trimmed "go" binary: it must run with GOROOT at
+# /opt/golang/go. Do not copy only go(1) to /usr/local/bin or it wins on PATH and breaks builds.
 
 function install_deps_debian11() {
   rm -rf /var/lib/apt/lists/*
@@ -22,7 +24,6 @@ function install_deps_debian11() {
       echo "unknown arch $(uname -m)"
       exit 1
   fi
-  install /opt/golang/go/bin/go /usr/local/bin/
   gem install fpm -v "$FPM_VERSION"
   rm -rf /var/lib/apt/lists/*
 }
@@ -43,7 +44,6 @@ function install_deps_debian12() {
       echo "unknown arch $(uname -m)"
       exit 1
   fi
-  install /opt/golang/go/bin/go /usr/local/bin/
   gem install fpm -v "$FPM_VERSION"
   rm -rf /var/lib/apt/lists/*
 }
@@ -64,7 +64,6 @@ function install_deps_debian13() {
       echo "unknown arch $(uname -m)"
       exit 1
   fi
-  install /opt/golang/go/bin/go /usr/local/bin/
   gem install fpm -v "$FPM_VERSION"
   rm -rf /var/lib/apt/lists/*
 }
@@ -85,7 +84,6 @@ function install_deps_ubuntu20.04() {
       echo "unknown arch $(uname -m)"
       exit 1
   fi
-  install /opt/golang/go/bin/go /usr/local/bin/
   gem install fpm -v "$FPM_VERSION"
   rm -rf /var/lib/apt/lists/*
 }
@@ -106,7 +104,6 @@ function install_deps_ubuntu22.04() {
       echo "unknown arch $(uname -m)"
       exit 1
   fi
-  install /opt/golang/go/bin/go /usr/local/bin/
   gem install fpm -v "$FPM_VERSION"
   rm -rf /var/lib/apt/lists/*
 }
@@ -127,7 +124,6 @@ function install_deps_ubuntu24.04() {
       echo "unknown arch $(uname -m)"
       exit 1
   fi
-  install /opt/golang/go/bin/go /usr/local/bin/
   gem install fpm -v "$FPM_VERSION"
   rm -rf /var/lib/apt/lists/*
 }
@@ -137,7 +133,6 @@ function install_deps_el8() {
   dnf -y update
   dnf module enable -y ruby:2.7
   dnf -y install ruby ruby-devel redhat-rpm-config rubygems rpm-build make git gcc gcc-c++
-  gem install --no-document fpm
 
   if [ "$(uname -m)" = "x86_64" ]; then
       curl -L "${CURL_RETRY_OPTS[@]}" https://go.dev/dl/go"$GOLANG_VERSION".linux-amd64.tar.gz -o /tmp/go"$GOLANG_VERSION".linux-amd64.tar.gz
@@ -149,7 +144,6 @@ function install_deps_el8() {
       echo "unknown arch $(uname -m)"
       exit 1
   fi
-  install /opt/golang/go/bin/go /usr/local/bin/
   gem install fpm -v "$FPM_VERSION"
   dnf clean all
 }
@@ -169,7 +163,6 @@ function install_deps_el9() {
       echo "unknown arch $(uname -m)"
       exit 1
   fi
-  install /opt/golang/go/bin/go /usr/local/bin/
   gem install fpm -v "$FPM_VERSION"
   dnf clean all
 }
@@ -189,7 +182,6 @@ function install_deps_el10() {
       echo "unknown arch $(uname -m)"
       exit 1
   fi
-  install /opt/golang/go/bin/go /usr/local/bin/
   gem install fpm -v "$FPM_VERSION"
   dnf clean all
 }
@@ -209,7 +201,6 @@ function install_deps_amzn2023() {
       echo "unknown arch $(uname -m)"
       exit 1
   fi
-  install /opt/golang/go/bin/go /usr/local/bin/
   gem install fpm -v "$FPM_VERSION"
   dnf clean all
 }

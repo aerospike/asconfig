@@ -213,7 +213,6 @@ jobs:
           PKG_VERSION: ${{ needs.get-version.outputs.VERSION }}
         run: |
           set -euo pipefail
-          export PATH="$PATH:/opt/golang/go/bin"
           source .github/bin/build_package.sh
           build_packages
 
