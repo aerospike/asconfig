@@ -10,7 +10,7 @@ function install_deps_debian11() {
   rm -rf /var/lib/apt/lists/*
   apt-get clean
   apt-get update -o Acquire::Retries=5
-  apt -y install ruby-rubygems make rpm git curl binutils
+  apt-get install -y --no-install-recommends ruby-rubygems make rpm git curl binutils build-essential ruby-dev libssl-dev
 
   if [ "$(uname -m)" = "x86_64" ]; then
       curl -L "${CURL_RETRY_OPTS[@]}" https://go.dev/dl/go"$GOLANG_VERSION".linux-amd64.tar.gz -o /tmp/go"$GOLANG_VERSION".linux-amd64.tar.gz
@@ -31,7 +31,7 @@ function install_deps_debian12() {
   rm -rf /var/lib/apt/lists/*
   apt-get clean
   apt-get update -o Acquire::Retries=5
-  apt -y install ruby-rubygems make rpm git curl binutils
+  apt-get install -y --no-install-recommends ruby-rubygems make rpm git curl binutils build-essential ruby-dev libssl-dev
 
   if [ "$(uname -m)" = "x86_64" ]; then
       curl -L "${CURL_RETRY_OPTS[@]}" https://go.dev/dl/go"$GOLANG_VERSION".linux-amd64.tar.gz -o /tmp/go"$GOLANG_VERSION".linux-amd64.tar.gz
@@ -52,7 +52,7 @@ function install_deps_debian13() {
   rm -rf /var/lib/apt/lists/*
   apt-get clean
   apt-get update -o Acquire::Retries=5
-  apt -y install ruby-rubygems make rpm git curl binutils
+  apt-get install -y --no-install-recommends ruby-rubygems make rpm git curl binutils build-essential ruby-dev libssl-dev
 
   if [ "$(uname -m)" = "x86_64" ]; then
       curl -L "${CURL_RETRY_OPTS[@]}" https://go.dev/dl/go"$GOLANG_VERSION".linux-amd64.tar.gz -o /tmp/go"$GOLANG_VERSION".linux-amd64.tar.gz
@@ -73,7 +73,7 @@ function install_deps_ubuntu20.04() {
   rm -rf /var/lib/apt/lists/*
   apt-get clean
   apt-get update -o Acquire::Retries=5
-  apt -y install ruby make rpm git curl binutils
+  apt-get install -y --no-install-recommends ruby make rpm git curl binutils build-essential ruby-dev libssl-dev
 
   if [ "$(uname -m)" = "x86_64" ]; then
       curl -L "${CURL_RETRY_OPTS[@]}" https://go.dev/dl/go"$GOLANG_VERSION".linux-amd64.tar.gz -o /tmp/go"$GOLANG_VERSION".linux-amd64.tar.gz
@@ -94,7 +94,7 @@ function install_deps_ubuntu22.04() {
   rm -rf /var/lib/apt/lists/*
   apt-get clean
   apt-get update -o Acquire::Retries=5
-  apt -y install ruby-rubygems make rpm git curl binutils
+  apt-get install -y --no-install-recommends ruby-rubygems make rpm git curl binutils build-essential ruby-dev libssl-dev
 
   if [ "$(uname -m)" = "x86_64" ]; then
       curl -L "${CURL_RETRY_OPTS[@]}" https://go.dev/dl/go"$GOLANG_VERSION".linux-amd64.tar.gz -o /tmp/go"$GOLANG_VERSION".linux-amd64.tar.gz
@@ -115,7 +115,7 @@ function install_deps_ubuntu24.04() {
   rm -rf /var/lib/apt/lists/*
   apt-get clean
   apt-get update -o Acquire::Retries=5
-  apt -y install ruby-rubygems make rpm git curl binutils
+  apt-get install -y --no-install-recommends ruby-rubygems make rpm git curl binutils build-essential ruby-dev libssl-dev
 
   if [ "$(uname -m)" = "x86_64" ]; then
       curl -L "${CURL_RETRY_OPTS[@]}" https://go.dev/dl/go"$GOLANG_VERSION".linux-amd64.tar.gz -o /tmp/go"$GOLANG_VERSION".linux-amd64.tar.gz
@@ -136,7 +136,7 @@ function install_deps_el8() {
   dnf clean all
   dnf -y update
   dnf module enable -y ruby:2.7
-  dnf -y install ruby ruby-devel redhat-rpm-config rubygems rpm-build make git
+  dnf -y install ruby ruby-devel redhat-rpm-config rubygems rpm-build make git gcc gcc-c++
   gem install --no-document fpm
 
   if [ "$(uname -m)" = "x86_64" ]; then
@@ -157,7 +157,7 @@ function install_deps_el8() {
 function install_deps_el9() {
   dnf clean all
   dnf -y update
-  dnf -y install ruby rpmdevtools make git
+  dnf -y install ruby ruby-devel rpmdevtools make git gcc gcc-c++ openssl-devel zlib-devel
 
   if [ "$(uname -m)" = "x86_64" ]; then
       curl -L "${CURL_RETRY_OPTS[@]}" https://go.dev/dl/go"$GOLANG_VERSION".linux-amd64.tar.gz -o /tmp/go"$GOLANG_VERSION".linux-amd64.tar.gz
@@ -177,7 +177,7 @@ function install_deps_el9() {
 function install_deps_el10() {
   dnf clean all
   dnf -y update
-  dnf -y install ruby rpmdevtools make git
+  dnf -y install ruby ruby-devel rpmdevtools make git gcc gcc-c++ openssl-devel zlib-devel
 
   if [ "$(uname -m)" = "x86_64" ]; then
       curl -L "${CURL_RETRY_OPTS[@]}" https://go.dev/dl/go"$GOLANG_VERSION".linux-amd64.tar.gz -o /tmp/go"$GOLANG_VERSION".linux-amd64.tar.gz
@@ -197,7 +197,7 @@ function install_deps_el10() {
 function install_deps_amzn2023() {
   dnf clean all
   dnf -y update
-  dnf -y install ruby rpmdevtools make git
+  dnf -y install ruby ruby-devel rpmdevtools make git gcc gcc-c++ openssl-devel zlib-devel
 
   if [ "$(uname -m)" = "x86_64" ]; then
       curl -L "${CURL_RETRY_OPTS[@]}" https://go.dev/dl/go"$GOLANG_VERSION".linux-amd64.tar.gz -o /tmp/go"$GOLANG_VERSION".linux-amd64.tar.gz
