@@ -1,0 +1,12 @@
+[
+    {
+        "Source":"testdata/cases/server812/server812.yaml",
+        "Destination":"testdata/cases/server812/server812-res-.conf",
+        "Expected":"testdata/cases/server812/server812.conf",
+        "Arguments":["convert","--aerospike-version","8.1.2.0-20260327044720","--format","yaml","--output","testdata/cases/server812/server812-res-.conf"],
+        "SkipServerTest":false,
+        "ServerErrorAllowList":null,
+        "ServerImage":"artifact.aerospike.io/database-docker-dev-local/aerospike-server-enterprise:8.1.2.0-20260327044720",
+        "DockerAuth":{"Username":"ASC_DOCKER_USER","Password":"ASC_DOCKER_PASS"}
+    }
+]
