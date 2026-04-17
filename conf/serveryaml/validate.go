@@ -8,9 +8,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// ValidationErr describes a single schema validation failure in a form that
+// ValidationError describes a single schema validation failure in a form that
 // is independent of the underlying validation library.
-type ValidationErr struct {
+type ValidationError struct {
 	Context     string
 	Field       string
 	ErrType     string
@@ -18,17 +18,17 @@ type ValidationErr struct {
 	Value       interface{}
 }
 
-// Error renders a ValidationErr in the same shape as
+// Error renders a ValidationError in the same shape as
 // aerospike-management-lib's asconfig.ValidationErr so that downstream
 // formatting can treat them interchangeably.
-func (v ValidationErr) Error() string {
+func (v ValidationError) Error() string {
 	return fmt.Sprintf("description: %s, error-type: %s", v.Description, v.ErrType)
 }
 
 // Validate validates yamlBytes against the server-native (experimental) JSON
 // schema for the given aerospike-server-version. A nil error and a nil/empty
 // slice indicates the document is valid against the schema.
-func Validate(yamlBytes []byte, version string) ([]ValidationErr, error) {
+func Validate(yamlBytes []byte, version string) ([]ValidationError, error) {
 	schemaJSON, err := LoadSchema(version)
 	if err != nil {
 		return nil, err
@@ -37,7 +37,7 @@ func Validate(yamlBytes []byte, version string) ([]ValidationErr, error) {
 	return validateAgainst(yamlBytes, schemaJSON)
 }
 
-func validateAgainst(yamlBytes []byte, schemaJSON string) ([]ValidationErr, error) {
+func validateAgainst(yamlBytes []byte, schemaJSON string) ([]ValidationError, error) {
 	docJSON, err := yamlToJSON(yamlBytes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert yaml document to json for validation: %w", err)
@@ -55,9 +55,9 @@ func validateAgainst(yamlBytes []byte, schemaJSON string) ([]ValidationErr, erro
 		return nil, nil
 	}
 
-	errs := make([]ValidationErr, 0, len(result.Errors()))
+	errs := make([]ValidationError, 0, len(result.Errors()))
 	for _, desc := range result.Errors() {
-		errs = append(errs, ValidationErr{
+		errs = append(errs, ValidationError{
 			Context:     desc.Context().String(),
 			Field:       desc.Field(),
 			ErrType:     desc.Type(),

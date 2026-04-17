@@ -157,8 +157,8 @@ func maybeEmitNativeYAML(
 // formatServerYAMLValidationErrors renders validation failures from
 // serveryaml.Validate in the same shape as conf.ValidationErrors so users see
 // a consistent experience regardless of which schema rejected the file.
-func formatServerYAMLValidationErrors(verrs []serveryaml.ValidationErr) error {
-	errorsByContext := map[string][]serveryaml.ValidationErr{}
+func formatServerYAMLValidationErrors(verrs []serveryaml.ValidationError) error {
+	errorsByContext := map[string][]serveryaml.ValidationError{}
 	for _, verr := range verrs {
 		errorsByContext[verr.Context] = append(errorsByContext[verr.Context], verr)
 	}

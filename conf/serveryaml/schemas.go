@@ -15,7 +15,7 @@ import (
 var (
 	experimentalSchemasOnce sync.Once
 	experimentalSchemas     schema.SchemaMap
-	experimentalSchemasErr  error
+	errExperimentalSchemas  error
 
 	baseVersionRe  = regexp.MustCompile(`^(\d+\.\d+\.\d+)`)
 	minorVersionRe = regexp.MustCompile(`^(\d+\.\d+)`)
@@ -57,12 +57,7 @@ func loadSchemaResolved(version string) (string, string, error) {
 		return schemaJSON, baseVersion, nil
 	}
 
-	resolved, err := resolveSchemaVersion(schemas, baseVersion)
-	if err != nil {
-		return "", "", err
-	}
-
-	if resolved != "" {
+	if resolved := resolveSchemaVersion(schemas, baseVersion); resolved != "" {
 		return schemas[resolved], resolved, nil
 	}
 
@@ -78,7 +73,7 @@ func loadSchemaResolved(version string) (string, string, error) {
 
 // resolveSchemaVersion finds the highest embedded schema version that is not
 // greater than target. Returns "" if no embedded schema is <= target.
-func resolveSchemaVersion(schemas schema.SchemaMap, target string) (string, error) {
+func resolveSchemaVersion(schemas schema.SchemaMap, target string) string {
 	candidates := make([]string, 0, len(schemas))
 	for v := range schemas {
 		cmp, err := lib.CompareVersions(v, target)
@@ -92,7 +87,7 @@ func resolveSchemaVersion(schemas schema.SchemaMap, target string) (string, erro
 	}
 
 	if len(candidates) == 0 {
-		return "", nil
+		return ""
 	}
 
 	sort.Slice(candidates, func(i, j int) bool {
@@ -104,14 +99,14 @@ func resolveSchemaVersion(schemas schema.SchemaMap, target string) (string, erro
 		return cmp < 0
 	})
 
-	return candidates[len(candidates)-1], nil
+	return candidates[len(candidates)-1]
 }
 
 func loadExperimentalSchemas() (schema.SchemaMap, error) {
 	experimentalSchemasOnce.Do(func() {
 		rawSchemas, err := schema.NewExperimentalSchemaMap()
 		if err != nil {
-			experimentalSchemasErr = err
+			errExperimentalSchemas = err
 			return
 		}
 
@@ -123,7 +118,7 @@ func loadExperimentalSchemas() (schema.SchemaMap, error) {
 		experimentalSchemas = sanitized
 	})
 
-	return experimentalSchemas, experimentalSchemasErr
+	return experimentalSchemas, errExperimentalSchemas
 }
 
 // sanitizeExperimentalSchema rewrites JSON-schema regex patterns that use
