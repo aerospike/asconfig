@@ -32,11 +32,7 @@ func newValidateCmd() *cobra.Command {
 	// is in the input config file's metadata
 	commonFlags := getCommonFlags()
 	res.Flags().AddFlagSet(commonFlags)
-	res.Flags().Bool(
-		flagServerYAML,
-		false,
-		"Interpret YAML input as server experimental YAML and translate it to legacy asconfig YAML before validation",
-	)
+	res.Flags().Bool(flagServerYAML, false, flagServerYAMLDescription)
 	res.Flags().
 		StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
 
@@ -101,7 +97,7 @@ func runValidateCommand(cmd *cobra.Command, args []string) error {
 
 	logger.Debugf("Processing flag aerospike-version value=%s", version)
 
-	parseData, err := maybeTranslateServerYAMLInput(cmd, srcFormat, fdata)
+	parseData, err := prepareYAMLForParse(cmd, srcFormat, version, fdata)
 	if err != nil {
 		return err
 	}

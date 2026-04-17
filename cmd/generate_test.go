@@ -47,19 +47,58 @@ func TestRunEGenerate(t *testing.T) {
 	}
 }
 
-func TestGenerateServerYAMLOutputGuards(t *testing.T) {
+func TestGenerateServerYAMLGuards(t *testing.T) {
+	tests := []struct {
+		name      string
+		outFormat asConf.Format
+		version   string
+		expected  error
+	}{
+		{
+			name:      "missing cluster version is rejected",
+			outFormat: asConf.YAML,
+			version:   "",
+			expected:  errServerYAMLRequiresVersion,
+		},
+		{
+			name:      "cluster version below cutoff is rejected",
+			outFormat: asConf.YAML,
+			version:   "8.0.0",
+			expected:  errServerYAMLUnsupportedVersion,
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			cmd := newGenerateCmd()
+			if err := cmd.ParseFlags([]string{"--server-yaml"}); err != nil {
+				t.Fatalf("failed to parse generate flags: %v", err)
+			}
+
+			_, err := maybeEmitNativeYAML(cmd, tc.outFormat, tc.version, []byte("logging: []"))
+			if !errors.Is(err, tc.expected) {
+				t.Fatalf("expected error %v, got: %v", tc.expected, err)
+			}
+		})
+	}
+}
+
+// TestGenerateServerYAMLNonYAMLOutputIsNoOp ensures --server-yaml silently
+// passes through when the output format is not YAML.
+func TestGenerateServerYAMLNonYAMLOutputIsNoOp(t *testing.T) {
 	cmd := newGenerateCmd()
-	if err := cmd.ParseFlags([]string{"--server-yaml-output"}); err != nil {
+	if err := cmd.ParseFlags([]string{"--server-yaml"}); err != nil {
 		t.Fatalf("failed to parse generate flags: %v", err)
 	}
 
-	_, err := maybeTranslateServerYAMLOutput(cmd, asConf.AeroConfig, "8.1.1", []byte("logging: []"))
-	if !errors.Is(err, errServerYAMLOutputRequiresYAML) {
-		t.Fatalf("expected YAML output guard error, got: %v", err)
+	in := []byte("namespaces: []")
+	out, err := maybeEmitNativeYAML(cmd, asConf.AeroConfig, "", in)
+	if err != nil {
+		t.Fatalf("expected no-op when output is not YAML, got: %v", err)
 	}
 
-	_, err = maybeTranslateServerYAMLOutput(cmd, asConf.YAML, "8.1.0", []byte("logging: []"))
-	if !errors.Is(err, errServerYAMLOutputUnsupportedVersion) {
-		t.Fatalf("expected version guard error, got: %v", err)
+	if string(out) != string(in) {
+		t.Fatalf("expected bytes to pass through, got: %s", string(out))
 	}
 }

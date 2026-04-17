@@ -57,16 +57,7 @@ func newConvertCmd() *cobra.Command {
 	asCommonFlags := getCommonFlags()
 	res.Flags().AddFlagSet(asCommonFlags)
 	res.Flags().BoolP("force", "f", false, "Override checks for supported server version and config validation")
-	res.Flags().Bool(
-		flagServerYAML,
-		false,
-		"Interpret YAML input as server experimental YAML and translate it to legacy asconfig YAML before processing",
-	)
-	res.Flags().Bool(
-		flagServerYAMLOutput,
-		false,
-		"Write YAML output in server experimental native format (requires Aerospike version 8.1.1+)",
-	)
+	res.Flags().Bool(flagServerYAML, false, flagServerYAMLDescription)
 	res.Flags().StringP("output", "o", os.Stdout.Name(), "File path to write output to")
 	res.Flags().
 		StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
@@ -122,7 +113,7 @@ func convertConfig(cmd *cobra.Command, args []string, cfgData []byte) error {
 		}
 	}
 
-	cfgDataToParse, err := maybeTranslateServerYAMLInput(cmd, srcFormat, cfgData)
+	cfgDataToParse, err := prepareYAMLForParse(cmd, srcFormat, asVersion, cfgData)
 	if err != nil {
 		return err
 	}
@@ -186,7 +177,7 @@ func processConfigConversion(
 		return nil, err
 	}
 
-	out, err = maybeTranslateServerYAMLOutput(cmd, outFmt, asVersion, out)
+	out, err = maybeEmitNativeYAML(cmd, outFmt, asVersion, out)
 	if err != nil {
 		return nil, err
 	}

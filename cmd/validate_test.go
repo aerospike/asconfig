@@ -3,7 +3,9 @@
 package cmd
 
 import (
+	"errors"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -134,5 +136,79 @@ namespaces:
 
 	if err := cmd.RunE(cmd, []string{tmpFile.Name()}); err != nil {
 		t.Fatalf("expected translated server yaml to validate, got error: %v", err)
+	}
+}
+
+func TestRunEValidateServerYAMLRejectsUnsupportedVersion(t *testing.T) {
+	if err := InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
+
+	serverYAML := "service:\n  cluster-name: test\n"
+
+	tmpFile, err := os.CreateTemp("", "asconfig-server-yaml-unsupported-*.yaml")
+	if err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	if _, err := tmpFile.WriteString(serverYAML); err != nil {
+		t.Fatalf("failed to write temp yaml file: %v", err)
+	}
+
+	if err := tmpFile.Close(); err != nil {
+		t.Fatalf("failed to close temp yaml file: %v", err)
+	}
+
+	cmd := newValidateCmd()
+	cmd.ParseFlags([]string{
+		"--aerospike-version", "8.0.0",
+		"--format", "yaml",
+		"--server-yaml",
+	})
+
+	err = cmd.RunE(cmd, []string{tmpFile.Name()})
+	if !errors.Is(err, errServerYAMLUnsupportedVersion) {
+		t.Fatalf("expected version guard error, got: %v", err)
+	}
+}
+
+func TestRunEValidateServerYAMLSchemaError(t *testing.T) {
+	if err := InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
+
+	// Using an illegal top-level key to trip the experimental schema's
+	// additionalProperties: false guard.
+	serverYAML := "not-a-real-context: true\n"
+
+	tmpFile, err := os.CreateTemp("", "asconfig-server-yaml-schema-*.yaml")
+	if err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	if _, err := tmpFile.WriteString(serverYAML); err != nil {
+		t.Fatalf("failed to write temp yaml file: %v", err)
+	}
+
+	if err := tmpFile.Close(); err != nil {
+		t.Fatalf("failed to close temp yaml file: %v", err)
+	}
+
+	cmd := newValidateCmd()
+	cmd.ParseFlags([]string{
+		"--aerospike-version", "8.1.0",
+		"--format", "yaml",
+		"--server-yaml",
+	})
+
+	err = cmd.RunE(cmd, []string{tmpFile.Name()})
+	if !errors.Is(err, errServerYAMLSchemaRejection) {
+		t.Fatalf("expected native schema rejection error, got: %v", err)
+	}
+
+	if !strings.Contains(err.Error(), "context:") {
+		t.Fatalf("expected schema validation details in error, got: %v", err)
 	}
 }

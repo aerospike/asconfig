@@ -70,11 +70,9 @@ func newGenerateCmd() *cobra.Command {
 	res.Flags().StringP("format", "F", "conf",
 		flags.DefaultWrapHelpString("The format of the destination file(s). Valid options are: yaml, yml, and conf."))
 	res.Flags().Bool(
-		flagServerYAMLOutput,
+		flagServerYAML,
 		false,
-		flags.DefaultWrapHelpString(
-			"Write YAML output in server experimental native format (requires Aerospike version 8.1.1+)",
-		),
+		flags.DefaultWrapHelpString(flagServerYAMLDescription),
 	)
 
 	return res
@@ -125,7 +123,7 @@ func runGenerateCommand(cmd *cobra.Command, aerospikeFlags *flags.AerospikeFlags
 		return fmt.Errorf("%w: %w", errUnableToMarshalGeneratedConfFile, err)
 	}
 
-	fdata, err = maybeTranslateServerYAMLOutput(cmd, outFormat, generatedConf.Version, fdata)
+	fdata, err = maybeEmitNativeYAML(cmd, outFormat, generatedConf.Version, fdata)
 	if err != nil {
 		return err
 	}
