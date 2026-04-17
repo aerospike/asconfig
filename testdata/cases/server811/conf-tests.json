@@ -6,8 +6,7 @@
         "Arguments":["convert","--aerospike-version","8.1.1","--format","asconfig","--output","testdata/cases/server811/server811-res-.yaml"],
         "SkipServerTest":false,
         "ServerErrorAllowList":null,
-        "ServerImage":"aerospike/aerospike-server-enterprise:8.1.1.0",
-        "DockerAuth":{"Username":"ASC_DOCKER_USER","Password":"ASC_DOCKER_PASS"}
+        "ServerImage":"aerospike/aerospike-server-enterprise:8.1.1.1"
     },
     {
         "Source":"testdata/cases/server811/server811.conf",
@@ -16,8 +15,7 @@
         "Arguments":["convert","--aerospike-version","8.1.1","--format","asconfig","--server-yaml","--output","testdata/cases/server811/server811-res-server-native-.yaml"],
         "SkipServerTest":false,
         "ServerErrorAllowList":null,
-        "ServerImage":"aerospike/aerospike-server-enterprise:8.1.1.0",
-        "ServerExperimental":true,
-        "DockerAuth":{"Username":"ASC_DOCKER_USER","Password":"ASC_DOCKER_PASS"}
+        "ServerImage":"aerospike/aerospike-server-enterprise:8.1.1.1",
+        "ServerExperimental":true
     }
 ]
