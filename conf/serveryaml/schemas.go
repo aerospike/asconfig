@@ -30,41 +30,50 @@ var (
 // that is not newer than the requested version is returned instead. This
 // mirrors how asconfig resolves legacy schemas by minor release.
 func LoadSchema(version string) (string, error) {
+	body, _, err := loadSchemaResolved(version)
+	return body, err
+}
+
+// loadSchemaResolved is the internal version of LoadSchema that also returns
+// the embedded schema version that was picked. Exported behavior is identical
+// to LoadSchema; the second return value exists for tests that need to make
+// sure asconfig resolved the right schema for a given version string.
+func loadSchemaResolved(version string) (string, string, error) {
 	if version == "" {
-		return "", ErrMissingVersion
+		return "", "", ErrMissingVersion
 	}
 
 	schemas, err := loadExperimentalSchemas()
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	baseVersion, err := extractBaseVersion(version)
+	baseVersion, err := extractBaseVersion(strings.TrimPrefix(version, "ee-"))
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	if schemaJSON, ok := schemas[baseVersion]; ok {
-		return schemaJSON, nil
+		return schemaJSON, baseVersion, nil
 	}
 
 	resolved, err := resolveSchemaVersion(schemas, baseVersion)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	if resolved != "" {
-		return schemas[resolved], nil
+		return schemas[resolved], resolved, nil
 	}
 
 	// No schema <= the requested version; fall back to the lowest schema
 	// embedded for the same major.minor so patch-level differences within a
 	// minor release still resolve (asconfig ignores patch numbers).
 	if fallback := lowestSchemaForSameMinor(schemas, baseVersion); fallback != "" {
-		return schemas[fallback], nil
+		return schemas[fallback], fallback, nil
 	}
 
-	return "", fmt.Errorf("no native yaml schema found for aerospike-server-version %s", version)
+	return "", "", fmt.Errorf("no native yaml schema found for aerospike-server-version %s", version)
 }
 
 // resolveSchemaVersion finds the highest embedded schema version that is not

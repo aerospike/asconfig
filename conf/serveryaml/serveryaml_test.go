@@ -297,6 +297,42 @@ func TestValidateRequiresVersion(t *testing.T) {
 	}
 }
 
+// TestLoadSchemaResolvesPerVersion documents how the resolver maps common
+// asconfig-style version strings onto the embedded native schemas. It's what
+// keeps "asconfig cares about major.minor, not patch" honest as new schemas
+// land (e.g. the addition of 8.1.2 in TOOLS-3291).
+func TestLoadSchemaResolvesPerVersion(t *testing.T) {
+	cases := []struct {
+		name             string
+		version          string
+		expectedResolved string
+	}{
+		{name: "exact 8.1.1", version: "8.1.1", expectedResolved: "8.1.1"},
+		{name: "exact 8.1.2", version: "8.1.2", expectedResolved: "8.1.2"},
+		{name: "full 8.1.2.0 resolves to 8.1.2", version: "8.1.2.0", expectedResolved: "8.1.2"},
+		{name: "ee prefix strips", version: "ee-8.1.2", expectedResolved: "8.1.2"},
+		{name: "8.1.0 falls back to lowest 8.1.x", version: "8.1.0", expectedResolved: "8.1.1"},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			body, resolved, err := loadSchemaResolved(tc.version)
+			if err != nil {
+				t.Fatalf("loadSchemaResolved(%q) errored: %v", tc.version, err)
+			}
+
+			if body == "" {
+				t.Fatalf("loadSchemaResolved(%q) returned empty body", tc.version)
+			}
+
+			if resolved != tc.expectedResolved {
+				t.Fatalf("loadSchemaResolved(%q): expected %q, got %q", tc.version, tc.expectedResolved, resolved)
+			}
+		})
+	}
+}
+
 func mustMap(t *testing.T, value any, path string) map[string]any {
 	t.Helper()
 
