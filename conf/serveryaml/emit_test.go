@@ -169,6 +169,59 @@ xdr:
 	}
 }
 
+// TestFromLegacyLoggingContextsConflictErrors covers the invariant that a
+// legacy sink which specifies the same context both under `contexts` and as a
+// top-level field (with differing values) is rejected rather than silently
+// favouring one side. This mirrors the error that ToLegacy produces in the
+// reverse direction.
+func TestFromLegacyLoggingContextsConflictErrors(t *testing.T) {
+	input := `
+logging:
+  - name: console
+    contexts:
+      any: info
+    any: warning
+`
+
+	_, err := FromLegacy([]byte(input))
+	if err == nil {
+		t.Fatalf("expected logging context conflict error, got nil")
+	}
+
+	if !strings.Contains(err.Error(), "defined both under contexts") {
+		t.Fatalf("expected logging context conflict error, got: %v", err)
+	}
+}
+
+// TestFromLegacyLoggingContextsAgreeingValuesNoError confirms that a sink
+// which specifies the same context in both places with the same value is
+// accepted (the two values are effectively the same). This guards against
+// over-strict rejection of redundant-but-valid configurations.
+func TestFromLegacyLoggingContextsAgreeingValuesNoError(t *testing.T) {
+	input := `
+logging:
+  - name: console
+    contexts:
+      any: info
+    any: info
+`
+
+	out, err := FromLegacy([]byte(input))
+	if err != nil {
+		t.Fatalf("FromLegacy returned error: %v", err)
+	}
+
+	parsed := map[string]any{}
+	if err := yaml.Unmarshal(out, parsed); err != nil {
+		t.Fatalf("unable to unmarshal translated yaml: %v", err)
+	}
+
+	sinks := mustSlice(t, parsed["logging"], "logging")
+	sink := mustMap(t, sinks[0], "logging[0]")
+	contexts := mustMap(t, sink["contexts"], "logging[0].contexts")
+	assertString(t, contexts["any"], "info", "logging[0].contexts.any")
+}
+
 func TestFromLegacyLoggingTypeNonString(t *testing.T) {
 	input := `
 logging:

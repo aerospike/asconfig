@@ -44,6 +44,19 @@ func isServerYAMLFlagSet(cmd *cobra.Command) (bool, error) {
 	return cmd.Flags().GetBool(flagServerYAML)
 }
 
+// serverYAMLValidatesInput reports whether prepareYAMLForParse will validate
+// the input against the experimental schema for the given command and source
+// format. Callers use this to suppress the legacy conf.NewConfigValidator
+// step, which would otherwise re-validate the translated document against a
+// different (and potentially stricter) schema.
+func serverYAMLValidatesInput(cmd *cobra.Command, srcFormat asConf.Format) (bool, error) {
+	if srcFormat != asConf.YAML {
+		return false, nil
+	}
+
+	return isServerYAMLFlagSet(cmd)
+}
+
 // prepareYAMLForParse validates a YAML document against the experimental
 // schema for the supplied aerospike-server-version and translates it into the
 // legacy asconfig YAML shape suitable for aerospike-management-lib. Callers

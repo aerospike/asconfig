@@ -311,3 +311,116 @@ func TestConvertServerYAMLEndToEndYAMLToConf(t *testing.T) {
 		t.Fatalf("expected converted .conf to contain service.cluster-name, got:\n%s", body)
 	}
 }
+
+// TestServerYAMLValidatesInputFlagBehavior pins down the helper that tells the
+// validate/convert commands when they can safely skip the legacy validator.
+// If this contract drifts, users will either see double-validation failures
+// or lose schema validation entirely, both of which are regressions.
+func TestServerYAMLValidatesInputFlagBehavior(t *testing.T) {
+	cases := []struct {
+		name       string
+		flagSet    bool
+		flagArg    []string
+		srcFormat  asConf.Format
+		expected   bool
+		configured bool
+	}{
+		{
+			name:       "flag off, yaml input",
+			flagSet:    true,
+			flagArg:    nil,
+			srcFormat:  asConf.YAML,
+			expected:   false,
+			configured: true,
+		},
+		{
+			name:       "flag on, yaml input",
+			flagSet:    true,
+			flagArg:    []string{"--server-yaml"},
+			srcFormat:  asConf.YAML,
+			expected:   true,
+			configured: true,
+		},
+		{
+			name:       "flag on, conf input",
+			flagSet:    true,
+			flagArg:    []string{"--server-yaml"},
+			srcFormat:  asConf.AeroConfig,
+			expected:   false,
+			configured: true,
+		},
+		{
+			name:       "flag not registered on command",
+			flagSet:    false,
+			flagArg:    nil,
+			srcFormat:  asConf.YAML,
+			expected:   false,
+			configured: false,
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			cmd := &cobra.Command{}
+			if tc.configured {
+				cmd.Flags().Bool(flagServerYAML, false, "")
+			}
+
+			if len(tc.flagArg) > 0 {
+				if err := cmd.ParseFlags(tc.flagArg); err != nil {
+					t.Fatalf("failed to parse flag: %v", err)
+				}
+			}
+
+			got, err := serverYAMLValidatesInput(cmd, tc.srcFormat)
+			if err != nil {
+				t.Fatalf("serverYAMLValidatesInput errored: %v", err)
+			}
+
+			if got != tc.expected {
+				t.Fatalf("expected %v, got %v", tc.expected, got)
+			}
+		})
+	}
+}
+
+// TestConvertServerYAMLAcceptsNativeOnlyFields is the regression test for the
+// double-validation fix. A native 8.1.x fixture may contain fields that are
+// not present in the legacy schema; with the fix, --server-yaml should still
+// accept it because the native schema validated the file and the legacy
+// validator is skipped.
+func TestConvertServerYAMLAcceptsNativeOnlyFields(t *testing.T) {
+	if err := InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
+
+	srcPath := "../testdata/cases/server812/server812.experimental.yaml"
+	if _, err := os.Stat(srcPath); err != nil {
+		t.Skipf("fixture %s not available: %v", srcPath, err)
+	}
+
+	tmpDir := t.TempDir()
+	outPath := filepath.Join(tmpDir, "out.conf")
+
+	cmd := newConvertCmd()
+	if err := cmd.ParseFlags([]string{
+		"--aerospike-version", "8.1.2",
+		"--server-yaml",
+		"--output", outPath,
+		"--format", "yaml",
+	}); err != nil {
+		t.Fatalf("failed to parse convert flags: %v", err)
+	}
+
+	// Deliberately omit --force. The whole point is that --server-yaml alone
+	// should be sufficient; users should not have to reach for --force to
+	// convert a native YAML that happens to exercise native-only fields.
+	if err := cmd.PreRunE(cmd, []string{srcPath}); err != nil {
+		t.Fatalf("PreRunE failed: %v", err)
+	}
+
+	if err := cmd.RunE(cmd, []string{srcPath}); err != nil {
+		t.Fatalf("convert RunE failed without --force: %v", err)
+	}
+}

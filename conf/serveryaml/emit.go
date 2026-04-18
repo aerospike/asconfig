@@ -348,15 +348,28 @@ func collectLegacyLoggingContexts(sinkMap map[string]any, index int) (map[string
 		}
 	}
 
+	// Collect top-level logging context keys (e.g. `any: info`) and merge them
+	// into the contexts map. If the same context appears under both the
+	// explicit `contexts` map and as a top-level field we error, mirroring
+	// the translate.go direction so the round-trip is symmetric.
 	for key, value := range sinkMap {
 		if _, reserved := loggingReservedFields[key]; reserved {
 			continue
 		}
 
-		if IsLoggingLevel(value) {
-			contexts[key] = value
-			delete(sinkMap, key)
+		if !IsLoggingLevel(value) {
+			continue
 		}
+
+		if existing, conflict := contexts[key]; conflict && existing != value {
+			return nil, fmt.Errorf(
+				"logging.%d context %q is defined both under contexts (%v) and as a top-level field (%v)",
+				index, key, existing, value,
+			)
+		}
+
+		contexts[key] = value
+		delete(sinkMap, key)
 	}
 
 	return contexts, nil

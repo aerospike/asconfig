@@ -96,6 +96,11 @@ func TestToLegacyHandlesMissingOptionalSections(t *testing.T) {
 	}
 }
 
+// TestToLegacyXDRDCsAlreadyAsSlice documents the "mixed shapes" path: when a
+// caller hands us a document where xdr.dcs is already a slice but nested
+// dc.namespaces is still in server-native map form, we still translate those
+// nested namespaces. This protects partially-translated inputs from silently
+// slipping through with a shape the management-lib cannot parse.
 func TestToLegacyXDRDCsAlreadyAsSlice(t *testing.T) {
 	input := `
 xdr:
@@ -116,14 +121,24 @@ xdr:
 		t.Fatalf("unable to unmarshal translated yaml: %v", err)
 	}
 
-	// dcs stays a slice, but dc1.namespaces (map form) does NOT get rewritten
-	// because we only translate the nested namespace collection when dcs was
-	// originally a map. That's intentional: this path mirrors what the
-	// server-native wrapper would produce.
 	xdr := mustMap(t, parsed["xdr"], "xdr")
 	dcs := mustSlice(t, xdr["dcs"], "xdr.dcs")
 	if len(dcs) != 1 {
 		t.Fatalf("expected 1 dc, got %d", len(dcs))
+	}
+
+	dc := mustMap(t, dcs[0], "xdr.dcs[0]")
+	assertString(t, dc["name"], "dc1", "xdr.dcs[0].name")
+
+	nsSlice := mustSlice(t, dc["namespaces"], "xdr.dcs[0].namespaces")
+	if len(nsSlice) != 1 {
+		t.Fatalf("expected 1 namespace, got %d", len(nsSlice))
+	}
+
+	ns := mustMap(t, nsSlice[0], "xdr.dcs[0].namespaces[0]")
+	assertString(t, ns["name"], "test", "xdr.dcs[0].namespaces[0].name")
+	if ns["forward"] != true {
+		t.Fatalf("expected namespaces[0].forward=true, got %#v", ns["forward"])
 	}
 }
 
@@ -144,6 +159,50 @@ func TestToLegacyXDRMissingDCs(t *testing.T) {
 	if _, hasDCs := xdr["dcs"]; hasDCs {
 		t.Fatalf("expected no dcs key when absent from input")
 	}
+}
+
+// TestToLegacyXDRAlreadyLegacyShape runs ToLegacy on a document that is
+// already entirely in the legacy (slice-of-DCs, slice-of-namespaces) shape
+// and confirms the translator is effectively a no-op. This is the case users
+// hit when they accidentally pass --server-yaml against a legacy file: we
+// should not corrupt the document.
+func TestToLegacyXDRAlreadyLegacyShape(t *testing.T) {
+	input := `
+xdr:
+  dcs:
+    - name: dc1
+      connector: true
+      namespaces:
+        - name: test
+          forward: true
+`
+
+	out, err := ToLegacy([]byte(input))
+	if err != nil {
+		t.Fatalf("ToLegacy returned error: %v", err)
+	}
+
+	parsed := map[string]any{}
+	if err := yaml.Unmarshal(out, parsed); err != nil {
+		t.Fatalf("unable to unmarshal translated yaml: %v", err)
+	}
+
+	xdr := mustMap(t, parsed["xdr"], "xdr")
+	dcs := mustSlice(t, xdr["dcs"], "xdr.dcs")
+	if len(dcs) != 1 {
+		t.Fatalf("expected 1 dc, got %d", len(dcs))
+	}
+
+	dc := mustMap(t, dcs[0], "xdr.dcs[0]")
+	assertString(t, dc["name"], "dc1", "xdr.dcs[0].name")
+
+	nsSlice := mustSlice(t, dc["namespaces"], "xdr.dcs[0].namespaces")
+	if len(nsSlice) != 1 {
+		t.Fatalf("expected 1 namespace, got %d", len(nsSlice))
+	}
+
+	ns := mustMap(t, nsSlice[0], "xdr.dcs[0].namespaces[0]")
+	assertString(t, ns["name"], "test", "xdr.dcs[0].namespaces[0].name")
 }
 
 func TestToLegacyRejectsNonMapXDR(t *testing.T) {

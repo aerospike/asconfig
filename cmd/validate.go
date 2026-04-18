@@ -102,6 +102,21 @@ func runValidateCommand(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	nativeValidated, err := serverYAMLValidatesInput(cmd, srcFormat)
+	if err != nil {
+		return err
+	}
+
+	// When --server-yaml validated the input against the experimental schema
+	// there is no reason (and no user benefit) to re-validate the translated
+	// document against the legacy schema: the two schemas can disagree on
+	// native-only fields, which would make --server-yaml unusable without
+	// --force for any 8.1.x addition.
+	if nativeValidated {
+		_, err = asConf.NewASConfigFromBytes(mgmtLibLogger, parseData, srcFormat)
+		return err
+	}
+
 	asconfig, err := asConf.NewASConfigFromBytes(mgmtLibLogger, parseData, srcFormat)
 
 	if err != nil {

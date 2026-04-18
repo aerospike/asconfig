@@ -118,8 +118,26 @@ func convertConfig(cmd *cobra.Command, args []string, cfgData []byte) error {
 		return err
 	}
 
+	// When --server-yaml validated the input against the experimental schema
+	// we should not re-validate the translated document against the legacy
+	// schema. Doing so would reject valid native-only fields.
+	nativeValidated, err := serverYAMLValidatesInput(cmd, srcFormat)
+	if err != nil {
+		return err
+	}
+
+	skipLegacyValidation := force || nativeValidated
+
 	// load, validate, and convert
-	out, err := processConfigConversion(cfgDataToParse, cfgData, srcFormat, outFmt, asVersion, force, cmd)
+	out, err := processConfigConversion(
+		cfgDataToParse,
+		cfgData,
+		srcFormat,
+		outFmt,
+		asVersion,
+		skipLegacyValidation,
+		cmd,
+	)
 	if err != nil {
 		return err
 	}
@@ -143,11 +161,15 @@ func determineOutputFormat(srcFormat asConf.Format) (asConf.Format, error) {
 }
 
 // processConfigConversion handles loading, validation, and conversion.
+// skipLegacyValidation is true when --force was supplied or when --server-yaml
+// already validated the input against the experimental schema; in both cases
+// the legacy conf.NewConfigValidator step is a no-op at best and a false
+// positive at worst, so it is skipped.
 func processConfigConversion(
 	cfgData, metadataSrc []byte,
 	srcFormat, outFmt asConf.Format,
 	asVersion string,
-	force bool,
+	skipLegacyValidation bool,
 	cmd *cobra.Command,
 ) ([]byte, error) {
 	// load
@@ -157,7 +179,7 @@ func processConfigConversion(
 	}
 
 	// validate
-	if !force {
+	if !skipLegacyValidation {
 		verrs, errValidate := conf.NewConfigValidator(asconfig, mgmtLibLogger, asVersion).Validate()
 
 		// First handle validation process errors

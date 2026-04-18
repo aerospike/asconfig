@@ -118,13 +118,24 @@ func translateXDR(root map[string]any) error {
 		return nil
 	}
 
-	dcMap, isDCMap := rawDCs.(map[string]any)
-	if !isDCMap {
-		// Already in legacy array form (or unknown shape). Leave unchanged.
-		return nil
+	// Handle both shapes we may encounter:
+	//   1. map[string]any  – pure server-native YAML.
+	//   2. []any           – already-translated or legacy YAML.
+	// In either shape each DC may itself contain a server-native
+	// `namespaces` map that needs translation; walking both cases keeps the
+	// translator safe against partially-translated input.
+	switch dcs := rawDCs.(type) {
+	case map[string]any:
+		return translateXDRDCsMap(xdrMap, dcs)
+	case []any:
+		return translateXDRDCsSlice(dcs)
 	}
 
-	for dcName, rawDC := range dcMap {
+	return nil
+}
+
+func translateXDRDCsMap(xdrMap map[string]any, dcs map[string]any) error {
+	for dcName, rawDC := range dcs {
 		dcObj, isDCObject := rawDC.(map[string]any)
 		if !isDCObject {
 			return fmt.Errorf("xdr.dcs.%s must be an object, found %T", dcName, rawDC)
@@ -139,12 +150,38 @@ func translateXDR(root map[string]any) error {
 		}
 	}
 
-	dcSlice, err := namedMapToNamedSlice(dcMap, []string{"xdr", "dcs"})
+	dcSlice, err := namedMapToNamedSlice(dcs, []string{"xdr", "dcs"})
 	if err != nil {
 		return err
 	}
 
 	xdrMap["dcs"] = dcSlice
+
+	return nil
+}
+
+func translateXDRDCsSlice(dcs []any) error {
+	for i, rawDC := range dcs {
+		dcObj, isDCObject := rawDC.(map[string]any)
+		if !isDCObject {
+			continue
+		}
+
+		dcName, _ := dcObj["name"].(string)
+		path := []string{"xdr", "dcs", strconv.Itoa(i)}
+
+		if dcName != "" {
+			path = []string{"xdr", "dcs", dcName}
+		}
+
+		if err := translateNamedMapInObjectToSlice(
+			dcObj,
+			"namespaces",
+			append(path, "namespaces"),
+		); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }

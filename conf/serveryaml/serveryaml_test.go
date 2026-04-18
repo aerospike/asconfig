@@ -3,6 +3,7 @@
 package serveryaml
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
@@ -260,7 +261,6 @@ func TestIsSupportedVersion(t *testing.T) {
 		version  string
 		expected bool
 	}{
-		{"", false},
 		{"7.2.0", false},
 		{"8.0.0", false},
 		{"8.1.0", true},
@@ -278,6 +278,17 @@ func TestIsSupportedVersion(t *testing.T) {
 		if got != tc.expected {
 			t.Fatalf("IsSupportedVersion(%q): expected %v, got %v", tc.version, tc.expected, got)
 		}
+	}
+}
+
+func TestIsSupportedVersionMissingVersionErrors(t *testing.T) {
+	supported, err := IsSupportedVersion("")
+	if supported {
+		t.Fatalf("IsSupportedVersion(\"\") = true, want false")
+	}
+
+	if !errors.Is(err, ErrMissingVersion) {
+		t.Fatalf("IsSupportedVersion(\"\") err = %v, want ErrMissingVersion", err)
 	}
 }
 
