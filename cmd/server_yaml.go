@@ -30,7 +30,9 @@ var (
 	errServerYAMLSchemaRejection = errors.New("server-native yaml failed schema validation")
 )
 
-// isServerYAMLFlagSet returns whether --server-yaml was supplied on cmd.
+// isServerYAMLFlagSet reports the current boolean value of --server-yaml on
+// cmd. It returns (false, nil) when the flag is not registered on the command
+// or when cmd is nil, so callers can treat absence and "off" uniformly.
 func isServerYAMLFlagSet(cmd *cobra.Command) (bool, error) {
 	if cmd == nil {
 		return false, nil
