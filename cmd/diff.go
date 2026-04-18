@@ -55,6 +55,7 @@ func newDiffCmd() *cobra.Command {
 	}
 
 	res.Version = VERSION
+	res.Flags().Bool(flagServerYAML, false, flagServerYAMLDescription)
 	res.Flags().
 		StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
 
@@ -87,6 +88,7 @@ func newDiffFilesCmd() *cobra.Command {
 		},
 	}
 	cmd.Version = VERSION
+	cmd.Flags().Bool(flagServerYAML, false, flagServerYAMLDescription)
 	cmd.Flags().
 		StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
 
@@ -112,6 +114,7 @@ func newDiffServerCmd() *cobra.Command {
 	// Add format flag but hide it from help output as it will be automatically detected
 	cmd.Flags().
 		StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
+	cmd.Flags().Bool(flagServerYAML, false, flagServerYAMLDescription)
 
 	if err := cmd.Flags().MarkHidden("format"); err != nil {
 		logger.Errorf("Unable to hide format flag: %v", err)
@@ -215,6 +218,16 @@ func runFileDiff(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	f1, err = translateNativeYAMLForDiff(cmd, fmt1, f1)
+	if err != nil {
+		return err
+	}
+
+	f2, err = translateNativeYAMLForDiff(cmd, fmt2, f2)
+	if err != nil {
+		return err
+	}
+
 	// not performing any validation so server version is "" (not needed)
 	// won't be marshaling these configs to text so use Invalid output format
 	// TODO decouple output format from asconf, probably pass it as an
@@ -283,12 +296,6 @@ func runServerDiff(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Create local config
-	localConf, err := asConf.NewASConfigFromBytes(mgmtLibLogger, localFile, localFormat)
-	if err != nil {
-		return err
-	}
-
 	logger.Debugf("Generating config from Aerospike node")
 	// Generate server config using existing generate functionality
 	asCommonConfig := aerospikeFlags.NewAerospikeConfig()
@@ -306,6 +313,19 @@ func runServerDiff(cmd *cobra.Command, args []string) error {
 	generatedConf, err := asConf.GenerateConf(mgmtLibLogger, asinfo, true)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errUnableToGenerateConfigFromServer, err)
+	}
+
+	// Interpret/translate the local file using the cluster-reported version so
+	// --server-yaml validates the local document against the schema for the
+	// version actually running in the target cluster.
+	localFile, err = prepareYAMLForParse(cmd, localFormat, generatedConf.Version, localFile)
+	if err != nil {
+		return err
+	}
+
+	localConf, err := asConf.NewASConfigFromBytes(mgmtLibLogger, localFile, localFormat)
+	if err != nil {
+		return err
 	}
 
 	// Convert server config to the same format as local file to ensure same parsing path

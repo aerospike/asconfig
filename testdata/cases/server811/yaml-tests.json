@@ -7,5 +7,15 @@
         "SkipServerTest":false,
         "ServerErrorAllowList":null,
         "ServerImage":"aerospike/aerospike-server-enterprise:8.1.1.1"
+    },
+    {
+        "Source":"testdata/cases/server811/server811.experimental.yaml",
+        "Destination":"testdata/cases/server811/server811-exp-res-.conf",
+        "Expected":"testdata/cases/server811/server811.conf",
+        "Arguments":["convert","--aerospike-version","8.1.1.1","--format","yaml","--server-yaml","--output","testdata/cases/server811/server811-exp-res-.conf"],
+        "SkipServerTest":false,
+        "ServerErrorAllowList":null,
+        "ServerImage":"aerospike/aerospike-server-enterprise:8.1.1.1",
+        "ServerExperimental":true
     }
 ]

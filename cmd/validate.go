@@ -32,6 +32,7 @@ func newValidateCmd() *cobra.Command {
 	// is in the input config file's metadata
 	commonFlags := getCommonFlags()
 	res.Flags().AddFlagSet(commonFlags)
+	res.Flags().Bool(flagServerYAML, false, flagServerYAMLDescription)
 	res.Flags().
 		StringP("format", "F", "conf", "The format of the source file(s). Valid options are: yaml, yml, and conf.")
 
@@ -96,7 +97,27 @@ func runValidateCommand(cmd *cobra.Command, args []string) error {
 
 	logger.Debugf("Processing flag aerospike-version value=%s", version)
 
-	asconfig, err := asConf.NewASConfigFromBytes(mgmtLibLogger, fdata, srcFormat)
+	parseData, err := prepareYAMLForParse(cmd, srcFormat, version, fdata)
+	if err != nil {
+		return err
+	}
+
+	nativeValidated, err := serverYAMLValidatesInput(cmd, srcFormat)
+	if err != nil {
+		return err
+	}
+
+	// When --server-yaml validated the input against the experimental schema
+	// there is no reason (and no user benefit) to re-validate the translated
+	// document against the legacy schema: the two schemas can disagree on
+	// native-only fields, which would make --server-yaml unusable without
+	// --force for any 8.1.x addition.
+	if nativeValidated {
+		_, err = asConf.NewASConfigFromBytes(mgmtLibLogger, parseData, srcFormat)
+		return err
+	}
+
+	asconfig, err := asConf.NewASConfigFromBytes(mgmtLibLogger, parseData, srcFormat)
 
 	if err != nil {
 		return err
