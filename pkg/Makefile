@@ -12,7 +12,10 @@ NAME = "aerospike-asconfig"
 MAINTAINER = "Aerospike"
 VERSION ?= $(shell git describe --tags --always --abbrev=9)
 RPM_VERSION := $(subst -,_,$(VERSION))
-MAC_VERSION := $(RPM_VERSION)
+# pkgbuild --version rejects hyphens and underscores; collapse both to dots
+# so SemVer pre-release tags (e.g. 0.20.1-rc1 -> 0.20.1.rc1) are accepted, and
+# defensively normalize any underscore-form inputs (env overrides) too.
+MAC_VERSION := $(subst _,.,$(subst -,.,$(VERSION)))
 MAC_ROOT = $(BUILD_DIR)/mac-root
 PKG_ID = com.aerospike.asconfig
 MAC_PKG = $(TARGET_DIR)/aerospike-asconfig-$(MAC_VERSION)-$(ARCH).pkg

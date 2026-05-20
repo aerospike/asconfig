@@ -1,4 +1,49 @@
-name: build-artifacts
+# Build and Release pipeline for asconfig.
+#
+# Source of truth for the version: the VERSION file at repo root.
+#
+# === Main release flow ===
+#   1. Run Bump Version (manual) → opens PR updating VERSION.
+#   2. Review + merge the PR to main.
+#   3. Dispatch this workflow on main with `release=true`:
+#      - Creates and pushes git tag <VERSION> (e.g. 5.0.0-rc1).
+#      - Tag push triggers draft-release.yml (drafts GitHub release notes).
+#      - Builds + signs + tests + publishes packages to JFrog dev repos.
+#      - Creates JFrog release bundle (the promotion unit for any publish).
+#
+# === Feature-branch publishing (for external customers without GHA access) ===
+#   Dispatch this workflow on any branch with `release=true`:
+#      - No git tag is created (tags are main-only).
+#      - VERSION is computed as a SemVer 2.0 pre-release identifier so it
+#        sorts correctly in apt/dnf and never collides with main:
+#            5.0.0-rc1 + branch feature/foo, sha abc123456
+#          → 5.0.0-rc1.feature-foo.abc123456
+#      - Packages are uploaded to the JFrog dev repo and installable via
+#        apt/dnf with that version pin. A release bundle is created so the
+#        artifacts can be promoted through JFrog.
+#
+# === Main feature-style build (publish from main without tagging) ===
+#   Dispatch on main with `release=true` and `skip_tagging=true`:
+#      - Behaves like a feature-branch build: VERSION gets the main+sha
+#        suffix (e.g. 5.0.0-rc1.main.abc123456) and no git tag is created.
+#        A release bundle is still produced (same as feature-branch publish).
+#      - Use when you want to publish a build from main for testing/
+#        validation without committing to a real release.
+#
+# === Test (dry-run) ===
+#   Dispatch with `release=false` from any branch: builds run end-to-end,
+#   artifacts available on the GHA run page, no tag, no JFrog publish,
+#   no release bundle.
+#
+# === Tagging rules (summary) ===
+#   Tagging is main-only. A git tag is created ONLY when:
+#       release=true  AND  ref==refs/heads/main  AND  skip_tagging=false
+#   For any non-main branch tagging is unconditionally skipped, regardless
+#   of `release` or `skip_tagging`. Release bundles, by contrast, are produced
+#   on every publish (`release=true`) regardless of branch or `skip_tagging`,
+#   since the bundle is what enables JFrog promotion.
+
+name: Build and Release
 permissions:
   contents: read
   id-token: write
@@ -9,111 +54,23 @@ defaults:
 on:
   workflow_dispatch:
     inputs:
-      GIT_TAG:
-        description: "git tag on main branch only (x.y.z or x.y.z-suffix format, e.g. 1.2.3, 1.2.3-rc1). Will be ignored on other branches."
-        required: false
-        type: string
-        default: ""
-  push:
-    branches:
-      - main
-      # yamllint disable-line rule:quoted-strings
+      release:
+        description: "Publish packages to JFrog (and push Docker tags) and create a JFrog release bundle (the promotion unit). On main, also creates the git tag from VERSION. On non-main branches, the git tag is always skipped. Uncheck for a dry-run build (no publish, no bundle)."
+        type: boolean
+        default: false
+      skip_tagging:
+        description: "Skip the git tag even on main (treat as feature-style build). Release bundle is still produced when release=true. No effect on non-main branches, which never tag."
+        type: boolean
+        default: false
 
 jobs:
   validate-inputs:
-    name: Validate workflow inputs
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-    steps:
-      - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
-        with:
-          egress-policy: audit
-
-      - name: Validate GIT_TAG
-        run: |
-          set -euo pipefail
-
-          # Only validate on workflow_dispatch
-          if [[ "${{ github.event_name }}" != "workflow_dispatch" ]]; then
-            echo "Skipping input validation (not a workflow_dispatch)"
-            exit 0
-          fi
-
-          GIT_TAG="${{ github.event.inputs.GIT_TAG }}"
-
-          # Validate: if GIT_TAG is provided, it must match x.y.z or x.y.z-suffix format and we must be on main branch
-          if [[ -n "$GIT_TAG" ]]; then
-            if ! [[ "$GIT_TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
-              echo "ERROR: GIT_TAG must be in x.y.z or x.y.z-suffix format (e.g. 1.2.3, 1.2.3-rc1). Got: '$GIT_TAG'" >&2
-              exit 1
-            fi
-            
-            if [[ "${{ github.ref }}" != "refs/heads/main" ]]; then
-              echo "ERROR: GIT_TAG can only be provided when running on main branch" >&2
-              echo "Current branch: ${{ github.ref }}" >&2
-              exit 1
-            fi
-          fi
-
-          echo "✓ Input validation passed"
-
-  create-tag:
-    name: Create git tag (x.y.z)
-    needs: validate-inputs
-    # Only run on workflow_dispatch on main with GIT_TAG provided
-    if: >-
-      github.event_name == 'workflow_dispatch' &&
-      github.ref == 'refs/heads/main' &&
-      github.event.inputs.GIT_TAG != ''
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: write
-    steps:
-      - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
-        with:
-          egress-policy: audit
-
-      - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-
-      - name: Create and push tag
-        run: |
-          set -euo pipefail
-
-          GIT_TAG="${{ github.event.inputs.GIT_TAG }}"
-
-          git fetch --tags --force
-
-          if git rev-parse -q --verify "refs/tags/$GIT_TAG" >/dev/null; then
-            echo "Tag '$GIT_TAG' already exists; skipping creation."
-            exit 0
-          fi
-
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          git tag -a "$GIT_TAG" -m "$GIT_TAG" "$GITHUB_SHA"
-          git push origin "refs/tags/$GIT_TAG"
-
-  get-version:
-    needs: [validate-inputs, create-tag]
-    # Run if validate-inputs succeeded AND create-tag succeeded or was skipped
-    if: >-
-      always() && 
-      needs.validate-inputs.result == 'success' &&
-      (needs.create-tag.result == 'success' || needs.create-tag.result == 'skipped')
+    name: Validate VERSION file
     runs-on: ubuntu-24.04
     permissions:
       contents: read
     outputs:
-      VERSION: ${{ steps.git_describe.outputs.version }}
-      BUNDLE_VERSION: ${{ steps.git_describe.outputs.bundle_version }}
+      VERSION: ${{ steps.read.outputs.VERSION }}
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
@@ -122,28 +79,69 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          fetch-depth: 0
-          fetch-tags: true
 
-      - name: Compute version from git describe
-        id: git_describe
+      - name: Read and validate VERSION
+        id: read
         run: |
-          VERSION=$(git describe --tags --always --abbrev=9)
-          BRANCH="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
-          BRANCH_PREFIX="${BRANCH//\//-}"
-          BUNDLE_VERSION="${BRANCH_PREFIX}-${VERSION}"
+          set -euo pipefail
+          if [[ ! -f VERSION ]]; then
+            echo "::error::VERSION file is missing at repo root." >&2
+            exit 1
+          fi
+          VERSION=$(tr -d '[:space:]' < VERSION)
+          if [[ -z "$VERSION" ]]; then
+            echo "::error::VERSION file is empty." >&2
+            exit 1
+          fi
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
+            echo "::error::VERSION '$VERSION' is not valid semver (expected MAJOR.MINOR.PATCH or MAJOR.MINOR.PATCH-suffix)." >&2
+            exit 1
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
           echo "VERSION: $VERSION"
-          echo "BUNDLE_VERSION: $BUNDLE_VERSION"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "bundle_version=$BUNDLE_VERSION" >> "$GITHUB_OUTPUT"
+
+  get-version:
+    needs: validate-inputs
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      VERSION: ${{ steps.compute.outputs.version }}
+      BUNDLE_VERSION: ${{ steps.compute.outputs.bundle_version }}
+    steps:
+      - name: Compute VERSION (SemVer-aware for branch builds)
+        id: compute
+        env:
+          BASE: ${{ needs.validate-inputs.outputs.VERSION }}
+          SKIP_TAGGING: ${{ inputs.skip_tagging }}
+        run: |
+          set -euo pipefail
+          # On main without skip_tagging this is a real release: use BASE as-is.
+          # Otherwise (any branch, or main+skip_tagging) build a SemVer pre-release
+          # identifier so it never collides with the bare BASE version.
+          if [[ "${GITHUB_REF}" == "refs/heads/main" && "${SKIP_TAGGING}" != "true" ]]; then
+            VERSION="${BASE}"
+          else
+            BRANCH_SLUG=$(printf '%s' "${GITHUB_REF_NAME}" | sed 's/[^A-Za-z0-9-]/-/g')
+            # 9-char SHA matches `git describe --abbrev=9` elsewhere in the repo.
+            SHORT_SHA="${GITHUB_SHA::9}"
+            if [[ "${BASE}" == *-* ]]; then
+              VERSION="${BASE}.${BRANCH_SLUG}.${SHORT_SHA}"
+            else
+              VERSION="${BASE}-${BRANCH_SLUG}.${SHORT_SHA}"
+            fi
+          fi
+          BRANCH_PREFIX="${GITHUB_REF_NAME//\//-}"
+          BUNDLE_VERSION="${BRANCH_PREFIX}-${VERSION}"
+          echo "VERSION: ${VERSION}"
+          echo "BUNDLE_VERSION: ${BUNDLE_VERSION}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "bundle_version=${BUNDLE_VERSION}" >> "$GITHUB_OUTPUT"
 
   build-artifacts:
     needs: get-version
-    # always() needed because get-version uses always() - without it, this job would be skipped
-    if: ${{ always() && needs.get-version.result == 'success' }}
     strategy:
-      fail-fast: false  # Run all OS builds to see full status, but fail overall if any fails
+      fail-fast: false
       matrix:
         host: [ubuntu-24.04, ubuntu-24.04-arm]
         distro:
@@ -227,14 +225,11 @@ jobs:
 
   build-mac-artifacts:
     needs: get-version
-    if: ${{ always() && needs.get-version.result == 'success' }}
     strategy:
       fail-fast: false
       matrix:
         os: [macos-15-intel, macos-14, macos-15, macos-26]
     runs-on: ${{ matrix.os }}
-    permissions:
-      contents: read
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
@@ -306,11 +301,7 @@ jobs:
 
   organize-built-artifacts:
     needs: [build-artifacts, build-mac-artifacts, get-version]
-    # always() needed because upstream jobs use always()
-    if: ${{ always() && needs.build-artifacts.result == 'success' && (needs.build-mac-artifacts.result == 'success' || needs.build-mac-artifacts.result == 'skipped') }}
     runs-on: ubuntu-24.04
-    permissions:
-      contents: read
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
@@ -336,8 +327,6 @@ jobs:
     needs:
       - get-version
       - organize-built-artifacts
-    # always() needed because upstream jobs use always()
-    if: ${{ always() && needs.organize-built-artifacts.result == 'success' }}
     uses: aerospike/shared-workflows/.github/workflows/reusable_sign-mac-artifacts.yaml@v3.4.0
     permissions:
       contents: read
@@ -355,8 +344,6 @@ jobs:
     needs:
       - get-version
       - notarize-mac-artifacts
-    # always() needed because upstream jobs use always()
-    if: ${{ always() && needs.notarize-mac-artifacts.result == 'success' }}
     uses: aerospike/shared-workflows/.github/workflows/reusable_sign-artifacts.yaml@v3.4.0
     with:
       gh-artifact-name: signed-artifacts-${{ needs.get-version.outputs.VERSION }}
@@ -367,11 +354,144 @@ jobs:
       gpg-public-key: ${{ secrets.GPG_PUBLIC_KEY }}
       gpg-key-pass: ${{ secrets.GPG_PASS }}
 
+  test-install-linux-and-execute:
+    name: Test install & execute (${{ matrix.distro }}, ${{ contains(matrix.host, 'arm') && 'arm64' || 'amd64' }})
+    needs: [get-version, sign-artifacts]
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [ubuntu-24.04, ubuntu-24.04-arm]
+        distro:
+          - el8
+          - el9
+          - el10
+          - amzn2023
+          - debian11
+          - debian12
+          - debian13
+          - ubuntu20.04
+          - ubuntu22.04
+          - ubuntu24.04
+    runs-on: ${{ matrix.host }}
+    container: >-
+      ${{ matrix.distro == 'el8' && 'redhat/ubi8:8.10' ||
+        matrix.distro == 'el9' && 'redhat/ubi9:9.6' ||
+        matrix.distro == 'el10' && 'redhat/ubi10:10.0' ||
+        matrix.distro == 'amzn2023' && 'amazonlinux:2023.9.20251208.0' ||
+        matrix.distro == 'debian11' && 'debian:bullseye-20251208' ||
+        matrix.distro == 'debian12' && 'debian:bookworm-20230411' ||
+        matrix.distro == 'debian13' && 'debian:trixie-20251020' ||
+        matrix.distro == 'ubuntu20.04' && 'ubuntu:focal-20210723' ||
+        matrix.distro == 'ubuntu22.04' && 'ubuntu:jammy-20231004' ||
+        matrix.distro == 'ubuntu24.04' && 'ubuntu:noble-20251013' }}
+    permissions:
+      contents: read
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        with:
+          egress-policy: audit
+
+      - name: Install prereqs
+        run: |
+          set -euo pipefail
+          case "${{ matrix.distro }}" in
+            ubuntu*|debian*)
+              export DEBIAN_FRONTEND=noninteractive
+              apt-get update -qq
+              apt-get install -y --no-install-recommends git ca-certificates curl tar
+              ;;
+            el*|amzn*)
+              dnf -y install findutils git ca-certificates tar gzip
+              ;;
+          esac
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 1
+
+      - name: Download signed artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: signed-artifacts-${{ needs.get-version.outputs.VERSION }}
+          path: ./packages
+
+      - name: Install package locally
+        run: |
+          set -euo pipefail
+          arch="${{ contains(matrix.host, 'arm') && 'aarch64' || 'x86_64' }}"
+          case "${{ matrix.distro }}" in
+            ubuntu*|debian*)
+              export DEBIAN_FRONTEND=noninteractive
+              pkg=$(find ./packages -name "*_${{ matrix.distro }}_*${arch}*.deb" | head -1)
+              [[ -n "${pkg}" ]] || { echo "ERROR: no .deb found for ${{ matrix.distro }}/${arch}" >&2; exit 1; }
+              apt-get install -y "${pkg}"
+              ;;
+            el*|amzn*)
+              pkg=$(find ./packages -name "*.${{ matrix.distro }}.*${arch}*.rpm" | head -1)
+              [[ -n "${pkg}" ]] || { echo "ERROR: no .rpm found for ${{ matrix.distro }}/${arch}" >&2; exit 1; }
+              dnf install -y "${pkg}"
+              ;;
+          esac
+
+      - name: Install bats
+        env:
+          BATS_VERSION: "1.11.0"
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 "https://github.com/bats-core/bats-core/archive/refs/tags/v${BATS_VERSION}.tar.gz" -o /tmp/bats.tgz
+          tar -xzf /tmp/bats.tgz -C /tmp
+          "/tmp/bats-core-${BATS_VERSION}/install.sh" /usr/local
+          bats --version
+
+      - name: Verify installation
+        run: bats .github/bin/test/test_execute.bats
+
+  test-install-mac-and-execute:
+    name: Test install & execute (${{ matrix.os }})
+    needs: [get-version, sign-artifacts]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15-intel, macos-14, macos-15, macos-26]
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 1
+
+      - name: Download signed artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: signed-artifacts-${{ needs.get-version.outputs.VERSION }}
+          path: ./packages
+
+      - name: Install .pkg locally
+        run: |
+          set -euo pipefail
+          pkg=$(find ./packages -name "*-${{ matrix.os }}-${{ runner.arch }}.pkg" | head -1)
+          [[ -n "${pkg}" ]] || { echo "ERROR: no .pkg found for ${{ matrix.os }}-${{ runner.arch }}" >&2; exit 1; }
+          sudo installer -pkg "${pkg}" -target /
+
+      - name: Install bats
+        run: brew install bats-core
+
+      - name: Verify installation
+        run: bats .github/bin/test/test_execute.bats
+
   organize-signed-artifacts:
     name: Organize signed artifacts for deploy
-    needs: [get-version, sign-artifacts]
-    # always() needed because upstream jobs use always()
-    if: ${{ always() && needs.sign-artifacts.result == 'success' }}
+    needs: [get-version, test-install-linux-and-execute, test-install-mac-and-execute]
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -411,8 +531,6 @@ jobs:
     needs:
       - get-version
       - organize-signed-artifacts
-    # always() needed because upstream jobs use always()
-    if: ${{ always() && needs.organize-signed-artifacts.result == 'success' }}
     uses: aerospike/shared-workflows/.github/workflows/reusable_deploy-artifacts.yaml@v3.4.0
     with:
       jf-project: database
@@ -422,16 +540,15 @@ jobs:
       oidc-audience: database-gh-aerospike
       gh-artifact-name: deploy-artifacts-${{ needs.get-version.outputs.VERSION }}
       gh-retention-days: 1
-      dry-run: false
+      dry-run: ${{ inputs.release != true }}
       jf-build-id: ${{ needs.get-version.outputs.VERSION }}
       jf-metadata-build-id: ${{ needs.get-version.outputs.VERSION }}-metadata
       gh-workflows-ref: "v3.4.0"
 
   docker-build-arch:
     name: Docker build, test & push (${{ matrix.arch }})
+    if: inputs.release == true
     needs: [get-version, organize-signed-artifacts]
-    # always() needed because upstream jobs use always()
-    if: ${{ always() && needs.organize-signed-artifacts.result == 'success' }}
     strategy:
       fail-fast: false
       matrix:
@@ -481,7 +598,7 @@ jobs:
           username: ${{ steps.jf.outputs.oidc-user }}
           password: ${{ steps.jf.outputs.oidc-token }}
 
-      - name: Build (native), smoke test, and push per-arch tag
+      - name: Build (native) and smoke test
         env:
           VERSION: ${{ needs.get-version.outputs.VERSION }}
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -492,6 +609,8 @@ jobs:
             -a ${{ matrix.arch }} \
             -u ../deploy-artifacts
 
+          # Reuse the linux-install bats smoke test against the loaded image
+          # by shimming `asconfig` to `docker run` calls.
           sudo apt-get update -qq && sudo apt-get install -y bats
           IMAGE="aerospike/aerospike-asconfig:${VERSION}-${{ matrix.arch }}"
           SHIM_DIR=$(mktemp -d)
@@ -502,6 +621,8 @@ jobs:
           chmod +x "${SHIM_DIR}/asconfig"
           PATH="${SHIM_DIR}:${PATH}" bats .github/bin/test/test_execute.bats
 
+          # Verify the loaded image actually carries the version we built —
+          # catches mis-tagged or stale-cached images that bats wouldn't.
           BASE_VERSION=$(printf '%s' "${VERSION}" | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+')
           docker run --rm "${IMAGE}" asconfig --version | grep -qF "${BASE_VERSION}" \
             || { echo "ERROR: expected ${BASE_VERSION} in --version output" >&2; exit 1; }
@@ -512,6 +633,11 @@ jobs:
               --file=docker/Dockerfile || true
           fi
 
+      - name: Push native per-arch tag to JFrog
+        env:
+          VERSION: ${{ needs.get-version.outputs.VERSION }}
+        run: |
+          set -euo pipefail
           docker/docker-build.sh -p \
             -v "${VERSION}" \
             -a ${{ matrix.arch }} \
@@ -521,8 +647,6 @@ jobs:
   docker-manifest:
     name: Docker multi-arch manifest (stitch native tags)
     needs: [get-version, docker-build-arch]
-    # always() needed because upstream jobs use always()
-    if: ${{ always() && needs.docker-build-arch.result == 'success' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -566,7 +690,10 @@ jobs:
             -v "${VERSION}" \
             -r artifact.aerospike.io/database-docker-dev-local
 
+  # Release bundles are JFrog's promotion unit; produced on every publish
+  # regardless of branch or skip_tagging.
   create-release-bundle:
+    if: inputs.release == true
     permissions:
       contents: read
       id-token: write
@@ -575,11 +702,6 @@ jobs:
       - get-version
       - upload-artifacts-to-jfrog
       - docker-manifest
-    # always() needed because upstream jobs use always()
-    if: >-
-      ${{ always() &&
-          needs.upload-artifacts-to-jfrog.result == 'success' &&
-          needs.docker-manifest.result == 'success' }}
     uses: aerospike/shared-workflows/.github/workflows/reusable_create-release-bundle.yaml@v3.4.0
     with:
       jf-project: "database"
@@ -590,3 +712,47 @@ jobs:
       version: ${{ needs.get-version.outputs.BUNDLE_VERSION }}
       gh-workflows-ref: v3.4.0
       dry-run: false
+
+  # Tag-last: created only after every publish step succeeds. A failure
+  # anywhere upstream means no tag, no draft release, no inconsistent state.
+  # Tagging is main-only; non-main dispatches never produce a tag.
+  # skip_tagging also suppresses tagging on main (feature-style main build).
+  create-tag:
+    name: Create git tag (release marker)
+    if: inputs.release == true && github.ref == 'refs/heads/main' && inputs.skip_tagging != true
+    needs:
+      - validate-inputs
+      - upload-artifacts-to-jfrog
+      - docker-manifest
+      - create-release-bundle
+    runs-on: ubuntu-24.04
+    environment: deploy-to-master
+    permissions:
+      contents: write
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Create and push tag
+        env:
+          VERSION: ${{ needs.validate-inputs.outputs.VERSION }}
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+          if git rev-parse -q --verify "refs/tags/${VERSION}" >/dev/null; then
+            echo "::error::Tag '${VERSION}' already exists. Bump VERSION first." >&2
+            exit 1
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$VERSION" -m "$VERSION" "$GITHUB_SHA"
+          git push origin "refs/tags/${VERSION}"
+          echo "Pushed tag: $VERSION"
