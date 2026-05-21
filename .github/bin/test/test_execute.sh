@@ -2,3 +2,4 @@
 set -euo pipefail
 
 asconfig --help
+asconfig --version
