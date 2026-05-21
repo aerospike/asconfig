@@ -402,7 +402,7 @@ jobs:
               apt-get install -y --no-install-recommends git ca-certificates curl tar
               ;;
             el*|amzn*)
-              dnf -y install findutils git ca-certificates tar gzip
+              dnf -y install findutils git ca-certificates curl tar gzip
               ;;
           esac
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
@@ -726,7 +726,7 @@ jobs:
       - docker-manifest
       - create-release-bundle
     runs-on: ubuntu-24.04
-    environment: deploy-to-master
+    environment: deploy-to-main
     permissions:
       contents: write
     steps:
