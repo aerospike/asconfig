@@ -57,6 +57,17 @@ rpm: $(ACONFIG_BIN)
 tar: $(ACONFIG_BIN)
 	$(MAKE) -C $(ROOT_DIR)/pkg/ $@
 
+OS = $(shell uname)
+
+.PHONY: osx-pkg
+ifeq ($(OS),Darwin)
+osx-pkg: $(ACONFIG_BIN)
+	$(MAKE) -C $(ROOT_DIR)/pkg/ $@
+else
+osx-pkg:
+	$(error osx-pkg is only supported on macOS (Darwin))
+endif
+
 .PHONY: help
 help:
 	@echo "Available targets:"
