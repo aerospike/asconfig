@@ -74,3 +74,5 @@ require (
 	k8s.io/apimachinery v0.35.3 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 )
+
+replace golang.org/x/crypto => golang.org/x/crypto v0.45.0
