@@ -1,6 +1,9 @@
 # Variables required for this Makefile
 ROOT_DIR = $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
-VERSION = $(shell git describe --tags --always --abbrev=9)
+# Honor VERSION from the environment (CI sets PKG_VERSION → build_package.sh exports VERSION)
+# so the linker-injected semver matches the packaged artifact version. Local builds keep the
+# git-describe default when VERSION is unset.
+VERSION ?= $(shell git describe --tags --always --abbrev=9)
 GO_ENV_VARS =
 INSTALL_DIR = /usr/local/bin
 TESTDATA_DIR = $(ROOT_DIR)/testdata
