@@ -12,14 +12,16 @@ function build_packages(){
   fi
   GIT_DIR=$(git rev-parse --show-toplevel)
 
+  # Version embedded in the binary must match the package version (CI passes PKG_VERSION).
+  # Export before `make` so the root Makefile's VERSION is used for -ldflags.
+  VERSION=${PKG_VERSION:-$(git describe --tags --always --abbrev=9)}
+  export VERSION
+  echo "build_package.sh version: ${VERSION}"
+
   # build
   cd "$GIT_DIR" || exit 1
   make clean
   make
-
-  echo "build_package.sh version: $(git describe --tags --always --abbrev=9)"
-  VERSION=${PKG_VERSION:-$(git describe --tags --always --abbrev=9)}
-  export VERSION
 
   # package
   cd $GIT_DIR/pkg || exit 1
