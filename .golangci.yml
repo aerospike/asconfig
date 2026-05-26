@@ -143,6 +143,11 @@ linters:
 
   # All settings can be found here https://github.com/golangci/golangci-lint/blob/HEAD/.golangci.reference.yml
   settings:
+    gomoddirectives:
+      # Allow pinning vulnerable transitive deps via replace.
+      replace-allow-list:
+        - golang.org/x/crypto
+
     cyclop:
       # The maximal code complexity to report.
       # Default: 10
