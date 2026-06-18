@@ -271,6 +271,12 @@ jobs:
 
       - name: Build mac asconfig
         if: steps.cache-asconfig.outputs.cache-hit != 'true'
+        env:
+          # Inject the workflow VERSION (from the VERSION file) so the linker-embedded
+          # semver matches the packaged artifact, even before the tag-last git tag
+          # exists. The Makefile honors VERSION from the environment; without it,
+          # make falls back to `git describe` and embeds the PREVIOUS tag.
+          VERSION: ${{ needs.get-version.outputs.VERSION }}
         run: |
           make
 
