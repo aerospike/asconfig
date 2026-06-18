@@ -271,6 +271,12 @@ jobs:
 
       - name: Build mac asconfig
         if: steps.cache-asconfig.outputs.cache-hit != 'true'
+        env:
+          # Inject the workflow VERSION (from the VERSION file) so the linker-embedded
+          # semver matches the packaged artifact, even before the tag-last git tag
+          # exists. The Makefile honors VERSION from the environment; without it,
+          # make falls back to `git describe` and embeds the PREVIOUS tag.
+          VERSION: ${{ needs.get-version.outputs.VERSION }}
         run: |
           make
 
@@ -719,7 +725,10 @@ jobs:
       jf-bundle-name: "aerospike-asconfig"
       oidc-provider-name: database-gh-aerospike
       oidc-audience: database-gh-aerospike
-      version: ${{ needs.get-version.outputs.BUNDLE_VERSION }}
+      # Real release (main, not skip_tagging) publishes the release bundle under
+      # the direct VERSION (e.g. 0.21.1); feature-style / non-release publishes keep
+      # the branch-prefixed BUNDLE_VERSION (e.g. mybranch-0.21.1-mybranch.<sha>).
+      version: ${{ github.ref == 'refs/heads/main' && inputs.skip_tagging != true && needs.get-version.outputs.VERSION || needs.get-version.outputs.BUNDLE_VERSION }}
       gh-workflows-ref: v3.6.0
       dry-run: false
 
