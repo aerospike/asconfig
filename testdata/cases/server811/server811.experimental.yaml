@@ -1,0 +1,85 @@
+logging:
+    - contexts:
+        masking: info
+        namespace: info
+      type: console
+namespaces:
+    ns1:
+        active-rack: 2
+        apply-ttl-reductions: false
+        default-read-touch-ttl-pct: 50
+        disable-mrt-writes: false
+        evict-indexes-memory-pct: 50
+        index-type:
+            type: shmem
+        indexes-memory-budget: 2147483648
+        migrate-skip-unreadable: false
+        mrt-duration: 60
+        nsup-period: 2048
+        replication-factor: 2
+        sets:
+            s1:
+                default-read-touch-ttl-pct: -1
+        sindex-type:
+            type: shmem
+        storage-engine:
+            data-size: 34359738368
+            type: memory
+        strong-consistency: true
+    ns2:
+        apply-ttl-reductions: true
+        default-read-touch-ttl-pct: 0
+        index-type:
+            type: shmem
+        replication-factor: 2
+        sets:
+            s2:
+                default-read-touch-ttl-pct: 50
+        sindex-type:
+            type: shmem
+        storage-engine:
+            devices:
+                - /dummy/mount/point1
+            evict-used-pct: 70
+            flush-size: 2097152
+            stop-writes-avail-pct: 20
+            stop-writes-used-pct: 70
+            type: device
+network:
+    admin:
+        addresses:
+            - any
+        port: 3003
+    fabric:
+        port: 3001
+    heartbeat:
+        interval: 150
+        mode: multicast
+        multicast-groups:
+            - 127.0.0.1
+        port: 9918
+        timeout: 10
+    service:
+        addresses:
+            - any
+        port: 3000
+security:
+    default-password-file: /dummy/file/path2
+service:
+    batch-max-requests: 1000
+    cluster-name: cl1
+    group: root
+    pidfile: /dummy/file/path1
+    tls-refresh-period: 300
+    user: root
+xdr:
+    dcs:
+        dataCenter1:
+            namespaces:
+                ns1:
+                    remote-namespace: ns2
+                    ship-versions-interval: 120
+                    ship-versions-policy: interval
+            node-address-ports:
+                - 127.0.0.1:3000
+            recovery-threads: 4

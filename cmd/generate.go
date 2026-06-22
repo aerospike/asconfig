@@ -69,6 +69,11 @@ func newGenerateCmd() *cobra.Command {
 		flags.DefaultWrapHelpString("File path to write output to"))
 	res.Flags().StringP("format", "F", "conf",
 		flags.DefaultWrapHelpString("The format of the destination file(s). Valid options are: yaml, yml, and conf."))
+	res.Flags().Bool(
+		flagServerYAML,
+		false,
+		flags.DefaultWrapHelpString(flagServerYAMLDescription),
+	)
 
 	return res
 }
@@ -116,6 +121,11 @@ func runGenerateCommand(cmd *cobra.Command, aerospikeFlags *flags.AerospikeFlags
 	fdata, err := marshaller.MarshalText()
 	if err != nil {
 		return fmt.Errorf("%w: %w", errUnableToMarshalGeneratedConfFile, err)
+	}
+
+	fdata, err = maybeEmitNativeYAML(cmd, outFormat, generatedConf.Version, fdata)
+	if err != nil {
+		return err
 	}
 
 	mdata := map[string]string{
