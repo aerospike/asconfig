@@ -8,7 +8,7 @@ require (
 	github.com/aerospike/tools-common-go v0.4.2
 	github.com/bombsimon/logrusr/v4 v4.1.0
 	github.com/docker/docker v28.5.2+incompatible
-	github.com/go-logr/logr v1.4.3
+	github.com/go-logr/logr v1.4.4
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/sirupsen/logrus v1.9.4
 	github.com/spf13/cobra v1.10.2
