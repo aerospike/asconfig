@@ -1,6 +1,23 @@
 #!/usr/bin/env bash
 set -xeuo pipefail
 
+function assert_dynamic_deps() {
+  local allowed="libc.so.6 libm.so.6 libpthread.so.0 libdl.so.2 librt.so.1
+    libresolv.so.2 ld-linux-x86-64.so.2 ld-linux-aarch64.so.1"
+
+  local lib fail=0
+  local needed
+  needed=$(readelf -d "$GIT_DIR/bin/asconfig" | awk '/\(NEEDED\)/ { gsub(/[][]/, "", $NF); print $NF }')
+  echo "asconfig DT_NEEDED:" $needed
+  for lib in $needed; do
+    if ! printf '%s\n' $allowed | grep -qxF "$lib"; then
+      echo "asconfig has unexpected dynamic dependency $lib; link it statically or add it to the allowlist and the package depends" >&2
+      fail=1
+    fi
+  done
+  return $fail
+}
+
 function build_packages(){
   if [ "${ENV_DISTRO:-}" = "" ]; then
     echo "ENV_DISTRO is not set"
@@ -22,6 +39,8 @@ function build_packages(){
   cd "$GIT_DIR" || exit 1
   make clean
   make
+
+  assert_dynamic_deps
 
   # package
   cd $GIT_DIR/pkg || exit 1
