@@ -274,16 +274,31 @@ jobs:
         env:
           # Inject the workflow VERSION (from the VERSION file) so the linker-embedded
           # semver matches the packaged artifact, even before the tag-last git tag
-          # exists. The Makefile honors VERSION from the environment; without it,
-          # make falls back to `git describe` and embeds the PREVIOUS tag.
+          # exists. Passed on the make command line, which overrides the Makefile's
+          # `git describe` default even for recursive or sudo-invoked makes.
           VERSION: ${{ needs.get-version.outputs.VERSION }}
         run: |
-          make
+          make VERSION="${VERSION}"
 
+      # Run the binary that will be packaged, in place. `sudo make install`
+      # re-links it through the `install: $(ACONFIG_BIN)` prerequisite whenever
+      # the sources are newer than bin/asconfig (always, after a cache restore),
+      # and sudo drops VERSION from the environment, so it used to overwrite the
+      # correctly stamped binary with a `git describe` one right before
+      # packaging. Assert the embedded version instead of trusting it.
       - name: Sanity test asconfig
+        env:
+          VERSION: ${{ needs.get-version.outputs.VERSION }}
         run: |
-          sudo make install
-          asconfig --version 2>&1 | grep "Aerospike Config"
+          set -euo pipefail
+          out=$(./bin/asconfig --version 2>&1)
+          printf '%s\n' "$out"
+          printf '%s\n' "$out" | grep -q "Aerospike Config"
+          BASE_VERSION=$(printf '%s' "${VERSION}" | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+')
+          printf '%s\n' "$out" | grep -qF "${BASE_VERSION}" \
+            || { echo "::error::bin/asconfig reports the wrong version; expected ${BASE_VERSION}" >&2; exit 1; }
+          sudo install -m 755 ./bin/asconfig /usr/local/bin/asconfig
+          asconfig --version 2>&1 | grep -q "Aerospike Config"
 
       - name: Create .pkg
         env:
