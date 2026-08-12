@@ -22,7 +22,21 @@ DEB_ITERATION = $(ITERATION)$(BUILD_DISTRO)
 MAC_VERSION := $(subst _,.,$(subst -,.,$(VERSION)))
 MAC_ROOT = $(BUILD_DIR)/mac-root
 PKG_ID = com.aerospike.asconfig
-MAC_PKG = $(TARGET_DIR)/aerospike-asconfig-$(MAC_VERSION)-$(ARCH).pkg
+# macOS artifact file name:
+#
+#     aerospike-asconfig-<version>-macos<major>-<arch>.pkg
+#     e.g. aerospike-asconfig-0.20.1-macos15-arm64.pkg
+#
+# Lower case and '-' separated so a Homebrew cask can interpolate it directly
+# (`arch arm: "arm64", intel: "x86_64"` + url ".../...-macos15-#{arch}.pkg").
+# <arch> is `uname -m` -- the tokens Homebrew's Hardware::CPU.arch emits, not
+# runner.arch (ARM64 / X64: upper case, and "X64" is not a macOS arch).
+# macos<major> is the build host's macOS major version -- the oldest macOS the
+# artifact supports, and what keeps names unique when one version ships a pkg
+# per (macOS major, arch) pair. MAC_VERSION above stays the pkgbuild --version
+# value only; the file name keeps the canonical hyphenated VERSION.
+MAC_PLATFORM = $(shell $(PKG_DIR)/../.github/bin/os_version.sh)
+MAC_PKG = $(TARGET_DIR)/aerospike-asconfig-$(VERSION)-$(MAC_PLATFORM)-$(ARCH).pkg
 DESCRIPTION = "Asconfig, a tool for managing Aerospike database configuration files."
 LICENSE = "Apache License 2.0"
 URL = "https://github.com/aerospike/asconfig"
@@ -95,6 +109,7 @@ prep:
 # Staging for macOS installer: install to /usr/local/aerospike/bin with symlink at /usr/local/bin.
 .PHONY: prep-mac
 prep-mac:
+	@test -n "$(MAC_PLATFORM)" || { echo "ERROR: empty macOS platform token -- .github/bin/os_version.sh failed; refusing to build an unnamed pkg" >&2; exit 1; }
 	install -d $(TARGET_DIR)
 	rm -rf $(MAC_ROOT)
 	install -d $(MAC_ROOT)/usr/local/aerospike/bin
