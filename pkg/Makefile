@@ -11,21 +11,29 @@ BUILD_DISTRO ?= $(shell $(PKG_DIR)/../.github/bin/os_version.sh)
 NAME = "aerospike-asconfig"
 MAINTAINER = "Aerospike"
 VERSION ?= $(shell git describe --tags --always --abbrev=9)
-RPM_VERSION := $(subst -,_,$(VERSION))
+# Package names never carry the "rcN" pre-release tag: rcN becomes the package
+# iteration, so 0.20.1-rc2 packages as version 0.20.1 iteration 2. VERSION
+# itself is untouched -- it is the git tag and what asconfig --version reports.
+PKG_RELEASE_SH = $(PKG_DIR)/../.github/bin/pkg_release.sh
+PKG_VERSION := $(shell $(PKG_RELEASE_SH) '$(VERSION)' version)
+ITERATION ?= $(shell $(PKG_RELEASE_SH) '$(VERSION)' iteration)
+# For names with no iteration field of their own (.tar, macOS .pkg).
+RELEASE = $(PKG_VERSION)-$(ITERATION)
+RPM_VERSION := $(subst -,_,$(PKG_VERSION))
 # rpm Release / deb revision. The deb revision embeds the distro per Debian
-# convention (e.g. 5.0.3-1debian12), like the rpm dist tag.
-ITERATION ?= 1
+# convention (e.g. 0.20.1-1debian12), like the rpm dist tag.
 DEB_ITERATION = $(ITERATION)$(BUILD_DISTRO)
 # pkgbuild --version rejects hyphens and underscores; collapse both to dots
-# so SemVer pre-release tags (e.g. 0.20.1-rc1 -> 0.20.1.rc1) are accepted, and
-# defensively normalize any underscore-form inputs (env overrides) too.
-MAC_VERSION := $(subst _,.,$(subst -,.,$(VERSION)))
+# (0.20.1-1 -> 0.20.1.1), and defensively normalize any underscore-form
+# inputs (env overrides) too. This is the version *inside* the pkg only;
+# the file name below keeps the canonical hyphenated RELEASE.
+MAC_VERSION = $(subst _,.,$(subst -,.,$(RELEASE)))
 MAC_ROOT = $(BUILD_DIR)/mac-root
 PKG_ID = com.aerospike.asconfig
 # macOS artifact file name:
 #
-#     aerospike-asconfig-<version>-macos<major>-<arch>.pkg
-#     e.g. aerospike-asconfig-0.20.1-macos15-arm64.pkg
+#     aerospike-asconfig-<version>-<iteration>-macos<major>-<arch>.pkg
+#     e.g. aerospike-asconfig-0.20.1-1-macos15-arm64.pkg
 #
 # Lower case and '-' separated so a Homebrew cask can interpolate it directly
 # (`arch arm: "arm64", intel: "x86_64"` + url ".../...-macos15-#{arch}.pkg").
@@ -33,10 +41,11 @@ PKG_ID = com.aerospike.asconfig
 # runner.arch (ARM64 / X64: upper case, and "X64" is not a macOS arch).
 # macos<major> is the build host's macOS major version -- the oldest macOS the
 # artifact supports, and what keeps names unique when one version ships a pkg
-# per (macOS major, arch) pair. MAC_VERSION above stays the pkgbuild --version
-# value only; the file name keeps the canonical hyphenated VERSION.
+# per (macOS major, arch) pair. The version field is RELEASE (version +
+# iteration), so an rc respin of the same version is a distinct file
+# (0.20.1-2 vs 0.20.1-3) and the name matches the deb/rpm/tar naming.
 MAC_PLATFORM = $(shell $(PKG_DIR)/../.github/bin/os_version.sh)
-MAC_PKG = $(TARGET_DIR)/aerospike-asconfig-$(VERSION)-$(MAC_PLATFORM)-$(ARCH).pkg
+MAC_PKG = $(TARGET_DIR)/aerospike-asconfig-$(RELEASE)-$(MAC_PLATFORM)-$(ARCH).pkg
 DESCRIPTION = "Asconfig, a tool for managing Aerospike database configuration files."
 LICENSE = "Apache License 2.0"
 URL = "https://github.com/aerospike/asconfig"
@@ -55,14 +64,14 @@ deb: prep
 		--output-type deb \
 		--chdir $(BUILD_DIR)/ \
 		--name $(NAME) \
-		--version $(VERSION) \
+		--version $(PKG_VERSION) \
 		--iteration $(DEB_ITERATION) \
 		--maintainer $(MAINTAINER) \
 		--description $(DESCRIPTION) \
 		--license $(LICENSE) \
 		--url $(URL) \
 		--vendor $(VENDOR) \
-		--package $(TARGET_DIR)/$(NAME)_$(VERSION)-$(DEB_ITERATION)_$(ARCH).deb
+		--package $(TARGET_DIR)/$(NAME)_$(PKG_VERSION)-$(DEB_ITERATION)_$(ARCH).deb
 
 .PHONY: rpm
 rpm: prep
@@ -89,13 +98,13 @@ tar: prep
 		--output-type tar \
 		--chdir $(BUILD_DIR)/ \
 		--name $(NAME) \
-		--version $(VERSION) \
+		--version $(PKG_VERSION) \
 		--maintainer $(MAINTAINER) \
 		--description $(DESCRIPTION) \
 		--license $(LICENSE) \
 		--url $(URL) \
 		--vendor $(VENDOR) \
-		--package $(TARGET_DIR)/$(NAME)-$(BUILD_DISTRO)-$(VERSION)-$(ARCH).tar
+		--package $(TARGET_DIR)/$(NAME)-$(BUILD_DISTRO)-$(RELEASE)-$(ARCH).tar
 
 .PHONY: prep
 prep:
