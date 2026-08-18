@@ -1,20 +1,9 @@
 # Variables required for this Makefile
 ROOT_DIR = $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
-# Honor VERSION from the environment (CI sets PKG_VERSION → build_package.sh exports VERSION)
-# so the linker-injected semver matches the packaged artifact version. Local builds keep the
-# git-describe default when VERSION is unset.
+# CI passes this (build_package.sh exports it from PKG_VERSION) so the embedded
+# semver matches the packaged artifact. Embedded whole: SetupRoot splits it, so
+# 0.21.3-rc3 reports "Version 0.21.3 / Build rc3".
 VERSION ?= $(shell git describe --tags --always --abbrev=9)
-# What the binary prints. "rcN" is a build detail: it lives in the package
-# iteration, not in the product version. A passing rc is promoted to GA with no
-# rebuild, so the binary that ships as GA must not call itself a release
-# candidate -- it is the same file either way. The packaged version is
-# untouched: it stays the git tag and the input pkg/Makefile derives names from.
-TOOL_VERSION := $(shell $(ROOT_DIR)/.github/bin/pkg_release.sh '$(VERSION)' version)
-# An unresolvable script path would leave this empty and embed a blank
-# version, which no test asserts on -- fail the build instead.
-ifeq ($(strip $(TOOL_VERSION)),)
-$(error could not derive TOOL_VERSION from VERSION='$(VERSION)' -- .github/bin/pkg_release.sh not found or failed)
-endif
 GO_ENV_VARS =
 INSTALL_DIR = /usr/local/bin
 TESTDATA_DIR = $(ROOT_DIR)/testdata
@@ -37,7 +26,7 @@ SOURCES := $(shell find . -name "*.go")
 
 # Builds asconfig binary
 $(ACONFIG_BIN): $(SOURCES)
-	$(GO_ENV_VARS) go build -ldflags="-X 'github.com/aerospike/asconfig/cmd.VERSION=$(TOOL_VERSION)'" -o $(ACONFIG_BIN) .
+	$(GO_ENV_VARS) go build -ldflags="-X 'github.com/aerospike/asconfig/cmd.VERSION=$(VERSION)'" -o $(ACONFIG_BIN) .
 
 # Clean up
 .PHONY: clean
