@@ -27,3 +27,12 @@ rather than testing against whatever it was handed.
 ```
 EXPECTED_VERSION=0.21.4-rc1 .github/bin/test/test_execute.sh
 ```
+
+`version_lib_test.sh` tests those assertions against strings -- no binary, no package, no
+bats, no Go -- and runs on every pull request from `test.yml`. The smoke tests above only
+run from `build-and-release.yml`, which is dispatch-only, so it is the one place a
+regression in the assertions is caught before a release.
+
+```
+bash .github/bin/test/version_lib_test.sh
+```
