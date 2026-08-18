@@ -106,6 +106,7 @@ jobs:
         id: read
         env:
           SKIP_TAGGING: ${{ inputs.skip_tagging }}
+          RELEASE: ${{ inputs.release }}
         run: |
           set -euo pipefail
           if [[ ! -f VERSION ]]; then
@@ -122,11 +123,35 @@ jobs:
             exit 1
           fi
 
+          # An rc suffix must be spelled the one way pkg_release.sh folds, because
+          # every collision guard in this pipeline (below, create-tag, Bump
+          # Version) compares literal tag strings while the artifacts are named
+          # from the *normalized* iteration. Those two agree only for canonical
+          # rcN: "rc01" and "rc1" are two tags but one package (both iteration
+          # 1, both overwriting the same files in the flat deb/rpm pools), "rc0"
+          # gives iteration 0, which dpkg/rpm order below the GA it precedes,
+          # "RC1" is not folded at all and leaks into every file name and image
+          # tag, and a 20-digit N silently wraps in $((10#...)). Reject the
+          # spelling here; the tag ledger can then police what it compares.
+          SUFFIX="${VERSION#*-}"
+          [[ "$SUFFIX" == "$VERSION" ]] && SUFFIX=""
+          if [[ -n "$SUFFIX" && "$SUFFIX" =~ ^[Rr][Cc] ]] \
+             && ! [[ "$SUFFIX" =~ ^rc[1-9][0-9]{0,3}$ ]]; then
+            echo "::error::VERSION '$VERSION' has a non-canonical release-candidate suffix '$SUFFIX'. Use lower-case rcN with no leading zero, N >= 1 (e.g. 0.21.4-rc1, 0.21.4-rc12)." >&2
+            exit 1
+          fi
+
           # Reject a reused version before anything is built. create-tag checks
           # this too, but only after the packages and the release bundle are
           # published -- by then the previous build's files in the flat deb/rpm
           # pools have already been overwritten.
-          if [[ "${GITHUB_REF}" == "refs/heads/main" && "${SKIP_TAGGING}" != "true" ]] \
+          #
+          # The predicate is create-tag's, verbatim (release && main &&
+          # !skip_tagging). A dry run has nothing to collide with -- it neither
+          # tags nor publishes -- and on main the tag of the current VERSION
+          # exists for the whole interval between bumps, so leaving `release`
+          # out would make a main dry run impossible in the steady state.
+          if [[ "${RELEASE}" == "true" && "${GITHUB_REF}" == "refs/heads/main" && "${SKIP_TAGGING}" != "true" ]] \
              && git rev-parse -q --verify "refs/tags/${VERSION}" >/dev/null; then
             echo "::error::Tag '${VERSION}' already exists. Bump VERSION (Bump Version workflow) to the next -rcN before releasing again." >&2
             exit 1
