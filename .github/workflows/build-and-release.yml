@@ -369,12 +369,17 @@ jobs:
           VERSION: ${{ needs.get-version.outputs.BUILD_VERSION }}
         run: |
           set -euo pipefail
+          # Same assertion the post-install smoke tests make, from the same
+          # library: both lines SetupRoot prints, not just the MAJOR.MINOR.PATCH
+          # core. A `git describe` relink shares the core and differs only in the
+          # Build line, so a core-only check cannot see the thing this step is
+          # here to catch.
+          . .github/bin/test/version_lib.sh
           out=$(./bin/asconfig --version 2>&1)
           printf '%s\n' "$out"
           printf '%s\n' "$out" | grep -q "Aerospike Config"
-          BASE_VERSION=$(printf '%s' "${VERSION}" | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+')
-          printf '%s\n' "$out" | grep -qF "${BASE_VERSION}" \
-            || { echo "::error::bin/asconfig reports the wrong version; expected ${BASE_VERSION}" >&2; exit 1; }
+          assert_version_output "$out" "${VERSION}" \
+            || { echo "::error::bin/asconfig reports the wrong version; expected ${VERSION}" >&2; exit 1; }
           sudo install -m 755 ./bin/asconfig /usr/local/bin/asconfig
           asconfig --version 2>&1 | grep -q "Aerospike Config"
 
@@ -952,13 +957,12 @@ jobs:
           exec docker run --rm "${IMAGE}" asconfig "\$@"
           EOF
           chmod +x "${SHIM_DIR}/asconfig"
+          # The shim runs this exact image, and EXPECTED_VERSION is the string
+          # the binary was stamped with, so this asserts both printed lines
+          # against the loaded image -- a mis-tagged or stale-cached image fails
+          # here. No separate core-only grep follows: it would test the same
+          # image through the same command, strictly more weakly.
           PATH="${SHIM_DIR}:${PATH}" EXPECTED_VERSION="${BUILD_VERSION}" bats .github/bin/test/test_execute.bats
-
-          # Verify the loaded image actually carries the version we built —
-          # catches mis-tagged or stale-cached images that bats wouldn't.
-          BASE_VERSION=$(printf '%s' "${BUILD_VERSION}" | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+')
-          docker run --rm "${IMAGE}" asconfig --version | grep -qF "${BASE_VERSION}" \
-            || { echo "ERROR: expected ${BASE_VERSION} in --version output" >&2; exit 1; }
 
           if [[ -n "${SNYK_TOKEN:-}" ]]; then
             snyk container test "${IMAGE}" \

@@ -13,4 +13,7 @@ asconfig --version
 expected="$(expected_version "$REPO_ROOT/VERSION")"
 out="$(asconfig --version 2>&1)"
 assert_version_output "$out" "$expected"
-echo "asconfig reports $(expected_version_lines "$expected" | tr '\n' ' ')(from $expected)"
+# Assert first, then report: a command substitution's failure is discarded by
+# `set -e`, so expected_version_lines must not be the thing that validates.
+lines="$(expected_version_lines "$expected")"
+echo "asconfig reports $(printf '%s' "$lines" | tr '\n' ' ') (from $expected)"
