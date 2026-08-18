@@ -1,9 +1,18 @@
 # Variables required for this Makefile
 ROOT_DIR = $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
-# CI passes this (build_package.sh exports it from PKG_VERSION) so the embedded
-# semver matches the packaged artifact. Embedded whole: SetupRoot splits it, so
-# 0.21.3-rc3 reports "Version 0.21.3 / Build rc3".
+# The one string the binary is stamped from and the packages are named from, so
+# the two can never disagree: CI passes it on both legs (linux via
+# build_package.sh, which exports the workflow's BUILD_VERSION as VERSION; macOS
+# via `make VERSION=` on the command line), and pkg/Makefile folds any rcN out of
+# the package names. Embedded whole, because SetupRoot splits it: 0.21.4-rc1
+# reports "Version 0.21.4 / Build rc1". Unset (local build): git describe.
 VERSION ?= $(shell git describe --tags --always --abbrev=9)
+# `$(shell)` swallows a failed git describe (no .git in a source tarball, or a
+# container checkout without safe.directory) and leaves this empty, which would
+# link -X 'cmd.VERSION=' and produce a binary reporting a bare "Version" line.
+ifeq ($(strip $(VERSION)),)
+$(error VERSION is empty -- `git describe` failed. Pass VERSION=<version> explicitly, or set `git config --global --add safe.directory $(ROOT_DIR)`)
+endif
 GO_ENV_VARS =
 INSTALL_DIR = /usr/local/bin
 TESTDATA_DIR = $(ROOT_DIR)/testdata

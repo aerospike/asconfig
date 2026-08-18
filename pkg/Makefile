@@ -12,7 +12,8 @@ NAME = "aerospike-asconfig"
 MAINTAINER = "Aerospike"
 VERSION ?= $(shell git describe --tags --always --abbrev=9)
 # Package names never carry the "rcN" pre-release tag: rcN becomes the package
-# iteration, so 0.21.3-rc2 packages as version 0.21.3 iteration 2.
+# iteration, so 0.20.1-rc2 packages as version 0.20.1 iteration 2 -- matching
+# the examples below. See .github/bin/pkg_release.sh for the full mapping.
 PKG_RELEASE_SH = $(PKG_DIR)/../.github/bin/pkg_release.sh
 PKG_VERSION := $(shell $(PKG_RELEASE_SH) '$(VERSION)' version)
 ITERATION ?= $(shell $(PKG_RELEASE_SH) '$(VERSION)' iteration)
@@ -40,9 +41,10 @@ PKG_ID = com.aerospike.asconfig
 # runner.arch (ARM64 / X64: upper case, and "X64" is not a macOS arch).
 # macos<major> is the macOS generation the artifact was built on, not a minimum
 # it supports (nothing pins MACOSX_DEPLOYMENT_TARGET); it keeps names unique
-# when one version ships a pkg per (macOS major, arch) pair. The version field is RELEASE (version +
-# iteration), so an rc respin of the same version is a distinct file
-# (0.20.1-2 vs 0.20.1-3) and the name matches the deb/rpm/tar naming.
+# when one version ships a pkg per (macOS major, arch) pair. The version field
+# is RELEASE (version + iteration), so an rc respin of the same version is a
+# distinct file (0.20.1-2 vs 0.20.1-3) and the name matches the deb/rpm/tar
+# naming.
 # Captured once (`:=`), so prep-mac's guard below checks the very token that
 # lands in the file name, and os_version.sh is not re-run per expansion.
 MAC_PLATFORM := $(shell $(PKG_DIR)/../.github/bin/os_version.sh)

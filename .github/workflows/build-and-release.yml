@@ -2,7 +2,9 @@
 #
 # Source of truth for the version: the VERSION file at repo root. It carries
 # the release candidate too (e.g. 0.21.4-rc1), written by the Bump Version
-# workflow. Each respin bumps it to the next -rcN.
+# workflow. A respin means bumping it to the next -rcN, which is the operator's
+# job: the guards below reject a version that is already tagged, but nothing
+# enforces that rcN only ever goes up.
 #
 # get-version emits two strings:
 #   VERSION        release identity: git tag, JFrog release bundle, build
@@ -21,19 +23,29 @@
 #      - Builds + signs + tests + publishes packages to JFrog dev repos.
 #      - Creates JFrog release bundle (the promotion unit for any publish).
 #   At GA the passing rc is promoted with no rebuild: its 0.21.4-N artifacts
-#   are what ship.
+#   are what ship. Since it is the same file, the GA binary keeps the string it
+#   was built with and reports "Version 0.21.4 / Build rcN" -- the rc is absent
+#   from every package name and image tag, but present in what the binary says
+#   about itself (and in the asconfig-version metadata it writes into generated
+#   configs). That is the cost of not rebuilding at GA.
 #
 # === Feature-branch publishing (for external customers without GHA access) ===
 #   Dispatch this workflow on any branch with `release=true`:
 #      - No git tag is created (tags are main-only).
-#      - VERSION is a SemVer 2.0 pre-release identifier, so it sorts correctly
-#        in apt/dnf and never collides with main:
+#      - VERSION is the release identity only (bundle version, JFrog build
+#        number) and never collides with main. BUILD_VERSION is what the
+#        packages are named from, pinned by the sha:
 #            0.21.4-rc1 + branch feature/foo, sha abc123456
 #          → VERSION       0.21.4-rc1-feature-foo-abc123456
 #          → BUILD_VERSION 0.21.4-abc123456   (sha pins it; iteration stays 1)
-#      - Packages are uploaded to the JFrog dev repo and installable via
-#        apt/dnf with that version pin. A release bundle is created so the
-#        artifacts can be promoted through JFrog.
+#      - Packages are uploaded to the JFrog dev repo and installable via apt/dnf
+#        by pinning the BUILD_VERSION-derived package version (e.g.
+#        0.21.4-abc123456-1ubuntu24.04). Note that dpkg/rpm order that ABOVE the
+#        0.21.4 GA it precedes -- appending the sha adds a revision segment, it
+#        does not make a pre-release -- so `apt upgrade` will not replace a dev
+#        build with the release. Uninstall it, or pin the release explicitly.
+#        A release bundle is created so the artifacts can be promoted through
+#        JFrog.
 #
 # === Main feature-style build (publish from main without tagging) ===
 #   Dispatch on main with `release=true` and `skip_tagging=true`:
@@ -289,6 +301,10 @@ jobs:
         env:
           ENV_DISTRO: ${{ matrix.distro }}
           BUILD_DISTRO: ${{ matrix.distro }}
+          # build_package.sh reads this name and exports it as VERSION for the
+          # root make, so the binary is stamped with BUILD_VERSION; pkg/Makefile
+          # then folds any rcN out of the package names. Not to be confused with
+          # get-version's PKG_VERSION output, which is the rcN-stripped string.
           PKG_VERSION: ${{ needs.get-version.outputs.BUILD_VERSION }}
         run: |
           set -euo pipefail
@@ -353,7 +369,9 @@ jobs:
         env:
           # BUILD_VERSION, matching the linux leg and the .pkg below, so one
           # release cannot report two versions depending on the building OS.
-          # On the make command line so it survives recursive and sudo makes.
+          # On the make command line so it outranks the Makefile's git-describe
+          # default and reaches recursive makes. It does NOT survive sudo, which
+          # is why the install below is `sudo install`, not `sudo make install`.
           VERSION: ${{ needs.get-version.outputs.BUILD_VERSION }}
         run: |
           make VERSION="${VERSION}"
@@ -940,8 +958,8 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |
           set -euo pipefail
-          # docker-build.sh folds any "rcN" in VERSION into the iteration, so
-          # the image tags carry RELEASE (e.g. <version>-2), never "rc2".
+          # docker-build.sh folds any "rcN" in BUILD_VERSION into the iteration,
+          # so the image tags carry RELEASE (e.g. <version>-2), never "rc2".
           docker/docker-build.sh -t \
             -v "${BUILD_VERSION}" \
             -a ${{ matrix.arch }} \

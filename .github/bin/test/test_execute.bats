@@ -2,16 +2,18 @@
 #
 # Post-install smoke tests, run against an INSTALLED asconfig.
 #
-# The version test compares what the installed binary reports against the
-# repo's VERSION file, both the Version and the Build line. A package labelled
-# with one version but carrying a binary stamped with another (a build step
-# that re-links without VERSION and falls back to `git describe`, or a stale
-# rc binary in a later rc's package) fails here, in this repo's own CI,
-# instead of downstream in the aerospike-tools bundle.
+# The version test compares what the installed binary reports -- both the
+# Version and the Build line -- against EXPECTED_VERSION when set, otherwise
+# the repo's VERSION file. CI always sets it, to the workflow's BUILD_VERSION,
+# which is the string the binary was stamped with; a bare local run takes the
+# file. When both are present their MAJOR.MINOR.PATCH cores must agree, so a
+# step wired to the wrong workflow output fails instead of testing against
+# whatever it was handed.
 #
-# Set EXPECTED_VERSION to verify a package built from a revision other than
-# the checkout the tests run from; it still has to agree with the VERSION
-# file on MAJOR.MINOR.PATCH.
+# A package labelled with one version but carrying a binary stamped with
+# another (a build step that re-links without VERSION and falls back to
+# `git describe`, or a stale rc binary in a later rc's package) fails here, in
+# this repo's own CI, instead of downstream in the aerospike-tools bundle.
 
 setup() {
   REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../../.." && pwd)"
