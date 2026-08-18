@@ -558,6 +558,8 @@ jobs:
           bats --version
 
       - name: Verify installation
+        env:
+          EXPECTED_VERSION: ${{ needs.get-version.outputs.BUILD_VERSION }}
         run: bats .github/bin/test/test_execute.bats
 
   test-install-mac-and-execute:
@@ -787,6 +789,8 @@ jobs:
         run: brew install bats-core
 
       - name: Verify installation
+        env:
+          EXPECTED_VERSION: ${{ needs.get-version.outputs.BUILD_VERSION }}
         run: bats .github/bin/test/test_execute.bats
 
   organize-signed-artifacts:
@@ -923,7 +927,7 @@ jobs:
           exec docker run --rm "${IMAGE}" asconfig "\$@"
           EOF
           chmod +x "${SHIM_DIR}/asconfig"
-          PATH="${SHIM_DIR}:${PATH}" bats .github/bin/test/test_execute.bats
+          PATH="${SHIM_DIR}:${PATH}" EXPECTED_VERSION="${BUILD_VERSION}" bats .github/bin/test/test_execute.bats
 
           # Verify the loaded image actually carries the version we built —
           # catches mis-tagged or stale-cached images that bats wouldn't.
