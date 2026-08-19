@@ -7,12 +7,6 @@ ROOT_DIR = $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 # the package names. Embedded whole, because SetupRoot splits it: 0.21.4-rc1
 # reports "Version 0.21.4 / Build rc1". Unset (local build): git describe.
 VERSION ?= $(shell git describe --tags --always --abbrev=9)
-# `$(shell)` swallows a failed git describe (no .git in a source tarball, or a
-# container checkout without safe.directory) and leaves this empty, which would
-# link -X 'cmd.VERSION=' and produce a binary reporting a bare "Version" line.
-ifeq ($(strip $(VERSION)),)
-$(error VERSION is empty -- `git describe` failed. Pass VERSION=<version> explicitly, or set `git config --global --add safe.directory $(ROOT_DIR)`)
-endif
 GO_ENV_VARS =
 INSTALL_DIR = /usr/local/bin
 TESTDATA_DIR = $(ROOT_DIR)/testdata
@@ -33,8 +27,14 @@ endif
 
 SOURCES := $(shell find . -name "*.go")
 
-# Builds asconfig binary
+# Builds asconfig binary. `$(shell)` swallows a failed git describe (no .git in a
+# source tarball, or a container checkout without safe.directory) and leaves
+# VERSION empty, which would link -X 'cmd.VERSION=' and produce a binary
+# reporting a bare "Version" line. Checked here rather than at parse time, so a
+# gitless tarball can still run clean/help/lint.
 $(ACONFIG_BIN): $(SOURCES)
+	@test -n '$(VERSION)' \
+		|| { echo "ERROR: VERSION is empty -- \`git describe\` failed. Pass VERSION=<version> explicitly, or set \`git config --global --add safe.directory $(ROOT_DIR)\`" >&2; exit 1; }
 	$(GO_ENV_VARS) go build -ldflags="-X 'github.com/aerospike/asconfig/cmd.VERSION=$(VERSION)'" -o $(ACONFIG_BIN) .
 
 # Clean up
