@@ -1,8 +1,11 @@
 # Variables required for this Makefile
 ROOT_DIR = $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
-# Honor VERSION from the environment (CI sets PKG_VERSION → build_package.sh exports VERSION)
-# so the linker-injected semver matches the packaged artifact version. Local builds keep the
-# git-describe default when VERSION is unset.
+# The one string the binary is stamped from and the packages are named from, so
+# the two can never disagree: CI passes it on both legs (linux via
+# build_package.sh, which exports the workflow's BUILD_VERSION as VERSION; macOS
+# via `make VERSION=` on the command line), and pkg/Makefile folds any rcN out of
+# the package names. Embedded whole, because SetupRoot splits it: 0.21.4-rc1
+# reports "Version 0.21.4 / Build rc1". Unset (local build): git describe.
 VERSION ?= $(shell git describe --tags --always --abbrev=9)
 GO_ENV_VARS =
 INSTALL_DIR = /usr/local/bin
@@ -24,8 +27,14 @@ endif
 
 SOURCES := $(shell find . -name "*.go")
 
-# Builds asconfig binary
+# Builds asconfig binary. `$(shell)` swallows a failed git describe (no .git in a
+# source tarball, or a container checkout without safe.directory) and leaves
+# VERSION empty, which would link -X 'cmd.VERSION=' and produce a binary
+# reporting a bare "Version" line. Checked here rather than at parse time, so a
+# gitless tarball can still run clean/help/lint.
 $(ACONFIG_BIN): $(SOURCES)
+	@test -n '$(VERSION)' \
+		|| { echo "ERROR: VERSION is empty -- \`git describe\` failed. Pass VERSION=<version> explicitly, or set \`git config --global --add safe.directory $(ROOT_DIR)\`" >&2; exit 1; }
 	$(GO_ENV_VARS) go build -ldflags="-X 'github.com/aerospike/asconfig/cmd.VERSION=$(VERSION)'" -o $(ACONFIG_BIN) .
 
 # Clean up
@@ -63,13 +72,10 @@ tar: $(ACONFIG_BIN)
 OS = $(shell uname)
 
 .PHONY: osx-pkg
-ifeq ($(OS),Darwin)
-osx-pkg: $(ACONFIG_BIN)
-	$(MAKE) -C $(ROOT_DIR)/pkg/ $@
-else
 osx-pkg:
-	$(error osx-pkg is only supported on macOS (Darwin))
-endif
+	@test '$(OS)' = 'Darwin' || { echo "ERROR: osx-pkg is only supported on macOS (Darwin), not $(OS)" >&2; exit 1; }
+	$(MAKE) $(ACONFIG_BIN)
+	$(MAKE) -C $(ROOT_DIR)/pkg/ $@
 
 .PHONY: help
 help:

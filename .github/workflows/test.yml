@@ -18,6 +18,12 @@ jobs:
       - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
         with:
           submodules: true
+      # The smoke-test assertions themselves. They run on strings, so they need
+      # no binary, no package and no Go -- and this is the only workflow that
+      # runs on a pull request, so without this step a regression in them would
+      # first be seen during a release (build-and-release.yml is dispatch-only).
+      - name: Test the version assertions
+        run: bash .github/bin/test/version_lib_test.sh
       - name: Get go version from go.mod
         run: |
           echo "GO_VERSION=$(grep '^go ' go.mod | cut -d " " -f 2)" >> $GITHUB_ENV

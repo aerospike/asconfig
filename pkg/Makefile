@@ -11,18 +11,36 @@ BUILD_DISTRO ?= $(shell $(PKG_DIR)/../.github/bin/os_version.sh)
 NAME = "aerospike-asconfig"
 MAINTAINER = "Aerospike"
 VERSION ?= $(shell git describe --tags --always --abbrev=9)
-RPM_VERSION := $(subst -,_,$(VERSION))
+# Package names never carry the "rcN" pre-release tag: rcN becomes the package
+# iteration, so 0.20.1-rc2 packages as version 0.20.1 iteration 2 -- matching
+# the examples below. See .github/bin/pkg_release.sh for the full mapping.
+PKG_RELEASE_SH = $(PKG_DIR)/../.github/bin/pkg_release.sh
+PKG_VERSION := $(shell $(PKG_RELEASE_SH) '$(VERSION)' version)
+ITERATION := $(or $(ITERATION),$(shell $(PKG_RELEASE_SH) '$(VERSION)' iteration))
+# For names with no iteration field of their own (.tar, macOS .pkg).
+RELEASE := $(PKG_VERSION)-$(ITERATION)
+RPM_VERSION := $(subst -,_,$(PKG_VERSION))
 # rpm Release / deb revision. The deb revision embeds the distro per Debian
-# convention (e.g. 5.0.3-1debian12), like the rpm dist tag.
-ITERATION ?= 1
-DEB_ITERATION = $(ITERATION)$(BUILD_DISTRO)
+# convention (e.g. 0.20.1-1debian12), like the rpm dist tag.
+DEB_ITERATION := $(ITERATION)$(BUILD_DISTRO)
 # pkgbuild --version rejects hyphens and underscores; collapse both to dots
-# so SemVer pre-release tags (e.g. 0.20.1-rc1 -> 0.20.1.rc1) are accepted, and
-# defensively normalize any underscore-form inputs (env overrides) too.
-MAC_VERSION := $(subst _,.,$(subst -,.,$(VERSION)))
+# (0.20.1-1 -> 0.20.1.1), and defensively normalize any underscore-form
+# inputs (env overrides) too. This is the version *inside* the pkg only;
+# the file name below keeps the canonical hyphenated RELEASE.
+MAC_VERSION := $(subst _,.,$(subst -,.,$(RELEASE)))
 MAC_ROOT = $(BUILD_DIR)/mac-root
 PKG_ID = com.aerospike.asconfig
-MAC_PKG = $(TARGET_DIR)/aerospike-asconfig-$(MAC_VERSION)-$(ARCH).pkg
+# Support floor, asserted by check_min_os.sh over the staged payload. Go stamps
+# its own minos well below this and ignores MACOSX_DEPLOYMENT_TARGET without cgo.
+MACOS_MIN_VERSION = 14.0
+# macOS artifact file name, lower case and '-' separated so a Homebrew cask can
+# interpolate it (<arch> is `uname -m`, the token a cask's `arch` stanza emits):
+#
+#     aerospike-asconfig-<version>-<iteration>-macos-<arch>.pkg
+#
+# One pkg per architecture, not per macOS generation: macOS is forward
+# compatible, so the oldest-runner build serves every supported release.
+MAC_PKG = $(TARGET_DIR)/aerospike-asconfig-$(RELEASE)-macos-$(ARCH).pkg
 DESCRIPTION = "Asconfig, a tool for managing Aerospike database configuration files."
 LICENSE = "Apache License 2.0"
 URL = "https://github.com/aerospike/asconfig"
@@ -41,14 +59,14 @@ deb: prep
 		--output-type deb \
 		--chdir $(BUILD_DIR)/ \
 		--name $(NAME) \
-		--version $(VERSION) \
+		--version $(PKG_VERSION) \
 		--iteration $(DEB_ITERATION) \
 		--maintainer $(MAINTAINER) \
 		--description $(DESCRIPTION) \
 		--license $(LICENSE) \
 		--url $(URL) \
 		--vendor $(VENDOR) \
-		--package $(TARGET_DIR)/$(NAME)_$(VERSION)-$(DEB_ITERATION)_$(ARCH).deb
+		--package $(TARGET_DIR)/$(NAME)_$(PKG_VERSION)-$(DEB_ITERATION)_$(ARCH).deb
 
 .PHONY: rpm
 rpm: prep
@@ -75,16 +93,28 @@ tar: prep
 		--output-type tar \
 		--chdir $(BUILD_DIR)/ \
 		--name $(NAME) \
-		--version $(VERSION) \
+		--version $(PKG_VERSION) \
 		--maintainer $(MAINTAINER) \
 		--description $(DESCRIPTION) \
 		--license $(LICENSE) \
 		--url $(URL) \
 		--vendor $(VENDOR) \
-		--package $(TARGET_DIR)/$(NAME)-$(BUILD_DISTRO)-$(VERSION)-$(ARCH).tar
+		--package $(TARGET_DIR)/$(NAME)-$(RELEASE)-$(BUILD_DISTRO)-$(ARCH).tar
+
+# PKG_VERSION, ITERATION and BUILD_DISTRO all come from $(shell ...), which
+# yields the empty string on failure without failing the build; unguarded, an
+# empty one ships aerospike-asconfig_-<distro>_<arch>.deb past every later check.
+.PHONY: check-version
+check-version:
+	@test -n '$(VERSION)' && test '$(VERSION)' != 'unknown' \
+		|| { echo "ERROR: VERSION is '$(VERSION)' -- git describe failed and none was passed; refusing to build an unversioned package" >&2; exit 1; }
+	@test -n '$(PKG_VERSION)' \
+		|| { echo "ERROR: empty package version -- $(PKG_RELEASE_SH) failed for VERSION='$(VERSION)'" >&2; exit 1; }
+	@test -n '$(ITERATION)' \
+		|| { echo "ERROR: empty package iteration -- $(PKG_RELEASE_SH) failed for VERSION='$(VERSION)'" >&2; exit 1; }
 
 .PHONY: prep
-prep:
+prep: check-version
 	install -d $(TARGET_DIR)
 	install -d $(BUILD_DIR)/$(CONFIG_DIR)
 	install -d $(BUILD_DIR)/opt/aerospike/bin
@@ -94,7 +124,9 @@ prep:
 
 # Staging for macOS installer: install to /usr/local/aerospike/bin with symlink at /usr/local/bin.
 .PHONY: prep-mac
-prep-mac:
+prep-mac: check-version
+	@echo '$(ARCH)' | grep -qE '^(arm64|x86_64)$$' \
+		|| { echo "ERROR: architecture token is '$(ARCH)', not arm64 or x86_64 -- uname -m failed; refusing to build a misnamed pkg" >&2; exit 1; }
 	install -d $(TARGET_DIR)
 	rm -rf $(MAC_ROOT)
 	install -d $(MAC_ROOT)/usr/local/aerospike/bin
@@ -104,6 +136,7 @@ prep-mac:
 
 .PHONY: osx-pkg
 osx-pkg: prep-mac
+	$(PKG_DIR)/../.github/bin/check_min_os.sh $(MACOS_MIN_VERSION) $(MAC_ROOT)
 	pkgbuild \
 		--root $(MAC_ROOT) \
 		--identifier $(PKG_ID) \
