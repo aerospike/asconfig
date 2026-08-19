@@ -72,13 +72,10 @@ tar: $(ACONFIG_BIN)
 OS = $(shell uname)
 
 .PHONY: osx-pkg
-ifeq ($(OS),Darwin)
-osx-pkg: $(ACONFIG_BIN)
-	$(MAKE) -C $(ROOT_DIR)/pkg/ $@
-else
 osx-pkg:
-	$(error osx-pkg is only supported on macOS (Darwin))
-endif
+	@test '$(OS)' = 'Darwin' || { echo "ERROR: osx-pkg is only supported on macOS (Darwin), not $(OS)" >&2; exit 1; }
+	$(MAKE) $(ACONFIG_BIN)
+	$(MAKE) -C $(ROOT_DIR)/pkg/ $@
 
 .PHONY: help
 help:

@@ -48,17 +48,28 @@ main() {
 	# per-runner artifacts distinct.
 	if [ "$kernel" = 'darwin' ]
 	then
+		# This script has no `set -e`, so the status has to be checked
+		# explicitly: an sw_vers that fails while printing anything at all to
+		# stdout would otherwise emit a non-empty garbage token. The token
+		# becomes a path component of the .pkg file name, so it is validated
+		# for shape as well as emptiness.
 		local mac_version=''
-		mac_version=$(sw_vers -productVersion)
-		# This script has no `set -e`, so an sw_vers that fails or prints
-		# nothing would otherwise emit the bare token "macos" -- non-empty,
-		# so pkg/Makefile's prep-mac guard would wave it through and the
-		# release would ship aerospike-<tool>-<version>-macos-<arch>.pkg.
+		if ! mac_version=$(sw_vers -productVersion 2>/dev/null)
+		then
+			error "sw_vers -productVersion failed."
+			exit 1
+		fi
 		if [ -z "$mac_version" ]
 		then
 			error "sw_vers -productVersion returned nothing."
 			exit 1
 		fi
+		case "$mac_version" in
+		*[!0-9.]* | '' | .* | *.)
+			error "sw_vers -productVersion returned '$mac_version', not a version."
+			exit 1
+			;;
+		esac
 		echo "macos${mac_version%%.*}"
 		exit 0
 	fi
