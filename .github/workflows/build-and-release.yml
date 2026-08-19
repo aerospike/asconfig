@@ -130,17 +130,6 @@ jobs:
             echo "::error::VERSION file is empty." >&2
             exit 1
           fi
-          # rcN folds into the package iteration by number, so rc01 and rc1 would
-          # name one package from two tags; artifact names are all lowercase.
-          if [[ "$VERSION" =~ -[Rr][Cc] ]] && ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+-rc[1-9][0-9]{0,3}$ ]]; then
-            echo "::error::VERSION '$VERSION': the release candidate identifier must be lowercase rc1..rc9999 with no leading zero (e.g. 0.21.4-rc1)." >&2
-            exit 1
-          fi
-          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9]+)?$ ]]; then
-            echo "::error::VERSION '$VERSION' is not valid semver (expected MAJOR.MINOR.PATCH or MAJOR.MINOR.PATCH-suffix, lowercase, e.g. 0.21.4-rc1)." >&2
-            exit 1
-          fi
-
           # An rc suffix must be spelled the one way pkg_release.sh folds, because
           # every collision guard in this pipeline (below, create-tag, Bump
           # Version) compares literal tag strings while the artifacts are named
@@ -156,6 +145,11 @@ jobs:
           if [[ -n "$SUFFIX" && "$SUFFIX" =~ ^[Rr][Cc] ]] \
              && ! [[ "$SUFFIX" =~ ^rc[1-9][0-9]{0,3}$ ]]; then
             echo "::error::VERSION '$VERSION' has a non-canonical release-candidate suffix '$SUFFIX'. Use lower-case rcN with no leading zero, N >= 1 (e.g. 0.21.4-rc1, 0.21.4-rc12)." >&2
+            exit 1
+          fi
+
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9]+)?$ ]]; then
+            echo "::error::VERSION '$VERSION' is not valid semver (expected MAJOR.MINOR.PATCH or MAJOR.MINOR.PATCH-suffix, lowercase, e.g. 0.21.4-rc1)." >&2
             exit 1
           fi
 
