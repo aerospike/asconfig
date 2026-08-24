@@ -7,5 +7,15 @@
         "SkipServerTest":false,
         "ServerErrorAllowList":null,
         "ServerImage":"artifact.aerospike.io/database-docker-preview-public-local/aerospike-server-enterprise:8.1.2.0"
+    },
+    {
+        "Source":"testdata/cases/server812/server812.conf",
+        "Destination":"testdata/cases/server812/server812-res-server-native-.yaml",
+        "Expected":"testdata/cases/server812/server812.experimental.yaml",
+        "Arguments":["convert","--aerospike-version","8.1.2.0","--format","asconfig","--server-yaml","--output","testdata/cases/server812/server812-res-server-native-.yaml"],
+        "SkipServerTest":false,
+        "ServerErrorAllowList":null,
+        "ServerImage":"artifact.aerospike.io/database-docker-preview-public-local/aerospike-server-enterprise:8.1.2.0",
+        "ServerExperimental":true
     }
 ]
