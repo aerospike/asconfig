@@ -9,6 +9,9 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@df199fb7be9f65074067a9eb93f12bb4c5547cf2 # v2.13.3
@@ -18,6 +21,24 @@ jobs:
       - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
         with:
           submodules: true
+
+      - name: Install JFrog CLI
+        id: jf
+        uses: step-security/setup-jfrog-cli@893a92f96c7727242adf0e603c77b1f2a22390e1 # v4.9.1
+        env:
+          JF_URL: https://artifact.aerospike.io
+          JF_PROJECT: database
+        with:
+          version: 2.78.8
+          oidc-provider-name: database-gh-aerospike
+          oidc-audience: database-gh-aerospike
+
+      - name: Docker login to Artifactory
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
+        with:
+          registry: artifact.aerospike.io
+          username: ${{ steps.jf.outputs.oidc-user }}
+          password: ${{ steps.jf.outputs.oidc-token }}
       # The smoke-test assertions themselves. They run on strings, so they need
       # no binary, no package and no Go -- and this is the only workflow that
       # runs on a pull request, so without this step a regression in them would
@@ -43,6 +64,8 @@ jobs:
           FEATKEY_DIR : /tmp
           ASC_DOCKER_USER : ${{secrets.DOCKER_USER}}
           ASC_DOCKER_PASS : ${{secrets.DOCKER_PASS}}
+          ASC_ARTIFACTORY_USER : ${{ steps.jf.outputs.oidc-user }}
+          ASC_ARTIFACTORY_TOKEN : ${{ steps.jf.outputs.oidc-token }}
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@ab904c41d6ece82784817410c45d8b8c02684457 # v3.1.6
         with:
