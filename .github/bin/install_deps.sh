@@ -8,26 +8,6 @@ export CURL_RETRY_OPTS=(--retry 5 --retry-delay 5)
 # Official Linux Go tarballs ship a trimmed "go" binary: it must run with GOROOT at
 # /opt/golang/go. Do not copy only go(1) to /usr/local/bin or it wins on PATH and breaks builds.
 
-function install_deps_debian11() {
-  rm -rf /var/lib/apt/lists/*
-  apt-get clean
-  apt-get update -o Acquire::Retries=5
-  apt-get install -y --no-install-recommends ruby-rubygems make rpm git curl binutils build-essential ruby-dev libssl-dev
-
-  if [ "$(uname -m)" = "x86_64" ]; then
-      curl -L "${CURL_RETRY_OPTS[@]}" https://go.dev/dl/go"$GOLANG_VERSION".linux-amd64.tar.gz -o /tmp/go"$GOLANG_VERSION".linux-amd64.tar.gz
-      mkdir -p /opt/golang && tar -zxvf /tmp/go"$GOLANG_VERSION".linux-amd64.tar.gz -C /opt/golang
-  elif [ "$(uname -m)" = "aarch64" ]; then
-      curl -L "${CURL_RETRY_OPTS[@]}" https://go.dev/dl/go"$GOLANG_VERSION".linux-arm64.tar.gz -o /tmp/go"$GOLANG_VERSION".linux-arm64.tar.gz
-      mkdir -p /opt/golang && tar -zxvf /tmp/go"$GOLANG_VERSION".linux-arm64.tar.gz -C /opt/golang
-  else
-      echo "unknown arch $(uname -m)"
-      exit 1
-  fi
-  gem install fpm -v "$FPM_VERSION"
-  rm -rf /var/lib/apt/lists/*
-}
-
 function install_deps_debian12() {
   rm -rf /var/lib/apt/lists/*
   apt-get clean
