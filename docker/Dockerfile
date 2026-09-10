@@ -8,9 +8,10 @@
 # SHA256s as build args (and optionally an in-context .deb via ASCONFIG_LOCAL_PKG*).
 # Build directly only if you set those args yourself; otherwise use the script.
 #
-# Base: debian:trixie-slim. The .deb is built on Ubuntu 24.04; trixie ships a
-# recent glibc and common C libs the Go binary may dynamically link to — apt
-# installs the .deb and anything it (transitively) needs.
+# Base: ubuntu:24.04, the distro the .deb is built on, so its Depends resolve
+# against the packages they were compiled against. It is also the base the
+# legacy aerospike-tools image used and the one aerospike-server.docker
+# publishes — apt installs the .deb and anything it (transitively) needs.
 #
 
 ARG ASCONFIG_AMD64_URL=""
@@ -18,7 +19,7 @@ ARG ASCONFIG_AMD64_SHA256=""
 ARG ASCONFIG_ARM64_URL=""
 ARG ASCONFIG_ARM64_SHA256=""
 
-FROM debian:trixie-slim@sha256:b6e2a152f22a40ff69d92cb397223c906017e1391a73c952b588e51af8883bf8
+FROM ubuntu:24.04@sha256:224a1869083a311ef3f13648a154ba79832fbef6364d31493642ca03082da254
 
 ARG ASCONFIG_AMD64_URL
 ARG ASCONFIG_AMD64_SHA256
@@ -33,7 +34,7 @@ ARG ASCONFIG_LOCAL_PKG_ARM64=""
 LABEL org.opencontainers.image.title="Aerospike asconfig" \
       org.opencontainers.image.description="asconfig, a tool for managing Aerospike configuration files." \
       org.opencontainers.image.source="https://github.com/aerospike/asconfig" \
-      org.opencontainers.image.base.name="docker.io/library/debian:trixie-slim" \
+      org.opencontainers.image.base.name="docker.io/library/ubuntu:24.04" \
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.vendor="Aerospike"
 
