@@ -20,25 +20,25 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@df199fb7be9f65074067a9eb93f12bb4c5547cf2 # v2.13.3
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
       - name: Get checkout directory
-        uses: step-security/action-cond@45aa5a709bd075f11c74285d8b0ca4d527e5fbcf # v1.2.4
+        uses: step-security/action-cond@6c9b559685e1bcd523fc000b3cc1272529f8810d # v1.2.5
         id: checkout-dir
         with:
           cond: ${{ inputs.submodule != '' }}
           if_true: aerospike-tools # In this case we are expecting to checkout the tools package.
           if_false: asconfig
       - name: Get asconfig working directory
-        uses: step-security/action-cond@45aa5a709bd075f11c74285d8b0ca4d527e5fbcf # v1.2.4
+        uses: step-security/action-cond@6c9b559685e1bcd523fc000b3cc1272529f8810d # v1.2.5
         id: working-dir
         with:
           cond: ${{ inputs.submodule != '' }}
           if_true: aerospike-tools/${{ inputs.submodule }} # In this case we are expecting to checkout the tools package.
           if_false: asconfig
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: ${{ steps.checkout-dir.outputs.value }}
           fetch-depth: 0
@@ -46,7 +46,7 @@ jobs:
         run: |
           # Workaround to replace ssh with http in .gitmodules and add auth
           # If the .gitmodules was http then we would just need to add the "token:"
-          # param to the above actions/checkout@v3 step since the token is persisted.
+          # param to the above actions/checkout step since the token is persisted.
           git config --file .gitmodules --get-regexp url | while read url; do
             git config --file=.gitmodules $(echo "$url" | sed -E "s/git@github.com:|https:\/\/github.com\//https:\/\/${{ secrets.TOOLS_BUILD_PAT }}:${{ secrets.TOOLS_BUILD_PAT }}@github.com\//")
           done
@@ -62,16 +62,16 @@ jobs:
         working-directory: ${{ steps.working-dir.outputs.value }}
         run: |
           echo "GO_VERSION=$(grep '^go ' go.mod | cut -d ' ' -f 2)" >> "$GITHUB_ENV"
-      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: ${{ env.GO_VERSION }}
           check-latest: true
           cache: true
           cache-dependency-path: ${{ steps.working-dir.outputs.value }}/go.sum
-      - uses: kenchan0130/actions-system-info@b98fe44bc35efcc60a9828cf4a04783a8b370bde # v1.3.0
+      - uses: kenchan0130/actions-system-info@59699597e84e80085a750998045983daa49274c4 # v1.4.0
         id: system-info
       - name: Cache asconfig
-        uses: actions/cache@6f8efc29b200d32929f49075959781ed54ec270c # v3.5.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: cache-asconfig
         env:
           cache-name: cache-asconfig
@@ -90,7 +90,7 @@ jobs:
         run: |
           sudo make install
           asconfig --version 2>&1 | grep "Aerospike Config"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ steps.system-info.outputs.platform }}-${{ runner.arch }}-${{ matrix.os }}-${{ steps.system-info.outputs.release }}-asconfig
           path: ${{ steps.working-dir.outputs.value }}/bin/asconfig
