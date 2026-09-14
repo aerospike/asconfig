@@ -304,7 +304,7 @@ func TestYamlToConf(t *testing.T) {
 		}
 
 		// test that the converted config works with an Aerospike server
-		if !tf.SkipServerTest {
+		if !tf.SkipServerTest && !skipPrivateImageTest(tf.DockerAuth) {
 			version := getVersion(tf.Arguments)
 			id, _ := runServer(version, tf.ServerImage, confPath, tf.ServerArgs, tf.DockerAuth, dockerClient, t)
 
@@ -344,6 +344,15 @@ func getExtraTests(path string, testType string) (tf []testutils.TestData, err e
 	}
 
 	return
+}
+
+// Opt out explicitly so a trusted run with missing credentials still fails.
+func skipPrivateImageTest(auth testutils.DockerAuth) bool {
+	if auth.Password == "" || auth.Username == "" {
+		return false
+	}
+
+	return os.Getenv("ASC_SKIP_PRIVATE_IMAGE_TESTS") != ""
 }
 
 func getDockerAuthFromEnv(auth testutils.DockerAuth) (string, error) {
@@ -703,7 +712,7 @@ func TestConfToYaml(t *testing.T) {
 		}
 
 		// test that the converted config works with an Aerospike server
-		if !tf.SkipServerTest {
+		if !tf.SkipServerTest && !skipPrivateImageTest(tf.DockerAuth) {
 			version := getVersion(tf.Arguments)
 			id, _ := runServer(version, tf.ServerImage, finalConfPath, tf.ServerArgs, tf.DockerAuth, dockerClient, t)
 

@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: test-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -22,8 +26,10 @@ jobs:
         with:
           submodules: true
 
+      # Credentials only on push; pull_request runs stay credential-free.
       - name: Install JFrog CLI
         id: jf
+        if: github.event_name == 'push'
         uses: step-security/setup-jfrog-cli@893a92f96c7727242adf0e603c77b1f2a22390e1 # v4.9.1
         env:
           JF_URL: https://artifact.aerospike.io
@@ -34,6 +40,7 @@ jobs:
           oidc-audience: database-gh-aerospike
 
       - name: Docker login to Artifactory
+        if: github.event_name == 'push'
         uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
         with:
           registry: artifact.aerospike.io
@@ -66,6 +73,7 @@ jobs:
           ASC_DOCKER_PASS : ${{secrets.DOCKER_PASS}}
           ASC_ARTIFACTORY_USER : ${{ steps.jf.outputs.oidc-user }}
           ASC_ARTIFACTORY_TOKEN : ${{ steps.jf.outputs.oidc-token }}
+          ASC_SKIP_PRIVATE_IMAGE_TESTS : ${{ github.event_name == 'pull_request' && '1' || '' }}
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@ab904c41d6ece82784817410c45d8b8c02684457 # v3.1.6
         with:

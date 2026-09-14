@@ -12,7 +12,7 @@ namespaces:
       replication-factor: 2
       apply-ttl-reductions: true
       replication-compression-mode: zstd
-      replication-compression-level: -5
+      replication-compression-level: -10
       migrate-compression-mode: none
       migrate-compression-level: 22
       index-checkpoint-compression: true
