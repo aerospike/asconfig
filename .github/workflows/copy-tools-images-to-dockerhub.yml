@@ -47,13 +47,13 @@ jobs:
       id-token: write
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
       - name: Install JFrog CLI
         id: jf
-        uses: step-security/setup-jfrog-cli@893a92f96c7727242adf0e603c77b1f2a22390e1 # v4.9.1
+        uses: step-security/setup-jfrog-cli@53aeacb709fce45d0baf69a13ec3342f7e2d71a9 # v5.1.0
         env:
           JF_URL: https://artifact.aerospike.io
           JF_PROJECT: database
@@ -63,7 +63,7 @@ jobs:
           oidc-audience: database-gh-aerospike
 
       - name: Docker login to Artifactory (pull only)
-        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: artifact.aerospike.io
           username: ${{ steps.jf.outputs.oidc-user }}
@@ -71,12 +71,12 @@ jobs:
 
       - name: Docker login to Docker Hub
         if: ${{ !inputs.dry-run }}
-        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           username: ${{ vars.AEROSPIKE_DOCKER_ORG_NAME || 'aerospike' }}
           password: ${{ secrets.AEROSPIKE_DOCKER_ORG_RW_TOKEN }}
 
-      - uses: step-security/setup-buildx-action@f931205d68723ad9589fd2a7e2ece238bf9de341 # v4.0.0
+      - uses: step-security/setup-buildx-action@a4709e2865773e1792246433e8eb922f9743a875 # v4.2.0
 
       - name: Copy existing tags to Docker Hub
         id: copy
