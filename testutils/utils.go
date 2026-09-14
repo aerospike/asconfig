@@ -38,6 +38,7 @@ type TestData struct {
 	SkipServerTest       bool       `json:"skipServerTest"`
 	ServerErrorAllowList []string   `json:"serverErrorAllowList"`
 	ServerImage          string     `json:"serverImage"`
+	ServerArgs           []string   `json:"serverArgs"`
 	DockerAuth           DockerAuth `json:"dockerAuth"`
 }
 

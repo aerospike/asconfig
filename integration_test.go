@@ -304,9 +304,9 @@ func TestYamlToConf(t *testing.T) {
 		}
 
 		// test that the converted config works with an Aerospike server
-		if !tf.SkipServerTest {
+		if !tf.SkipServerTest && !skipPrivateImageTest(tf.DockerAuth) {
 			version := getVersion(tf.Arguments)
-			id, _ := runServer(version, tf.ServerImage, confPath, tf.DockerAuth, dockerClient, t)
+			id, _ := runServer(version, tf.ServerImage, confPath, tf.ServerArgs, tf.DockerAuth, dockerClient, t)
 
 			time.Sleep(time.Second * 3) // need this to allow logs to accumulate
 			checkContainerLogs(id, t, tf, tmpServerLogPath)
@@ -346,6 +346,15 @@ func getExtraTests(path string, testType string) (tf []testutils.TestData, err e
 	return
 }
 
+// Opt out explicitly so a trusted run with missing credentials still fails.
+func skipPrivateImageTest(auth testutils.DockerAuth) bool {
+	if auth.Password == "" || auth.Username == "" {
+		return false
+	}
+
+	return os.Getenv("ASC_SKIP_PRIVATE_IMAGE_TESTS") != ""
+}
+
 func getDockerAuthFromEnv(auth testutils.DockerAuth) (string, error) {
 
 	if auth.Password == "" || auth.Username == "" {
@@ -377,7 +386,7 @@ func getDockerAuthFromEnv(auth testutils.DockerAuth) (string, error) {
 	return authStr, nil
 }
 
-func runServer(version string, serverVersion string, confPath string, auth testutils.DockerAuth, dockerClient *client.Client, t *testing.T) (string, string) {
+func runServer(version string, serverVersion string, confPath string, serverArgs []string, auth testutils.DockerAuth, dockerClient *client.Client, t *testing.T) (string, string) {
 	containerName := "aerospike:" + version
 	if serverVersion != "" {
 		containerName = serverVersion
@@ -385,13 +394,13 @@ func runServer(version string, serverVersion string, confPath string, auth testu
 
 	var err error
 	serverConfPath := "/opt/aerospike/work/" + filepath.Base(confPath)
-	cmd := fmt.Sprintf("/usr/bin/asd --foreground --config-file %s", serverConfPath)
-	// cmd = fmt.Sprintf("/bin/bash")
+	cmd := append([]string{"/usr/bin/asd", "--foreground"}, serverArgs...)
+	cmd = append(cmd, "--config-file", serverConfPath)
 
 	containerConf := &container.Config{
 		Image: containerName,
 		Tty:   true,
-		Cmd:   strings.Split(cmd, " "),
+		Cmd:   cmd,
 	}
 
 	destDir := filepath.Dir(confPath)
@@ -703,9 +712,9 @@ func TestConfToYaml(t *testing.T) {
 		}
 
 		// test that the converted config works with an Aerospike server
-		if !tf.SkipServerTest {
+		if !tf.SkipServerTest && !skipPrivateImageTest(tf.DockerAuth) {
 			version := getVersion(tf.Arguments)
-			id, _ := runServer(version, tf.ServerImage, finalConfPath, tf.DockerAuth, dockerClient, t)
+			id, _ := runServer(version, tf.ServerImage, finalConfPath, tf.ServerArgs, tf.DockerAuth, dockerClient, t)
 
 			time.Sleep(time.Second * 3) // need this to allow logs to accumulate
 			checkContainerLogs(id, t, tf, tmpServerLogPath)
@@ -1104,7 +1113,7 @@ func TestGenerate(t *testing.T) {
 	for _, tf := range generateTests {
 		var err error
 
-		id, ip := runServer(tf.version, "", tf.source, testutils.DockerAuth{}, dockerClient, t)
+		id, ip := runServer(tf.version, "", tf.source, nil, testutils.DockerAuth{}, dockerClient, t)
 
 		// Make a copy of tf.firstArgs
 		firstArgs := make([]string, len(tf.arguments))
@@ -1143,7 +1152,7 @@ func TestGenerate(t *testing.T) {
 			t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf, string(err.(*exec.ExitError).Stderr))
 		}
 
-		id, ip = runServer(tf.version, "", tf.destination, testutils.DockerAuth{}, dockerClient, t)
+		id, ip = runServer(tf.version, "", tf.destination, nil, testutils.DockerAuth{}, dockerClient, t)
 
 		time.Sleep(time.Second * 3) // need this to allow aerospike to startup
 

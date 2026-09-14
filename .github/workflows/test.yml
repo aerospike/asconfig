@@ -6,9 +6,16 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: test-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
@@ -18,6 +25,27 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
+
+      # Credentials only on push; pull_request runs stay credential-free.
+      - name: Install JFrog CLI
+        id: jf
+        if: github.event_name == 'push'
+        uses: step-security/setup-jfrog-cli@893a92f96c7727242adf0e603c77b1f2a22390e1 # v4.9.1
+        env:
+          JF_URL: https://artifact.aerospike.io
+          JF_PROJECT: database
+        with:
+          version: 2.78.8
+          oidc-provider-name: database-gh-aerospike
+          oidc-audience: database-gh-aerospike
+
+      - name: Docker login to Artifactory
+        if: github.event_name == 'push'
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
+        with:
+          registry: artifact.aerospike.io
+          username: ${{ steps.jf.outputs.oidc-user }}
+          password: ${{ steps.jf.outputs.oidc-token }}
       # The smoke-test assertions themselves. They run on strings, so they need
       # no binary, no package and no Go -- and this is the only workflow that
       # runs on a pull request, so without this step a regression in them would
@@ -43,6 +71,9 @@ jobs:
           FEATKEY_DIR : /tmp
           ASC_DOCKER_USER : ${{secrets.DOCKER_USER}}
           ASC_DOCKER_PASS : ${{secrets.DOCKER_PASS}}
+          ASC_ARTIFACTORY_USER : ${{ steps.jf.outputs.oidc-user }}
+          ASC_ARTIFACTORY_TOKEN : ${{ steps.jf.outputs.oidc-token }}
+          ASC_SKIP_PRIVATE_IMAGE_TESTS : ${{ github.event_name == 'pull_request' && '1' || '' }}
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
