@@ -6,7 +6,7 @@
         "Arguments":["convert","--aerospike-version","8.2.0.0","--format","asconfig","--output","testdata/cases/server82/server82-res-.yaml"],
         "SkipServerTest":false,
         "ServerErrorAllowList":null,
-        "ServerImage":"artifact.aerospike.io/database-docker-test-local/aerospike-server-enterprise:8.2.0.0-20260908214755",
+        "ServerImage":"artifact.aerospike.io/database-docker-test-local/aerospike-server-enterprise:8.2.0.0_20260911T220300Z",
         "ServerArgs":["--preview","index-checkpoint"],
         "DockerAuth":{"Username":"ASC_ARTIFACTORY_USER","Password":"ASC_ARTIFACTORY_TOKEN"}
     }
