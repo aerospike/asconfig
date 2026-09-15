@@ -1503,7 +1503,7 @@ func TestFormatArrayItemChange(t *testing.T) {
 				if err != nil {
 					t.Fatalf("formatChange failed: %v", err)
 				}
-				renderOutput("%s", formattedChange)
+				renderOutputf("%s", formattedChange)
 			})
 
 			// Check expected content
@@ -1704,7 +1704,7 @@ func TestFormatPropertyChange(t *testing.T) {
 				if err != nil {
 					t.Fatalf("formatChange failed: %v", err)
 				}
-				renderOutput("%s", formattedChange)
+				renderOutputf("%s", formattedChange)
 			})
 
 			// Check expected content

@@ -80,7 +80,7 @@ osx-pkg:
 .PHONY: help
 help:
 	@echo "Available targets:"
-	@echo "  install-golangci-lint  Install golangci-lint v2.4.0"
+	@echo "  install-golangci-lint  Install golangci-lint v2.13.2"
 	@echo "  check-golangci-lint    Check if golangci-lint is installed"
 	@echo "  go-lint                Run golangci-lint (auto-installs if needed)"
 	@echo "  go-lint-fix            Run golangci-lint with --fix (auto-installs if needed)"
@@ -99,7 +99,7 @@ test: integration unit
 .PHONY: install-golangci-lint
 install-golangci-lint:
 	@echo "Installing golangci-lint..."
-	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $$(go env GOPATH)/bin v2.4.0
+	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $$(go env GOPATH)/bin v2.13.2
 	@echo "golangci-lint installed successfully!"
 	@golangci-lint --version
 

@@ -31,6 +31,10 @@ const (
 	// File and directory permissions.
 	dirPermissions  = 0o755 // rwxr-xr-x
 	filePermissions = 0o600 // rw-------
+
+	defaultDCName     = "dc1"
+	convertSubcommand = "convert"
+	outputFlag        = "--output"
 )
 
 // global flags.
@@ -128,17 +132,17 @@ var obfuscateThese = []*obfuscateEntry{
 	},
 	{
 		pattern: regexp.MustCompile(`(dc\s+)(\S+)`),
-		value:   "dc1",
+		value:   defaultDCName,
 		cb:      obfuscateDcCallback,
 	},
 	{
 		pattern: regexp.MustCompile(`(xdr-remote-datacenter\s+)(\S+)`),
-		value:   "dc1",
+		value:   defaultDCName,
 		cb:      obfuscateDcCallback,
 	},
 	{
 		pattern: regexp.MustCompile(`((?:^|^\s*)datacenter\s+)(\S+)`),
-		value:   "dc1",
+		value:   defaultDCName,
 		cb:      obfuscateDcCallback,
 	},
 	{
@@ -378,11 +382,11 @@ func main() {
 	// convert the input file to yaml or asconf
 	ext := filepath.Ext(inputPath)
 	args := []string{
-		"convert",
+		convertSubcommand,
 		copiedSrcPath,
 		"-a",
 		*aerospikeVersion,
-		"--output",
+		outputFlag,
 		testCasePath,
 	}
 
@@ -491,12 +495,12 @@ func generateTestFiles(
 
 	// yaml to conf test
 	args := []string{
-		"convert",
+		convertSubcommand,
 		"--aerospike-version",
 		aerospikeVersion,
 		"--format",
 		"yaml",
-		"--output",
+		outputFlag,
 		outYamlPath,
 	}
 
@@ -525,12 +529,12 @@ func generateTestFiles(
 
 	// conf to yaml test
 	args = []string{
-		"convert",
+		convertSubcommand,
 		"--aerospike-version",
 		aerospikeVersion,
 		"--format",
 		"asconfig",
-		"--output",
+		outputFlag,
 		outConfPath,
 	}
 

@@ -121,13 +121,12 @@ func (o ValidationErrors) Error() string {
 
 	sort.Strings(contexts)
 
-	errString := ""
+	var sb strings.Builder
 
 	for _, ctx := range contexts {
-		errString += fmt.Sprintf("context: %s\n", ctx)
+		fmt.Fprintf(&sb, "context: %s\n", ctx)
 
-		errList := errorsByContext[ctx]
-		for _, err := range errList {
+		for _, err := range errorsByContext[ctx] {
 			// filter "Must validate one and only one schema " errors
 			// I have never seen a useful one and they seem to always be
 			// accompanied by another more useful error that will be displayed
@@ -135,11 +134,11 @@ func (o ValidationErrors) Error() string {
 				continue
 			}
 
-			errString += fmt.Sprintf("\t- %s\n", err.Error())
+			fmt.Fprintf(&sb, "\t- %s\n", err.Error())
 		}
 	}
 
-	return errString
+	return sb.String()
 }
 
 // jsonToConfigContext takes a json config and a context string and returns a copy
