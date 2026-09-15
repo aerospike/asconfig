@@ -332,7 +332,7 @@ func formatPropertyAddition(change SchemaChange, verbose bool) string {
 	if verbose {
 		icon := iconAddition
 		var result strings.Builder
-		result.WriteString(fmt.Sprintf("  %s %s\n", icon, path))
+		fmt.Fprintf(&result, "  %s %s\n", icon, path)
 		if change.Value != nil {
 			result.WriteString(formatValueDetails(change.Value))
 		}
@@ -364,7 +364,7 @@ func formatPropertyModification(change SchemaChange, verbose bool) string {
 	if verbose {
 		icon := iconModification
 		var result strings.Builder
-		result.WriteString(fmt.Sprintf("  %s %s\n", icon, path))
+		fmt.Fprintf(&result, "  %s %s\n", icon, path)
 		result.WriteString(formatModificationDetails(change))
 		if change.Value != nil {
 			result.WriteString(formatValueDetails(change.Value))
@@ -385,13 +385,13 @@ func formatArrayItemAddition(change SchemaChange, verbose bool) string {
 	if verbose {
 		icon := iconAddition
 		var result strings.Builder
-		result.WriteString(fmt.Sprintf("  %s %s\n", icon, path))
+		fmt.Fprintf(&result, "  %s %s\n", icon, path)
 
 		if itemMap, isMap := change.Value.(map[string]any); isMap {
 			result.WriteString("     → Array item:\n")
 			result.WriteString(formatValueDetails(itemMap))
 		} else {
-			result.WriteString(fmt.Sprintf("     → Array item: %s\n", formatValue(change.Value)))
+			fmt.Fprintf(&result, "     → Array item: %s\n", formatValue(change.Value))
 		}
 		return result.String()
 	}
@@ -409,13 +409,13 @@ func formatArrayItemRemoval(change SchemaChange, verbose bool) string {
 	if verbose {
 		icon := iconRemoval
 		var result strings.Builder
-		result.WriteString(fmt.Sprintf("  %s %s\n", icon, path))
+		fmt.Fprintf(&result, "  %s %s\n", icon, path)
 
 		if itemMap, isMap := change.Value.(map[string]any); isMap {
 			result.WriteString("     → Array item:\n")
 			result.WriteString(formatValueDetails(itemMap))
 		} else {
-			result.WriteString(fmt.Sprintf("     → Array item: %s\n", formatValue(change.Value)))
+			fmt.Fprintf(&result, "     → Array item: %s\n", formatValue(change.Value))
 		}
 		return result.String()
 	}
@@ -433,12 +433,12 @@ func formatArrayItemModification(change SchemaChange, verbose bool) string {
 	if verbose {
 		icon := iconModification
 		var result strings.Builder
-		result.WriteString(fmt.Sprintf("  %s %s\n", icon, path))
+		fmt.Fprintf(&result, "  %s %s\n", icon, path)
 
 		// For array modifications, show the full array values if available
 		if change.OldFullValue != nil && change.NewFullValue != nil {
-			result.WriteString(fmt.Sprintf("     → Changed from: %s\n", formatValue(change.OldFullValue)))
-			result.WriteString(fmt.Sprintf("     → Changed to: %s\n", formatValue(change.NewFullValue)))
+			fmt.Fprintf(&result, "     → Changed from: %s\n", formatValue(change.OldFullValue))
+			fmt.Fprintf(&result, "     → Changed to: %s\n", formatValue(change.NewFullValue))
 		} else {
 			result.WriteString(formatModificationDetails(change))
 		}
@@ -568,9 +568,9 @@ func renderHeader(summary ChangeSummary, options DiffOptions) {
 			headerText,
 			strings.Repeat(" ", rightPadding),
 			border)
-		renderOutput("%s", headerBox)
+		renderOutputf("%s", headerBox)
 	} else {
-		renderOutput("AEROSPIKE CONFIGURATION CHANGES SUMMARY\n\n")
+		renderOutputf("AEROSPIKE CONFIGURATION CHANGES SUMMARY\n\n")
 	}
 
 	summaryInfo := fmt.Sprintf(
@@ -582,7 +582,7 @@ func renderHeader(summary ChangeSummary, options DiffOptions) {
 		summary.TotalRemovals,
 		summary.TotalModified,
 	)
-	renderOutput("%s", summaryInfo)
+	renderOutputf("%s", summaryInfo)
 }
 
 // renderSectionChanges renders changes for a specific section.
@@ -591,7 +591,7 @@ func renderSectionChanges(section string, changes SectionChanges, options DiffOp
 	if options.Verbose {
 		renderSectionBox(section)
 	} else {
-		renderOutput("\n[SECTION: %s]\n", strings.ToUpper(section))
+		renderOutputf("\n[SECTION: %s]\n", strings.ToUpper(section))
 	}
 
 	// Render all changes for this section
@@ -630,7 +630,7 @@ func renderSectionBox(section string) {
 		sectionText,
 		strings.Repeat(" ", rightPadding),
 		bottomBorder)
-	renderOutput("%s", sectionBox)
+	renderOutputf("%s", sectionBox)
 }
 
 // renderAllChanges renders all types of changes in a unified way.
@@ -653,19 +653,19 @@ func renderAllChanges(changes SectionChanges, options DiffOptions) {
 
 		// Render header
 		if options.Verbose {
-			renderOutput("\n  %s:\n", config.header)
+			renderOutputf("\n  %s:\n", config.header)
 		} else {
-			renderOutput("%s:\n", config.header)
+			renderOutputf("%s:\n", config.header)
 		}
 
 		// Format and render each change
 		for _, change := range config.changes {
 			formattedChange, err := formatChange(change, options.Verbose)
 			if err != nil {
-				renderError("Error formatting change: %v\n", err)
+				renderErrorf("Error formatting change: %v\n", err)
 				continue
 			}
-			renderOutput("%s", formattedChange)
+			renderOutputf("%s", formattedChange)
 		}
 	}
 }
@@ -688,13 +688,13 @@ func formatSingleProperty(key string, val any, prefix string) string {
 	case map[string]any:
 		// Render the key and expand the map hierarchically
 		var result strings.Builder
-		result.WriteString(fmt.Sprintf("%s%s:\n", prefix, displayName))
+		fmt.Fprintf(&result, "%s%s:\n", prefix, displayName)
 		result.WriteString(formatNestedData(v, prefix+"  "))
 		return result.String()
 	case []any:
 		// Render the key and expand the array hierarchically
 		var result strings.Builder
-		result.WriteString(fmt.Sprintf("%s%s:\n", prefix, displayName))
+		fmt.Fprintf(&result, "%s%s:\n", prefix, displayName)
 		result.WriteString(formatNestedDataArray(v, prefix+"  "))
 		return result.String()
 	default:
@@ -730,17 +730,17 @@ func formatNestedData(data map[string]any, prefix string) string {
 		switch v := val.(type) {
 		case map[string]any:
 			// Nested map - recurse
-			result.WriteString(fmt.Sprintf("%s%s:\n", prefix, displayName))
+			fmt.Fprintf(&result, "%s%s:\n", prefix, displayName)
 			result.WriteString(formatNestedData(v, prefix+"  "))
 		case []any:
 			// Array - format elements
-			result.WriteString(fmt.Sprintf("%s%s:\n", prefix, displayName))
+			fmt.Fprintf(&result, "%s%s:\n", prefix, displayName)
 			result.WriteString(formatNestedDataArray(v, prefix+"  "))
 		default:
 			// Simple value
 			displayValue := formatValue(v)
 			if displayValue != "" {
-				result.WriteString(fmt.Sprintf("%s%s: %s\n", prefix, displayName, displayValue))
+				fmt.Fprintf(&result, "%s%s: %s\n", prefix, displayName, displayValue)
 			}
 		}
 	}
@@ -756,17 +756,17 @@ func formatNestedDataArray(arr []any, prefix string) string {
 		switch v := item.(type) {
 		case map[string]any:
 			// Object in array
-			result.WriteString(fmt.Sprintf("%s[%d]:\n", prefix, i))
+			fmt.Fprintf(&result, "%s[%d]:\n", prefix, i)
 			result.WriteString(formatNestedData(v, prefix+"  "))
 		case []any:
 			// Nested array
-			result.WriteString(fmt.Sprintf("%s[%d]:\n", prefix, i))
+			fmt.Fprintf(&result, "%s[%d]:\n", prefix, i)
 			result.WriteString(formatNestedDataArray(v, prefix+"  "))
 		default:
 			// Simple value
 			displayValue := formatValue(item)
 			if displayValue != "" {
-				result.WriteString(fmt.Sprintf("%s[%d]: %s\n", prefix, i, displayValue))
+				fmt.Fprintf(&result, "%s[%d]: %s\n", prefix, i, displayValue)
 			}
 		}
 	}
@@ -967,7 +967,7 @@ func formatValue(value any) string {
 		jsonBytes, err := json.Marshal(v)
 		if err != nil {
 			// If JSON marshaling fails, show the raw Go representation
-			renderWarning("Failed to marshal map to JSON: %v\n", err)
+			renderWarningf("Failed to marshal map to JSON: %v\n", err)
 			return fmt.Sprintf("%#v", v)
 		}
 		return string(jsonBytes)
@@ -976,7 +976,7 @@ func formatValue(value any) string {
 		jsonBytes, err := json.Marshal(v)
 		if err != nil {
 			// If JSON marshaling fails, show the raw Go representation
-			renderWarning("Failed to marshal value to JSON: %v\n", err)
+			renderWarningf("Failed to marshal value to JSON: %v\n", err)
 			return fmt.Sprintf("%#v", v)
 		}
 		return string(jsonBytes)
@@ -1020,7 +1020,7 @@ func formatArray(arr []any) string {
 	jsonBytes, err := json.Marshal(arr)
 	if err != nil {
 		// If JSON marshaling fails, show the raw Go representation instead of hiding content
-		renderWarning("Failed to marshal array to JSON: %v\n", err)
+		renderWarningf("Failed to marshal array to JSON: %v\n", err)
 		return fmt.Sprintf("%#v", arr)
 	}
 	return string(jsonBytes)
