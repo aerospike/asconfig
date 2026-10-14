@@ -121,9 +121,10 @@ func newDiffServerCmd() *cobra.Command {
 	}
 
 	// Add Aerospike connection flags when server mode is enabled
-	asFlagSet := aerospikeFlags.NewFlagSet(flags.DefaultWrapHelpString)
+	asFlagSet := aerospikeFlags.NewFlagSetWithSecrets(flags.DefaultWrapHelpString)
 	cmd.Flags().AddFlagSet(asFlagSet)
 	config.BindPFlags(asFlagSet, "cluster")
+	addSecretAgentFlags(cmd, secretAgentFlags)
 	cmd.Version = VERSION
 
 	return cmd
@@ -286,6 +287,10 @@ func runServerDiff(cmd *cobra.Command, args []string) error {
 	// Create local config
 	localConf, err := asConf.NewASConfigFromBytes(mgmtLibLogger, localFile, localFormat)
 	if err != nil {
+		return err
+	}
+
+	if err = resolveSecrets(cmd, aerospikeFlags, secretAgentFlags); err != nil {
 		return err
 	}
 

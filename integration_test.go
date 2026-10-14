@@ -487,7 +487,19 @@ func runServer(version string, serverVersion string, confPath string, serverArgs
 		return "", ""
 	}
 
-	return id, resp.NetworkSettings.IPAddress
+	return id, containerIP(resp)
+}
+
+// containerIP returns the container's address on its network. Newer Docker
+// versions leave the top-level NetworkSettings.IPAddress empty.
+func containerIP(info container.InspectResponse) string {
+	for _, network := range info.NetworkSettings.Networks {
+		if network.IPAddress != "" {
+			return network.IPAddress
+		}
+	}
+
+	return info.NetworkSettings.IPAddress
 }
 
 func stopServer(id string, dockerClient *client.Client) error {

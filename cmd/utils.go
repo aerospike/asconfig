@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -8,6 +9,8 @@ import (
 	"strings"
 
 	asConf "github.com/aerospike/aerospike-management-lib/asconfig"
+	"github.com/aerospike/tools-common-go/config"
+	"github.com/aerospike/tools-common-go/flags"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
@@ -34,6 +37,7 @@ var (
 	errDiffConfigsDiffer                = errors.New("configuration files are not equal")
 	errMismatchedFileFormats            = errors.New("mismatched file formats")
 	errUnableToCreateClientPolicy       = errors.New("unable to create client policy")
+	errUnableToResolveSecrets           = errors.New("unable to resolve secrets")
 	errUnableToParseGeneratedServerConf = errors.New("unable to parse the generated server conf")
 	errUnableToGenerateConfigFromServer = errors.New("unable to generate config from server")
 	errUnableToMarshalServerConfig      = errors.New("unable to marshal server config")
@@ -230,4 +234,27 @@ func renderErrorf(format string, args ...any) {
 // renderWarningf writes warning messages to stderr.
 func renderWarningf(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "Warning: "+format, args...)
+}
+
+// addSecretAgentFlags adds the --sa-* flags, read from the [secret-agent] or
+// [secret-agent_<instance>] config section.
+func addSecretAgentFlags(cmd *cobra.Command, saFlags *flags.SecretAgentFlags) {
+	saFlagSet := saFlags.NewFlagSet(flags.DefaultWrapHelpString)
+	cmd.Flags().AddFlagSet(saFlagSet)
+	config.BindPFlagsWithInstanceFallback(saFlagSet, "secret-agent")
+}
+
+// resolveSecrets fetches secrets: values of --user, --password and the TLS
+// file and password options from the Secret Agent.
+func resolveSecrets(cmd *cobra.Command, asFlags *flags.AerospikeFlags, saFlags *flags.SecretAgentFlags) error {
+	ctx := cmd.Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	if err := asFlags.ResolveSecrets(ctx, saFlags); err != nil {
+		return fmt.Errorf("%w: %w", errUnableToResolveSecrets, err)
+	}
+
+	return nil
 }
