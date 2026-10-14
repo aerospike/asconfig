@@ -121,7 +121,7 @@ func newDiffServerCmd() *cobra.Command {
 	}
 
 	// Add Aerospike connection flags when server mode is enabled
-	asFlagSet := aerospikeFlags.NewFlagSet(flags.DefaultWrapHelpString)
+	asFlagSet := aerospikeFlags.NewFlagSetWithSecrets(flags.DefaultWrapHelpString)
 	cmd.Flags().AddFlagSet(asFlagSet)
 	config.BindPFlags(asFlagSet, "cluster")
 	addSecretAgentFlags(cmd, secretAgentFlags)

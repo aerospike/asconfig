@@ -62,7 +62,7 @@ func newGenerateCmd() *cobra.Command {
 	}
 
 	res.Version = VERSION
-	asFlagSet := asCommonFlags.NewFlagSet(flags.DefaultWrapHelpString)
+	asFlagSet := asCommonFlags.NewFlagSetWithSecrets(flags.DefaultWrapHelpString)
 	res.Flags().AddFlagSet(asFlagSet)
 	config.BindPFlags(asFlagSet, "cluster")
 	addSecretAgentFlags(res, saFlags)

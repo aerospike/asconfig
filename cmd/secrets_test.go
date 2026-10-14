@@ -49,7 +49,7 @@ func TestSecretAgentFlagsRegistered(t *testing.T) {
 	}
 
 	for name, cmd := range commands {
-		for _, flag := range []string{"sa-address", "sa-port", "sa-timeout", "sa-cafile"} {
+		for _, flag := range []string{"sa-address", "sa-port", "sa-timeout", "sa-ca-file"} {
 			if cmd.Flags().Lookup(flag) == nil {
 				t.Errorf("%s: missing --%s", name, flag)
 			}
@@ -67,16 +67,19 @@ func TestGenerateResolvesSecrets(t *testing.T) {
 
 	tests := map[string]struct {
 		want     error
+		password string
 		args     []string
 		contains []string
 	}{
 		"resolved, then the server is unreachable": {
-			args: []string{"-P", "secrets:asconfig:password", "--sa-address", agent.Addr()},
-			want: errUnableToGenerateConfigFile,
+			args:     []string{"-P", "secrets:asconfig:password", "--sa-address", agent.Addr()},
+			want:     errUnableToGenerateConfigFile,
+			password: "admin",
 		},
 		"secret agent address after the password": {
-			args: []string{"--sa-address", agent.Addr(), "-P", "secrets:asconfig:password"},
-			want: errUnableToGenerateConfigFile,
+			args:     []string{"--sa-address", agent.Addr(), "-P", "secrets:asconfig:password"},
+			want:     errUnableToGenerateConfigFile,
+			password: "admin",
 		},
 		"missing key": {
 			args:     []string{"-P", "secrets:asconfig:missing", "--sa-address", agent.Addr()},
@@ -88,10 +91,31 @@ func TestGenerateResolvesSecrets(t *testing.T) {
 			want:     errUnableToResolveSecrets,
 			contains: []string{"--password", "secrets:asconfig:password", unreachableAddr},
 		},
-		"invalid port": {
-			args:     []string{"-P", "admin", "--sa-port", "0"},
+		"user secret": {
+			args:     []string{"-U", "secrets:asconfig:missing", "-P", "admin", "--sa-address", agent.Addr()},
+			want:     errUnableToResolveSecrets,
+			contains: []string{"--user", "secrets:asconfig:missing"},
+		},
+		"b64 password that decodes to secrets: stays literal": {
+			args: []string{
+				"-P", "b64:" + base64.StdEncoding.EncodeToString([]byte("secrets:asconfig:password")),
+				"--sa-address", unreachableAddr,
+			},
+			want: errUnableToGenerateConfigFile,
+		},
+		"invalid port without a secret is ignored": {
+			args: []string{"-P", "admin", "--sa-port", "0"},
+			want: errUnableToGenerateConfigFile,
+		},
+		"invalid port with a secret": {
+			args:     []string{"-P", "secrets:asconfig:password", "--sa-port", "0"},
 			want:     errUnableToResolveSecrets,
 			contains: []string{"--sa-port: invalid value 0"},
+		},
+		"invalid timeout with a secret": {
+			args:     []string{"-P", "secrets:asconfig:password", "--sa-address", agent.Addr(), "--sa-timeout", "0"},
+			want:     errUnableToResolveSecrets,
+			contains: []string{"--sa-timeout: invalid value 0"},
 		},
 	}
 
@@ -103,6 +127,12 @@ func TestGenerateResolvesSecrets(t *testing.T) {
 			}
 
 			requireErr(t, cmd.RunE(cmd, nil), tt.want, tt.contains...)
+
+			if tt.password != "" {
+				if got := cmd.Flags().Lookup("password").Value.String(); got != tt.password {
+					t.Fatalf("expected the fetched password %q, got %q", tt.password, got)
+				}
+			}
 		})
 	}
 }
@@ -113,6 +143,9 @@ func TestGenerateResolvesSecretsFromConfigFile(t *testing.T) {
 	}
 
 	agent := newSecretsTestAgent(t)
+	tlsAgent := secretagenttest.NewTLSServer(t, secretagenttest.Secrets{
+		"asconfig": {"password": base64.StdEncoding.EncodeToString([]byte("admin"))},
+	})
 
 	tests := map[string]struct {
 		want     error
@@ -120,6 +153,18 @@ func TestGenerateResolvesSecretsFromConfigFile(t *testing.T) {
 		args     []string
 		contains []string
 	}{
+		"C tools spelling sa-cafile": {
+			config: `[cluster]
+host = "` + unreachableAddr + `"
+user = "admin"
+password = "secrets:asconfig:password"
+
+[secret-agent]
+sa-address = "` + tlsAgent.Addr() + `"
+sa-cafile = "` + tlsAgent.CAFile() + `"
+`,
+			want: errUnableToGenerateConfigFile,
+		},
 		"secret-agent section": {
 			config: `[cluster]
 host = "` + unreachableAddr + `"

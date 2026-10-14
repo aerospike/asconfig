@@ -244,8 +244,8 @@ func addSecretAgentFlags(cmd *cobra.Command, saFlags *flags.SecretAgentFlags) {
 	config.BindPFlagsWithInstanceFallback(saFlagSet, "secret-agent")
 }
 
-// resolveSecrets fetches secrets: values of --password and
-// --tls-keyfile-password from the Secret Agent.
+// resolveSecrets fetches secrets: values of --user, --password and the TLS
+// file and password options from the Secret Agent.
 func resolveSecrets(cmd *cobra.Command, asFlags *flags.AerospikeFlags, saFlags *flags.SecretAgentFlags) error {
 	ctx := cmd.Context()
 	if ctx == nil {
