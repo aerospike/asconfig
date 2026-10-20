@@ -245,12 +245,15 @@ func addSecretAgentFlags(cmd *cobra.Command, saFlags *flags.SecretAgentFlags) {
 }
 
 // resolveSecrets fetches secrets: values of --user, --password and the TLS
-// file and password options from the Secret Agent.
+// file and password options from the Secret Agent, and reads the --password
+// and --tls-keyfile-password sources.
 func resolveSecrets(cmd *cobra.Command, asFlags *flags.AerospikeFlags, saFlags *flags.SecretAgentFlags) error {
 	ctx := cmd.Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
+
+	asFlags.SetWarningHandler(func(msg string) { logger.Warn(msg) })
 
 	if err := asFlags.ResolveSecrets(ctx, saFlags); err != nil {
 		return fmt.Errorf("%w: %w", errUnableToResolveSecrets, err)
