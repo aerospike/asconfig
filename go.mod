@@ -5,7 +5,7 @@ go 1.26.8
 require (
 	github.com/aerospike/aerospike-client-go/v8 v8.8.0
 	github.com/aerospike/aerospike-management-lib v1.11.2-0.20260914152233-6510a886fa3f
-	github.com/aerospike/tools-common-go v0.4.4-0.20261020015227-dca3354b0537
+	github.com/aerospike/tools-common-go v0.4.4-0.20261022203342-4e6bd8103d0e
 	github.com/bombsimon/logrusr/v4 v4.2.0
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/go-logr/logr v1.4.4
