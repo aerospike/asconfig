@@ -1132,6 +1132,12 @@ func TestGenerate(t *testing.T) {
 		_, err = test.Output()
 		if err != nil {
 			t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", firstArgs, string(err.(*exec.ExitError).Stderr))
+
+			err = stopServer(id, dockerClient)
+			if err != nil {
+				t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf, err)
+			}
+
 			return
 		}
 
@@ -1149,7 +1155,7 @@ func TestGenerate(t *testing.T) {
 
 		err = stopServer(id, dockerClient)
 		if err != nil {
-			t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf, string(err.(*exec.ExitError).Stderr))
+			t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf, err)
 		}
 
 		id, ip = runServer(tf.version, "", tf.destination, nil, testutils.DockerAuth{}, dockerClient, t)
@@ -1165,7 +1171,7 @@ func TestGenerate(t *testing.T) {
 
 		err = stopServer(id, dockerClient)
 		if err != nil {
-			t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf, string(err.(*exec.ExitError).Stderr))
+			t.Errorf("\nTESTCASE: %+v\nERR: %+v\n", tf, err)
 		}
 
 		// Compare the config of the two servers
