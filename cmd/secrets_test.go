@@ -150,6 +150,7 @@ func TestGenerateResolvesSecretsFromConfigFile(t *testing.T) {
 	tests := map[string]struct {
 		want     error
 		config   string
+		password string
 		args     []string
 		contains []string
 	}{
@@ -163,7 +164,8 @@ password = "secrets:asconfig:password"
 sa-address = "` + tlsAgent.Addr() + `"
 sa-cafile = "` + tlsAgent.CAFile() + `"
 `,
-			want: errUnableToGenerateConfigFile,
+			want:     errUnableToGenerateConfigFile,
+			password: "admin",
 		},
 		"secret-agent section": {
 			config: `[cluster]
@@ -174,7 +176,8 @@ password = "secrets:asconfig:password"
 [secret-agent]
 sa-address = "` + agent.Addr() + `"
 `,
-			want: errUnableToGenerateConfigFile,
+			want:     errUnableToGenerateConfigFile,
+			password: "admin",
 		},
 		"instance falls back to secret-agent section": {
 			config: `[cluster_a]
@@ -185,8 +188,9 @@ password = "secrets:asconfig:password"
 [secret-agent]
 sa-address = "` + agent.Addr() + `"
 `,
-			args: []string{"--instance", "a"},
-			want: errUnableToGenerateConfigFile,
+			args:     []string{"--instance", "a"},
+			want:     errUnableToGenerateConfigFile,
+			password: "admin",
 		},
 		"instance section replaces secret-agent section": {
 			config: `[cluster_a]
@@ -213,8 +217,9 @@ password = "secrets:asconfig:password"
 [secret-agent]
 sa-address = "` + unreachableAddr + `"
 `,
-			args: []string{"--sa-address", agent.Addr()},
-			want: errUnableToGenerateConfigFile,
+			args:     []string{"--sa-address", agent.Addr()},
+			want:     errUnableToGenerateConfigFile,
+			password: "admin",
 		},
 	}
 
@@ -230,11 +235,18 @@ sa-address = "` + unreachableAddr + `"
 
 			*cfFileFlags = flags.ConfFileFlags{}
 
+			generateCmd := newGenerateCmd()
 			rootCmd := NewRootCmd()
-			rootCmd.AddCommand(newGenerateCmd())
+			rootCmd.AddCommand(generateCmd)
 			rootCmd.SetArgs(append([]string{"generate", "--config-file", configFile}, tt.args...))
 
 			requireErr(t, rootCmd.Execute(), tt.want, tt.contains...)
+
+			if tt.password != "" {
+				if got := generateCmd.Flags().Lookup("password").Value.String(); got != tt.password {
+					t.Fatalf("expected the fetched password %q, got %q", tt.password, got)
+				}
+			}
 		})
 	}
 }
