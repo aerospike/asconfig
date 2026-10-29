@@ -94,6 +94,8 @@ func newDiffFilesCmd() *cobra.Command {
 }
 
 func newDiffServerCmd() *cobra.Command {
+	asFlags := flags.NewDefaultAerospikeFlags()
+	saFlags := flags.NewDefaultSecretAgentFlags()
 	cmd := &cobra.Command{
 		Use:   "server [flags] <path/to/config>",
 		Short: "BETA: Diff a local config file against a running Aerospike server's configuration.",
@@ -105,7 +107,7 @@ func newDiffServerCmd() *cobra.Command {
   				asconfig diff server -h 127.0.0.1:3000 aerospike.conf`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger.Debug("Running server diff command")
-			return runServerDiff(cmd, args)
+			return runServerDiff(cmd, args, asFlags, saFlags)
 		},
 	}
 
@@ -121,10 +123,10 @@ func newDiffServerCmd() *cobra.Command {
 	}
 
 	// Add Aerospike connection flags when server mode is enabled
-	asFlagSet := aerospikeFlags.NewFlagSetWithSecrets(flags.DefaultWrapHelpString)
+	asFlagSet := asFlags.NewFlagSetWithSecrets(flags.DefaultWrapHelpString)
 	cmd.Flags().AddFlagSet(asFlagSet)
 	config.BindPFlags(asFlagSet, "cluster")
-	addSecretAgentFlags(cmd, secretAgentFlags)
+	addSecretAgentFlags(cmd, saFlags)
 	cmd.Version = VERSION
 
 	return cmd
@@ -255,7 +257,9 @@ func runFileDiff(cmd *cobra.Command, args []string) error {
 }
 
 // runServerDiff handles comparing a local file against a running server.
-func runServerDiff(cmd *cobra.Command, args []string) error {
+func runServerDiff(
+	cmd *cobra.Command, args []string, asFlags *flags.AerospikeFlags, saFlags *flags.SecretAgentFlags,
+) error {
 	if len(args) < diffServerArgMin {
 		return errDiffServerTooFewArgs
 	}
@@ -290,13 +294,13 @@ func runServerDiff(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if err = resolveSecrets(cmd, aerospikeFlags, secretAgentFlags); err != nil {
+	if err = resolveSecrets(cmd, asFlags, saFlags); err != nil {
 		return err
 	}
 
 	logger.Debugf("Generating config from Aerospike node")
 	// Generate server config using existing generate functionality
-	asCommonConfig := aerospikeFlags.NewAerospikeConfig()
+	asCommonConfig := asFlags.NewAerospikeConfig()
 
 	asPolicy, err := asCommonConfig.NewClientPolicy()
 	if err != nil {

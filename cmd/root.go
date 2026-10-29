@@ -22,10 +22,8 @@ import (
 var rootCmd = NewRootCmd()
 
 var (
-	VERSION          = "development" // Replaced at compile time
-	aerospikeFlags   = flags.NewDefaultAerospikeFlags()
-	secretAgentFlags = flags.NewDefaultSecretAgentFlags()
-	cfFileFlags      = flags.NewConfFileFlags()
+	VERSION     = "development" // Replaced at compile time
+	cfFileFlags = flags.NewConfFileFlags()
 )
 
 // NewRootCmd creates and returns the root cobra command.

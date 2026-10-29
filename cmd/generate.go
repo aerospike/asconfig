@@ -33,6 +33,10 @@ func newGenerateCmd() *cobra.Command {
 		Long: `BETA: Generate a configuration file from a running Aerospike node. ` +
 			`This can be useful if you have changed the configuration of a node dynamically ` +
 			`(e.g. xdr) and would like to persist the changes.`,
+		Example: `  # Generate a configuration file from a running node
+  asconfig generate -h 127.0.0.1:3000 -U admin -P admin -o aerospike.conf
+  # Fetch the password from the Aerospike Secret Agent
+  asconfig generate -h 127.0.0.1:3000 -U admin -P secrets:aerospike:password --sa-address 127.0.0.1:3005 -o aerospike.conf`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runGenerateCommand(cmd, asCommonFlags, saFlags, disclaimer)
 		},
