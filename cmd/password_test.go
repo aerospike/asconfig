@@ -12,6 +12,7 @@ import (
 	"github.com/aerospike/tools-common-go/config"
 	"github.com/aerospike/tools-common-go/flags"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 func TestGenerateReadsPasswordSources(t *testing.T) {
@@ -118,6 +119,58 @@ func TestGeneratePasswordWithoutUser(t *testing.T) {
 	}
 }
 
+func TestGenerateSecretPasswordWithoutUser(t *testing.T) {
+	if err := InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
+
+	tests := map[string]struct {
+		config  string
+		warning string
+		args    []string
+	}{
+		"command line": {
+			args:    []string{"-P", "secrets:asconfig:password"},
+			warning: "--password: ignored because no user is set",
+		},
+		"config file": {
+			config:  "[cluster]\npassword = \"secrets:asconfig:password\"\n",
+			warning: "password in config file: ignored because no user is set",
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			var logs bytes.Buffer
+
+			logger.SetOutput(&logs)
+			t.Cleanup(func() { logger.SetOutput(os.Stderr) })
+
+			config.Reset()
+			t.Cleanup(config.Reset)
+
+			configFile := filepath.Join(t.TempDir(), "astools.conf")
+			if err := os.WriteFile(configFile, []byte(tt.config), outputFilePermissions); err != nil {
+				t.Fatal(err)
+			}
+
+			*cfFileFlags = flags.ConfFileFlags{}
+
+			root := NewRootCmd()
+			root.AddCommand(newGenerateCmd())
+			root.SetArgs(append([]string{
+				"generate", "--config-file", configFile, "-h", unreachableAddr, "--sa-address", unreachableAddr,
+			}, tt.args...))
+
+			requireErr(t, root.Execute(), errUnableToGenerateConfigFile)
+
+			if !strings.Contains(logs.String(), "level=warning") || !strings.Contains(logs.String(), tt.warning) {
+				t.Fatalf("expected the warning %q, got %s", tt.warning, logs.String())
+			}
+		})
+	}
+}
+
 func TestGeneratePasswordFromConfigFile(t *testing.T) {
 	if err := InitializeGlobals(); err != nil {
 		t.Fatalf("Failed to initialize globals for testing: %v", err)
@@ -197,6 +250,80 @@ func TestPasswordHelp(t *testing.T) {
 		for _, line := range lines {
 			if !strings.Contains(usage, line+"\n") {
 				t.Errorf("%s: help is missing the line %q", name, line)
+			}
+		}
+	}
+}
+
+func flagHelp(t *testing.T, cmd *cobra.Command, name string) string {
+	t.Helper()
+
+	flag := cmd.Flags().Lookup(name)
+	if flag == nil {
+		t.Fatalf("missing --%s", name)
+	}
+
+	fs := pflag.NewFlagSet(name, pflag.ContinueOnError)
+	fs.AddFlag(flag)
+
+	return strings.Join(strings.Fields(fs.FlagUsages()), " ")
+}
+
+func TestPasswordHelpMatchesTheOtherTools(t *testing.T) {
+	if err := InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
+
+	// The canonical text, less the prompt sentences: asconfig has no prompt.
+	help := map[string]string{
+		"password": `Password used to authenticate with cluster. Default: none
+			It can be one of the following:
+			1) Environment variable: 'env:<VAR>', used exactly as set
+			2) Base64 encoded environment variable: 'env-b64:<VAR>'
+			3) Base64 encoded string: 'b64:<BASE64>'
+			4) File: 'file:<PATH>', the whole file less one trailing '\n' or
+			   '\r\n'. PATH should name a regular file.
+			5) Aerospike Secret Agent: 'secrets:<resource>:<key>'
+			6) String: 'PASSWORD'
+			Prefixes are case-sensitive. A base64 value may be line wrapped,
+			and one trailing newline is dropped after decoding. A 'b64:' value
+			on the command line is as visible as a literal password.
+			A password that itself begins with 'env:', 'env-b64:', 'b64:',
+			'file:' or 'secrets:' must be given as 'b64:'.
+			The password is read only when a user is set and the auth mode is
+			not PKI. It must be at most 63 bytes.
+			A value fetched with 'secrets:' is used as-is.`,
+		"tls-keyfile-password": `Password to load protected tls-keyfile.
+			It can be one of the following:
+			1) Environment variable: 'env:<VAR>', used exactly as set
+			2) Base64 encoded environment variable: 'env-b64:<VAR>'
+			3) Base64 encoded string: 'b64:<BASE64>'
+			4) File: 'file:<PATH>', the first line of the file
+			5) Aerospike Secret Agent: 'secrets:<resource>:<key>'
+			6) String: 'PASSWORD'
+			Prefixes are case-sensitive. A base64 value may be line wrapped,
+			and one trailing newline is dropped after decoding.
+			A password that itself begins with 'env:', 'env-b64:', 'b64:',
+			'file:' or 'secrets:' must be given as 'b64:'.
+			Surrounding whitespace is trimmed before the form is read. A
+			password with surrounding whitespace must be given as 'b64:'.
+			The password is read only when a key file is set. It must be at
+			most 1024 bytes.
+			A value fetched with 'secrets:' is used as-is.
+			Default: none`,
+	}
+
+	commands := map[string]*cobra.Command{
+		"generate":    newGenerateCmd(),
+		"diff server": newDiffServerCmd(),
+	}
+
+	for cmdName, cmd := range commands {
+		for name, text := range help {
+			usage := flagHelp(t, cmd, name)
+
+			if want := strings.Join(strings.Fields(text), " "); !strings.Contains(usage, want) {
+				t.Errorf("%s: --%s help is missing %q, got %q", cmdName, name, want, usage)
 			}
 		}
 	}
