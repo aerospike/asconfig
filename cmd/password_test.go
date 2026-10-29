@@ -222,6 +222,41 @@ func TestGeneratePasswordFromConfigFile(t *testing.T) {
 	}
 }
 
+func TestPasswordSourceErrorsNameOnlyTheOption(t *testing.T) {
+	if err := InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
+
+	t.Setenv("ASCONFIG_TEST_UNSET", "")
+
+	tests := map[string]struct {
+		newCmd func() *cobra.Command
+		args   []string
+	}{
+		"generate":    {newCmd: newGenerateCmd},
+		"diff server": {newCmd: newDiffServerCmd, args: []string{"../testdata/expected/all_flash_cluster_cr.conf"}},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			cmd := tt.newCmd()
+			if err := cmd.ParseFlags(
+				[]string{"-h", unreachableAddr, "-U", "admin", "-P", "env:ASCONFIG_TEST_UNSET"},
+			); err != nil {
+				t.Fatal(err)
+			}
+
+			err := cmd.RunE(cmd, tt.args)
+			requireErr(t, err, errUnableToResolveSecrets,
+				"--password: environment variable ASCONFIG_TEST_UNSET is not set or empty")
+
+			if strings.Contains(err.Error(), "secrets") {
+				t.Fatalf("expected an error that names only the option, got %v", err)
+			}
+		})
+	}
+}
+
 func TestPasswordHelp(t *testing.T) {
 	if err := InitializeGlobals(); err != nil {
 		t.Fatalf("Failed to initialize globals for testing: %v", err)

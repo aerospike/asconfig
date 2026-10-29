@@ -37,7 +37,7 @@ var (
 	errDiffConfigsDiffer                = errors.New("configuration files are not equal")
 	errMismatchedFileFormats            = errors.New("mismatched file formats")
 	errUnableToCreateClientPolicy       = errors.New("unable to create client policy")
-	errUnableToResolveSecrets           = errors.New("unable to resolve secrets")
+	errUnableToResolveSecrets           = errors.New("unable to read credentials")
 	errUnableToParseGeneratedServerConf = errors.New("unable to parse the generated server conf")
 	errUnableToGenerateConfigFromServer = errors.New("unable to generate config from server")
 	errUnableToMarshalServerConfig      = errors.New("unable to marshal server config")
