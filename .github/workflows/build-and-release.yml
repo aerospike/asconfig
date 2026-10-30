@@ -381,12 +381,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-15-intel, macos-14, macos-15, macos-26]
+        os: [macos-15-intel, macos-26-intel, macos-15, macos-26]
         include:
           # One publisher per arch (the oldest runner): every leg of an arch now
           # builds the same file name, so a second uploader would collide. The
           # unmarked legs still build and test, which is the point of the matrix.
-          - os: macos-14
+          - os: macos-15
             publish: true
           - os: macos-15-intel
             publish: true
@@ -682,7 +682,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-15-intel, macos-14, macos-15, macos-26]
+        os: [macos-15-intel, macos-26-intel, macos-15, macos-26]
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
