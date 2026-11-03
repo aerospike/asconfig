@@ -236,12 +236,38 @@ func renderWarningf(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "Warning: "+format, args...)
 }
 
+const secretAgentUsage = `{{secretAgentFlagUsages .LocalFlags false | trimTrailingWhitespaces}}
+
+[secret-agent]
+ Aerospike Secret Agent used for 'secrets:<resource>:<key>' values.
+ In a config file, set these in the [secret-agent] section as sa-address,
+ sa-port, sa-timeout and sa-ca-file.
+{{secretAgentFlagUsages .LocalFlags true | trimTrailingWhitespaces}}{{end}}`
+
+// secretAgentFlagUsages returns the usage of the --sa-* flags in flagSet, or
+// of the other flags.
+func secretAgentFlagUsages(flagSet *pflag.FlagSet, secretAgent bool) string {
+	group := &pflag.FlagSet{}
+
+	flagSet.VisitAll(func(f *pflag.Flag) {
+		if strings.HasPrefix(f.Name, "sa-") == secretAgent {
+			group.AddFlag(f)
+		}
+	})
+
+	return group.FlagUsages()
+}
+
 // addSecretAgentFlags adds the --sa-* flags, read from the [secret-agent] or
-// [secret-agent_<instance>] config section.
+// [secret-agent_<instance>] config section, and lists them in the help under
+// [secret-agent].
 func addSecretAgentFlags(cmd *cobra.Command, saFlags *flags.SecretAgentFlags) {
 	saFlagSet := saFlags.NewFlagSet(flags.DefaultWrapHelpString)
 	cmd.Flags().AddFlagSet(saFlagSet)
 	config.BindPFlagsWithInstanceFallback(saFlagSet, "secret-agent")
+	cobra.AddTemplateFunc("secretAgentFlagUsages", secretAgentFlagUsages)
+	cmd.SetUsageTemplate(strings.Replace(cmd.UsageTemplate(),
+		"{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}", secretAgentUsage, 1))
 }
 
 // resolveSecrets fetches secrets: values of --user, --password and the TLS

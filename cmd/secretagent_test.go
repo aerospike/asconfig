@@ -510,6 +510,50 @@ func TestSecretAgentHelp(t *testing.T) {
 	}
 }
 
+func TestSecretAgentHelpBlock(t *testing.T) {
+	if err := InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
+
+	const block = "\n\n[secret-agent]\n" +
+		" Aerospike Secret Agent used for 'secrets:<resource>:<key>' values.\n" +
+		" In a config file, set these in the [secret-agent] section as sa-address,\n" +
+		" sa-port, sa-timeout and sa-ca-file.\n"
+
+	commands := map[string]*cobra.Command{
+		"generate":    newGenerateCmd(),
+		"diff server": newDiffServerCmd(),
+	}
+
+	for cmdName, cmd := range commands {
+		usage := cmd.UsageString()
+
+		before, after, found := strings.Cut(usage, block)
+		if !found {
+			t.Fatalf("%s: help has no [secret-agent] block:\n%s", cmdName, usage)
+		}
+
+		if _, flagList, _ := strings.Cut(before, "\nFlags:\n"); strings.Contains(flagList, "--sa-") {
+			t.Errorf("%s: --sa-* options are listed outside the [secret-agent] block:\n%s", cmdName, usage)
+		}
+
+		saFlags, _, _ := strings.Cut(after, "\n\n")
+		if !strings.HasPrefix(strings.TrimSpace(saFlags), "--sa-address") {
+			t.Errorf("%s: the [secret-agent] block does not start with --sa-address:\n%s", cmdName, saFlags)
+		}
+
+		for _, name := range []string{"--sa-address", "--sa-port", "--sa-timeout", "--sa-ca-file"} {
+			if !strings.Contains(saFlags, name) {
+				t.Errorf("%s: the [secret-agent] block is missing %s:\n%s", cmdName, name, saFlags)
+			}
+		}
+
+		if strings.Contains(usage, "--sa-cafile") {
+			t.Errorf("%s: help shows --sa-cafile", cmdName)
+		}
+	}
+}
+
 func TestLegacyCAFileHiddenFromHelp(t *testing.T) {
 	if err := InitializeGlobals(); err != nil {
 		t.Fatalf("Failed to initialize globals for testing: %v", err)
