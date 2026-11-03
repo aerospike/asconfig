@@ -282,21 +282,21 @@ func TestBadSecretAgentSectionFailsClosed(t *testing.T) {
 		},
 		"invalid port": {
 			section: `sa-port = "0"`,
-			want:    "invalid value 0 for sa-port in the [secret-agent] config section, expected an integer from 1 to 65535",
+			want:    `invalid value "0" for sa-port in the [secret-agent] config section, expected an integer from 1 to 65535`,
 		},
 		"invalid timeout": {
 			section: `sa-timeout = 0`,
-			want: "invalid value 0 for sa-timeout in the [secret-agent] config section, " +
+			want: `invalid value "0" for sa-timeout in the [secret-agent] config section, ` +
 				"expected an integer from 1 to 2147483647",
 		},
 		"invalid address": {
 			section: `sa-address = "a:b:c"`,
-			want: "invalid value a:b:c for sa-address in the [secret-agent] config section, " +
+			want: `invalid value "a:b:c" for sa-address in the [secret-agent] config section, ` +
 				"expected <host>[:<port>] or [<ipv6>][:<port>]",
 		},
 		"timeout of the wrong type": {
 			section: `sa-timeout = true`,
-			want: "invalid value true for sa-timeout in the [secret-agent] config section, " +
+			want: `invalid value "true" for sa-timeout in the [secret-agent] config section, ` +
 				"expected an integer from 1 to 2147483647",
 		},
 		"address of the wrong type": {
@@ -305,12 +305,12 @@ func TestBadSecretAgentSectionFailsClosed(t *testing.T) {
 		},
 		"empty CA file": {
 			section: `sa-ca-file = ""`,
-			want: "invalid value  for sa-ca-file in the [secret-agent] config section, " +
+			want: `invalid value "" for sa-ca-file in the [secret-agent] config section, ` +
 				"expected a path to a CA certificate file",
 		},
 		"empty legacy CA file": {
 			section: `sa-cafile = ""`,
-			want: "invalid value  for sa-cafile in the [secret-agent] config section, " +
+			want: `invalid value "" for sa-cafile in the [secret-agent] config section, ` +
 				"expected a path to a CA certificate file",
 		},
 	}
@@ -356,7 +356,7 @@ func TestBadSecretAgentSectionFailsClosedWithInstance(t *testing.T) {
 			_, err := runServerCommand(t, sc, configText, "--instance", "a")
 
 			requireErrText(t, err,
-				"invalid value 0 for sa-port in the [secret-agent_a] config section, expected an integer from 1 to 65535")
+				`invalid value "0" for sa-port in the [secret-agent_a] config section, expected an integer from 1 to 65535`)
 			requireNoConnections(t, agent, server)
 		})
 	}
@@ -399,7 +399,7 @@ func TestEmptySecretAgentCAFileOption(t *testing.T) {
 					"-h", server.Addr(), "-U", "admin", "-P", "secrets:asconfig:password",
 					"--sa-address", agent.Addr(), "--"+option, "")
 
-				requireErrText(t, err, "--"+option+": invalid value , expected a path to a CA certificate file")
+				requireErrText(t, err, "--"+option+`: invalid value "", expected a path to a CA certificate file`)
 				requireNoConnections(t, agent, server)
 			})
 		}
@@ -437,7 +437,7 @@ func TestSecretAgentTimeoutIsDecimal(t *testing.T) {
 			}
 
 			requireErrText(t, err,
-				"--sa-timeout: invalid value "+tt.timeout+", expected an integer from 1 to 2147483647")
+				`--sa-timeout: invalid value "`+tt.timeout+`", expected an integer from 1 to 2147483647`)
 			requireNoConnections(t, agent, server)
 		})
 	}
@@ -822,5 +822,211 @@ func TestGenerateOpensOutputAfterCredentials(t *testing.T) {
 
 	if _, statErr := os.Stat(output); !errors.Is(statErr, os.ErrNotExist) {
 		t.Fatalf("expected %s not to be created, got %v", output, statErr)
+	}
+}
+
+func requireResolveErr(t *testing.T, err error, want string) {
+	t.Helper()
+
+	requireErr(t, err, errUnableToResolveSecrets)
+
+	if got := err.Error(); got != errUnableToResolveSecrets.Error()+": "+want {
+		t.Fatalf("expected the error %q, got %q", want, got)
+	}
+}
+
+func TestSecretAgentOptionsCheckedWithoutSecrets(t *testing.T) {
+	if err := InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
+
+	tests := map[string]struct {
+		want string
+		args []string
+	}{
+		"address": {
+			args: []string{"--sa-address", "[localhost]:3005"},
+			want: `--sa-address: invalid value "[localhost]:3005", expected <host>[:<port>] or [<ipv6>][:<port>]`,
+		},
+		"port": {
+			args: []string{"--sa-port", "65536"},
+			want: `--sa-port: invalid value "65536", expected an integer from 1 to 65535`,
+		},
+		"timeout": {
+			args: []string{"--sa-timeout", "0"},
+			want: `--sa-timeout: invalid value "0", expected an integer from 1 to 2147483647`,
+		},
+		"CA file": {
+			args: []string{"--sa-ca-file", ""},
+			want: `--sa-ca-file: invalid value "", expected a path to a CA certificate file`,
+		},
+		"legacy CA file": {
+			args: []string{"--sa-cafile", ""},
+			want: `--sa-cafile: invalid value "", expected a path to a CA certificate file`,
+		},
+	}
+
+	for cmdName, sc := range serverCommands {
+		for name, tt := range tests {
+			t.Run(cmdName+"/"+name, func(t *testing.T) {
+				server := newFakeServer(t)
+
+				_, err := runServerCommand(t, sc, "",
+					append([]string{"-h", server.Addr(), "-U", "admin", "-P", "admin"}, tt.args...)...)
+
+				requireResolveErr(t, err, tt.want)
+
+				if n := server.Conns(); n != 0 {
+					t.Errorf("expected no server connection, got %d", n)
+				}
+			})
+		}
+	}
+}
+
+func TestSecretAgentCAFileReadOnlyWhenFetching(t *testing.T) {
+	if err := InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
+
+	const missing = "/nonexistent/ca.pem"
+
+	tlsAgent := secretagenttest.NewTLSServer(t, secretagenttest.Secrets{
+		"asconfig": {"password": base64.StdEncoding.EncodeToString([]byte("admin"))},
+	})
+
+	for cmdName, sc := range serverCommands {
+		for _, key := range []string{"sa-ca-file", "sa-cafile"} {
+			t.Run(cmdName+"/config "+key+" not read without a secret", func(t *testing.T) {
+				server := newFakeServer(t)
+
+				configText := "[cluster]\nhost = \"" + server.Addr() + "\"\nuser = \"admin\"\npassword = \"admin\"\n\n" +
+					"[secret-agent]\n" + key + " = \"" + missing + "\"\n"
+
+				_, err := runServerCommand(t, sc, configText)
+
+				requireErr(t, err, sc.serverErr)
+			})
+		}
+
+		for _, option := range []string{"--sa-ca-file", "--sa-cafile"} {
+			t.Run(cmdName+"/"+option+" beats a config file CA file that cannot be read", func(t *testing.T) {
+				server := newFakeServer(t)
+
+				configText := "[cluster]\nhost = \"" + server.Addr() + "\"\nuser = \"admin\"\n" +
+					"password = \"secrets:asconfig:password\"\n\n[secret-agent]\nsa-address = \"" + tlsAgent.Addr() + "\"\n" +
+					"sa-ca-file = \"" + missing + "\"\n"
+
+				cmd, err := runServerCommand(t, sc, configText, option, tlsAgent.CAFile())
+
+				requireErr(t, err, sc.serverErr)
+				requirePassword(t, cmd, "admin")
+			})
+		}
+	}
+
+	tests := map[string]struct {
+		conf     string
+		instance string
+		want     string
+		args     []string
+	}{
+		"--sa-ca-file": {
+			args: []string{"--sa-ca-file", missing},
+			want: `--sa-ca-file: cannot load CA file "` + missing + `": No such file or directory`,
+		},
+		"--sa-cafile": {
+			args: []string{"--sa-cafile", missing},
+			want: `--sa-cafile: cannot load CA file "` + missing + `": No such file or directory`,
+		},
+		"config sa-ca-file": {
+			conf: "[secret-agent]\nsa-ca-file = \"" + missing + "\"\n",
+			want: `sa-ca-file in the [secret-agent] config section: cannot load CA file "` + missing + `": No such file or directory`,
+		},
+		"config sa-cafile": {
+			conf: "[secret-agent]\nsa-cafile = \"" + missing + "\"\n",
+			want: `sa-cafile in the [secret-agent] config section: cannot load CA file "` + missing + `": No such file or directory`,
+		},
+		"instance section": {
+			conf:     "[secret-agent_a]\nsa-ca-file = \"" + missing + "\"\n",
+			instance: "a",
+			want:     `sa-ca-file in the [secret-agent_a] config section: cannot load CA file "` + missing + `": No such file or directory`,
+		},
+	}
+
+	for cmdName, sc := range serverCommands {
+		for name, tt := range tests {
+			t.Run(cmdName+"/"+name, func(t *testing.T) {
+				agent := newFakeAgent(t, map[string]string{"asconfig:password": "admin"})
+				server := newFakeServer(t)
+
+				args := append([]string{
+					"-h", server.Addr(), "-U", "admin", "-P", "secrets:asconfig:password", "--sa-address", agent.Addr(),
+				}, tt.args...)
+
+				if tt.instance != "" {
+					args = append(args, "--instance", tt.instance)
+				}
+
+				_, err := runServerCommand(t, sc, tt.conf, args...)
+
+				requireResolveErr(t, err, tt.want)
+				requireNoConnections(t, agent, server)
+			})
+		}
+	}
+}
+
+func TestSecretAgentOnlySelectedSectionIsRead(t *testing.T) {
+	if err := InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
+
+	const invalid = "sa-port = 0\nsa-ca-file = \"\"\nbogus = 1\n"
+
+	tests := map[string]struct {
+		conf     string
+		instance string
+		args     []string
+	}{
+		"instance section, invalid default section": {
+			conf:     "[secret-agent]\n" + invalid + "\n[secret-agent_a]\nsa-address = \"AGENT\"\n",
+			instance: "a",
+		},
+		"empty instance section, invalid default section": {
+			conf:     "[secret-agent]\n" + invalid + "\n[secret-agent_a]\n",
+			instance: "a",
+			args:     []string{"--sa-address", "AGENT"},
+		},
+		"no instance, invalid instance section": {
+			conf: "[secret-agent]\nsa-address = \"AGENT\"\n\n[secret-agent_a]\n" + invalid,
+		},
+		"other instance, invalid instance section": {
+			conf:     "[secret-agent]\nsa-address = \"AGENT\"\n\n[secret-agent_a]\n" + invalid,
+			instance: "b",
+		},
+	}
+
+	for cmdName, sc := range serverCommands {
+		for name, tt := range tests {
+			t.Run(cmdName+"/"+name, func(t *testing.T) {
+				agent := newFakeAgent(t, map[string]string{"asconfig:password": "admin"})
+				server := newFakeServer(t)
+
+				args := []string{"-h", server.Addr(), "-U", "admin", "-P", "secrets:asconfig:password"}
+				for _, arg := range tt.args {
+					args = append(args, strings.ReplaceAll(arg, "AGENT", agent.Addr()))
+				}
+
+				if tt.instance != "" {
+					args = append(args, "--instance", tt.instance)
+				}
+
+				cmd, err := runServerCommand(t, sc, strings.ReplaceAll(tt.conf, "AGENT", agent.Addr()), args...)
+
+				requireErr(t, err, sc.serverErr)
+				requirePassword(t, cmd, "admin")
+			})
+		}
 	}
 }

@@ -470,7 +470,7 @@ sa-port = "0"
 			name:     "bad [secret-agent] section fails without secrets",
 			output:   filepath.Join(dir, "bad-section.conf"),
 			args:     []string{"generate", "--config-file", badSectionConf},
-			contains: []string{"invalid value 0 for sa-port in the [secret-agent] config section"},
+			contains: []string{`invalid value \"0\" for sa-port in the [secret-agent] config section`},
 			fail:     true,
 		},
 	}

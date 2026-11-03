@@ -103,19 +103,20 @@ func TestGenerateResolvesSecrets(t *testing.T) {
 			},
 			want: errUnableToGenerateConfigFile,
 		},
-		"invalid port without a secret is ignored": {
-			args: []string{"-P", "admin", "--sa-port", "0"},
-			want: errUnableToGenerateConfigFile,
+		"invalid port without a secret": {
+			args:     []string{"-P", "admin", "--sa-port", "0"},
+			want:     errUnableToResolveSecrets,
+			contains: []string{`--sa-port: invalid value "0"`},
 		},
 		"invalid port with a secret": {
 			args:     []string{"-P", "secrets:asconfig:password", "--sa-port", "0"},
 			want:     errUnableToResolveSecrets,
-			contains: []string{"--sa-port: invalid value 0"},
+			contains: []string{`--sa-port: invalid value "0"`},
 		},
 		"invalid timeout with a secret": {
 			args:     []string{"-P", "secrets:asconfig:password", "--sa-address", agent.Addr(), "--sa-timeout", "0"},
 			want:     errUnableToResolveSecrets,
-			contains: []string{"--sa-timeout: invalid value 0"},
+			contains: []string{`--sa-timeout: invalid value "0"`},
 		},
 	}
 
