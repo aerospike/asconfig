@@ -202,7 +202,7 @@ sa-address = "` + unreachableAddr + `"
 `,
 			args:     []string{"--instance", "a"},
 			want:     errUnableToResolveSecrets,
-			contains: []string{"--password", "secrets:asconfig:password", unreachableAddr},
+			contains: []string{"password in config file", "secrets:asconfig:password", unreachableAddr},
 		},
 		"command line beats config file": {
 			config: `[cluster]
