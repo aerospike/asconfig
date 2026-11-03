@@ -36,9 +36,15 @@ func NewRootCmd() *cobra.Command {
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			var multiErr error
 
-			cfgFiles, err := config.InitConfigFiles(cfFileFlags.Files(), cfFileFlags.Instance, cmd.Flags())
-			if err != nil {
-				multiErr = errors.Join(multiErr, err)
+			var cfgFiles []string
+
+			if _, ok := cmd.Annotations[configFilesAnnotation]; ok {
+				var err error
+
+				cfgFiles, err = config.InitConfigFiles(cfFileFlags.Files(), cfFileFlags.Instance, cmd.Flags())
+				if err != nil {
+					multiErr = errors.Join(multiErr, err)
+				}
 			}
 
 			lvl, err := cmd.Flags().GetString("log-level")

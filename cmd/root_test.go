@@ -18,7 +18,8 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-// Keeps the developer's ~/.aerospike/astools.conf out of every test.
+// Keeps the host's /etc/aerospike/astools.conf and ~/.aerospike/astools.conf
+// out of every test.
 func TestMain(m *testing.M) {
 	home, err := os.MkdirTemp("", "asconfig-home")
 	if err != nil {
@@ -246,6 +247,52 @@ func writeTestFile(t *testing.T, file, text string) string {
 	return file
 }
 
+func TestOnlyServerCommandsReadConfigFiles(t *testing.T) {
+	if err := InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
+
+	tests := map[string]struct {
+		args    []string
+		wantErr bool
+	}{
+		"list versions": {args: []string{"list", "versions"}},
+		"generate":      {args: []string{"generate", "-h", "127.0.0.1:1"}, wantErr: true},
+		"diff server":   {args: []string{"diff", "server", "-h", "127.0.0.1:1", "local.conf"}, wantErr: true},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			homeDir := t.TempDir()
+			t.Setenv("HOME", homeDir)
+			home := writeTestFile(t, filepath.Join(homeDir, ".aerospike", "astools.conf"), "[cluster\n")
+
+			config.Reset()
+			t.Cleanup(config.Reset)
+
+			*cfFileFlags = flags.ConfFileFlags{}
+
+			root := NewRootCmd()
+			root.AddCommand(newListCmd(), newGenerateCmd(), newDiffCmd())
+			root.SetArgs(tt.args)
+
+			var err error
+
+			captureOutput(t, func() { err = root.Execute() })
+
+			if !tt.wantErr {
+				if err != nil {
+					t.Fatalf("expected %s to ignore the config files, got %v", name, err)
+				}
+
+				return
+			}
+
+			requireErrText(t, err, "failed to read config file "+home)
+		})
+	}
+}
+
 func TestConfigFileHelp(t *testing.T) {
 	usage := strings.Join(strings.Fields(NewRootCmd().PersistentFlags().Lookup("config-file").Usage), " ")
 
@@ -374,6 +421,7 @@ func (testsuite *RootTest) TestPersistentPreRunRootInitConfig() {
 			Use: "sub",
 			Run: func(_ *cobra.Command, _ []string) {},
 		}
+		readConfigFiles(subCmd)
 		flagSet1 := &pflag.FlagSet{}
 		flagSet2 := &pflag.FlagSet{}
 

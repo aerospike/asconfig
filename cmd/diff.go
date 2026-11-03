@@ -127,6 +127,7 @@ func newDiffServerCmd() *cobra.Command {
 	cmd.Flags().AddFlagSet(asFlagSet)
 	config.BindPFlags(asFlagSet, "cluster")
 	addSecretAgentFlags(cmd, saFlags)
+	readConfigFiles(cmd)
 	cmd.Version = VERSION
 
 	return cmd

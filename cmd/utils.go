@@ -258,6 +258,18 @@ func secretAgentFlagUsages(flagSet *pflag.FlagSet, secretAgent bool) string {
 	return group.FlagUsages()
 }
 
+const configFilesAnnotation = "reads-config-files"
+
+// readConfigFiles makes the root command load the config files before cmd
+// runs. Commands that do not connect to a server read none.
+func readConfigFiles(cmd *cobra.Command) {
+	if cmd.Annotations == nil {
+		cmd.Annotations = map[string]string{}
+	}
+
+	cmd.Annotations[configFilesAnnotation] = "true"
+}
+
 // addSecretAgentFlags adds the --sa-* flags, read from the [secret-agent] or
 // [secret-agent_<instance>] config section, and lists them in the help under
 // [secret-agent].

@@ -70,6 +70,7 @@ func newGenerateCmd() *cobra.Command {
 	res.Flags().AddFlagSet(asFlagSet)
 	config.BindPFlags(asFlagSet, "cluster")
 	addSecretAgentFlags(res, saFlags)
+	readConfigFiles(res)
 
 	res.Flags().StringP("output", "o", os.Stdout.Name(),
 		flags.DefaultWrapHelpString("File path to write output to"))
