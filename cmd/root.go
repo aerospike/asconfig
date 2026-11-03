@@ -36,7 +36,7 @@ func NewRootCmd() *cobra.Command {
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			var multiErr error
 
-			cfgFiles, err := config.InitConfigFiles(cfFileFlags.File, cfFileFlags.Instance, cmd.Flags())
+			cfgFiles, err := config.InitConfigFiles(cfFileFlags.Files(), cfFileFlags.Instance, cmd.Flags())
 			if err != nil {
 				multiErr = errors.Join(multiErr, err)
 			}
@@ -65,9 +65,6 @@ func NewRootCmd() *cobra.Command {
 	logLevelUsage := fmt.Sprintf("Set the logging detail level. Valid levels are: %v", log.GetLogLevels())
 	cmd.PersistentFlags().StringP("log-level", "l", "info", logLevelUsage)
 	cmd.PersistentFlags().AddFlagSet(cfFileFlags.NewFlagSet(flags.DefaultWrapHelpString))
-	cmd.PersistentFlags().Lookup("config-file").Usage = flags.DefaultWrapHelpString(
-		"Config file to read after /etc/aerospike/astools.conf and ~/.aerospike/astools.conf." +
-			" A later file overrides an earlier one, key by key.")
 	flags.SetupRoot(cmd, "Aerospike Config", VERSION)
 
 	cmd.SilenceErrors = true

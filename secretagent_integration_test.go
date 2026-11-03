@@ -473,6 +473,26 @@ sa-port = "0"
 			contains: []string{`invalid value \"0\" for sa-port in the [secret-agent] config section`},
 			fail:     true,
 		},
+		{
+			name:   "TLS agent, --only-config-file wins over --config-file",
+			output: filepath.Join(dir, "only-config-file.conf"),
+			args:   []string{"generate", "--only-config-file", tlsConf, "--config-file", badSectionConf},
+		},
+		{
+			name:   "--no-config-file reads no file",
+			output: filepath.Join(dir, "no-config-file.conf"),
+			args: withPassword("secrets:asconfig:password",
+				"--sa-address", agent, "--no-config-file", "--config-file", badSectionConf),
+		},
+		{
+			name:   "--no-config-file with --only-config-file",
+			output: filepath.Join(dir, "no-and-only-config-file.conf"),
+			args:   []string{"generate", "--no-config-file", "--only-config-file", clusterConf},
+			contains: []string{
+				"--no-config-file and only-config-file are mutually exclusive option. Please enable only one.",
+			},
+			fail: true,
+		},
 	}
 
 	for _, tc := range tests {

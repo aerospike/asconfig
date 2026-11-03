@@ -44,39 +44,76 @@ func TestConfigFilesReadLikeCTools(t *testing.T) {
 	})
 
 	tests := map[string]struct {
-		home     string
-		user     string
-		working  string
+		files    configFiles
 		wantUser string
 		wantPass string
 		wantErr  string
 	}{
 		"--config-file is read after the home file, key by key": {
-			home:     "[cluster]\nuser = \"home\"\npassword = \"admin\"\n",
-			user:     "[cluster]\nuser = \"admin\"\n",
+			files: configFiles{
+				home: "[cluster]\nuser = \"home\"\npassword = \"admin\"\n",
+				user: "[cluster]\nuser = \"admin\"\n",
+			},
 			wantUser: "admin",
 			wantPass: "admin",
 		},
 		"the working directory file is not read": {
-			working: "[cluster]\nuser = \"working\"\npassword = \"admin\"\n",
+			files: configFiles{working: "[cluster]\nuser = \"working\"\npassword = \"admin\"\n"},
 		},
 		"a later sa-address keeps the sa-ca-file of an earlier file": {
-			home: "[secret-agent]\nsa-ca-file = \"" + agent.CAFile() + "\"\n",
-			user: "[cluster]\nuser = \"admin\"\npassword = \"secrets:asconfig:password\"\n\n" +
-				"[secret-agent]\nsa-address = \"" + agent.Addr() + "\"\n",
+			files: configFiles{
+				home: "[secret-agent]\nsa-ca-file = \"" + agent.CAFile() + "\"\n",
+				user: "[cluster]\nuser = \"admin\"\npassword = \"secrets:asconfig:password\"\n\n" +
+					"[secret-agent]\nsa-address = \"" + agent.Addr() + "\"\n",
+			},
 			wantUser: "admin",
 			wantPass: "admin",
 		},
 		"the [secret-agent] section of an earlier file is checked": {
-			home:    "[secret-agent]\nsa-port = 0\n",
-			user:    "[cluster]\nuser = \"admin\"\npassword = \"admin\"\n",
+			files: configFiles{
+				home: "[secret-agent]\nsa-port = 0\n",
+				user: "[cluster]\nuser = \"admin\"\npassword = \"admin\"\n",
+			},
 			wantErr: `invalid value "0" for sa-port in the [secret-agent] config section, expected an integer from 1 to 65535`,
+		},
+		"--only-config-file skips the home file": {
+			files: configFiles{
+				home: "[cluster]\nuser = \"home\"\npassword = \"admin\"\n",
+				user: "[cluster]\nuser = \"admin\"\n",
+				only: true,
+			},
+			wantUser: "admin",
+		},
+		"--only-config-file fetches with the [secret-agent] section of that file": {
+			files: configFiles{
+				home: "[secret-agent]\nsa-port = 0\n",
+				user: "[cluster]\nuser = \"admin\"\npassword = \"secrets:asconfig:password\"\n\n" +
+					"[secret-agent]\nsa-address = \"" + agent.Addr() + "\"\nsa-ca-file = \"" + agent.CAFile() + "\"\n",
+				only: true,
+			},
+			wantUser: "admin",
+			wantPass: "admin",
+		},
+		"--no-config-file reads no file": {
+			files: configFiles{
+				home: "[secret-agent]\nsa-port = 0\n",
+				user: "[cluster\n",
+				none: true,
+			},
+		},
+		"--no-config-file with --only-config-file": {
+			files: configFiles{
+				user: "[cluster]\nuser = \"admin\"\n",
+				only: true,
+				none: true,
+			},
+			wantErr: "--no-config-file and only-config-file are mutually exclusive option. Please enable only one.",
 		},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			run := runGenerateWithConfigFiles(t, tt.home, tt.user, tt.working)
+			run := runGenerateWithConfigFiles(t, tt.files)
 
 			if tt.wantErr != "" {
 				requireErrText(t, run.err, tt.wantErr)
@@ -111,10 +148,21 @@ type configFilesRun struct {
 	logged []string
 }
 
-// runGenerateWithConfigFiles runs generate against a fake server with home as
-// ~/.aerospike/astools.conf, user as --config-file and working as
-// ./astools.conf, each written only when not empty.
-func runGenerateWithConfigFiles(t *testing.T, home, user, working string) configFilesRun {
+// configFiles holds the text of ~/.aerospike/astools.conf (home), of the
+// --config-file or, with only, --only-config-file (user), and of
+// ./astools.conf (working). none adds --no-config-file.
+type configFiles struct {
+	home    string
+	user    string
+	working string
+	only    bool
+	none    bool
+}
+
+// runGenerateWithConfigFiles runs generate against a fake server with the
+// config files of files, each written only when not empty. run.files holds the
+// files expected to be read.
+func runGenerateWithConfigFiles(t *testing.T, files configFiles) configFilesRun {
 	t.Helper()
 
 	homeDir := t.TempDir()
@@ -124,17 +172,35 @@ func runGenerateWithConfigFiles(t *testing.T, home, user, working string) config
 	run := configFilesRun{server: newFakeServer(t)}
 	args := []string{"generate", "-h", run.server.Addr()}
 
-	if home != "" {
-		run.files = append(run.files, writeTestFile(t, filepath.Join(homeDir, ".aerospike", "astools.conf"), home))
+	if files.home != "" {
+		home := writeTestFile(t, filepath.Join(homeDir, ".aerospike", "astools.conf"), files.home)
+
+		if !files.only && !files.none {
+			run.files = append(run.files, home)
+		}
 	}
 
-	if working != "" {
-		writeTestFile(t, "astools.conf", working)
+	if files.working != "" {
+		writeTestFile(t, "astools.conf", files.working)
 	}
 
-	if user != "" {
-		run.files = append(run.files, writeTestFile(t, filepath.Join(t.TempDir(), "user.conf"), user))
-		args = append(args, "--config-file", run.files[len(run.files)-1])
+	if files.user != "" {
+		user := writeTestFile(t, filepath.Join(t.TempDir(), "user.conf"), files.user)
+
+		option := "--config-file"
+		if files.only {
+			option = "--only-config-file"
+		}
+
+		args = append(args, option, user)
+
+		if !files.none {
+			run.files = append(run.files, user)
+		}
+	}
+
+	if files.none {
+		args = append(args, "--no-config-file")
 	}
 
 	config.Reset()
@@ -183,6 +249,24 @@ func TestConfigFileHelp(t *testing.T) {
 
 	if strings.Contains(usage, "default is") {
 		t.Errorf("--config-file help still describes a single default file: %q", usage)
+	}
+}
+
+func TestConfigFileOptionsHelp(t *testing.T) {
+	usage := strings.Join(strings.Fields(NewRootCmd().PersistentFlags().FlagUsages()), " ")
+
+	for _, want := range []string{
+		"--only-config-file string Read only this config file.",
+		"--no-config-file Do not read any config file.",
+		"cluster_a and secret-agent_a",
+	} {
+		if !strings.Contains(usage, want) {
+			t.Errorf("config file help is missing %q, got %q", want, usage)
+		}
+	}
+
+	if strings.Contains(usage, "uda_a") {
+		t.Errorf("--instance help still names the retired uda_a section: %q", usage)
 	}
 }
 
