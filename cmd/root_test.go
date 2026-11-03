@@ -3,15 +3,188 @@
 package cmd
 
 import (
+	"encoding/base64"
 	"errors"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/aerospike/tools-common-go/config"
+	"github.com/aerospike/tools-common-go/flags"
+	"github.com/aerospike/tools-common-go/secretagent/secretagenttest"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/suite"
 )
+
+// Keeps the developer's ~/.aerospike/astools.conf out of every test.
+func TestMain(m *testing.M) {
+	home, err := os.MkdirTemp("", "asconfig-home")
+	if err != nil {
+		panic(err)
+	}
+
+	_ = os.Setenv("HOME", home)
+
+	code := m.Run()
+
+	_ = os.RemoveAll(home)
+
+	os.Exit(code)
+}
+
+func TestConfigFilesReadLikeCTools(t *testing.T) {
+	if err := InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
+
+	agent := secretagenttest.NewTLSServer(t, secretagenttest.Secrets{
+		"asconfig": {"password": base64.StdEncoding.EncodeToString([]byte("admin"))},
+	})
+
+	tests := map[string]struct {
+		home     string
+		user     string
+		working  string
+		wantUser string
+		wantPass string
+		wantErr  string
+	}{
+		"--config-file is read after the home file, key by key": {
+			home:     "[cluster]\nuser = \"home\"\npassword = \"admin\"\n",
+			user:     "[cluster]\nuser = \"admin\"\n",
+			wantUser: "admin",
+			wantPass: "admin",
+		},
+		"the working directory file is not read": {
+			working: "[cluster]\nuser = \"working\"\npassword = \"admin\"\n",
+		},
+		"a later sa-address keeps the sa-ca-file of an earlier file": {
+			home: "[secret-agent]\nsa-ca-file = \"" + agent.CAFile() + "\"\n",
+			user: "[cluster]\nuser = \"admin\"\npassword = \"secrets:asconfig:password\"\n\n" +
+				"[secret-agent]\nsa-address = \"" + agent.Addr() + "\"\n",
+			wantUser: "admin",
+			wantPass: "admin",
+		},
+		"the [secret-agent] section of an earlier file is checked": {
+			home:    "[secret-agent]\nsa-port = 0\n",
+			user:    "[cluster]\nuser = \"admin\"\npassword = \"admin\"\n",
+			wantErr: `invalid value "0" for sa-port in the [secret-agent] config section, expected an integer from 1 to 65535`,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			run := runGenerateWithConfigFiles(t, tt.home, tt.user, tt.working)
+
+			if tt.wantErr != "" {
+				requireErrText(t, run.err, tt.wantErr)
+
+				if n := run.server.Conns(); n != 0 {
+					t.Fatalf("expected no server connection, got %d", n)
+				}
+
+				return
+			}
+
+			requireErr(t, run.err, errUnableToGenerateConfigFile)
+
+			if got := run.cmd.Flags().Lookup("user").Value.String(); got != tt.wantUser {
+				t.Fatalf("expected the user %q, got %q", tt.wantUser, got)
+			}
+
+			requirePassword(t, run.cmd, tt.wantPass)
+
+			if strings.Join(run.logged, "\n") != strings.Join(run.files, "\n") {
+				t.Fatalf("expected the config files %q to be logged, got %q", run.files, run.logged)
+			}
+		})
+	}
+}
+
+type configFilesRun struct {
+	err    error
+	cmd    *cobra.Command
+	server *fakePeer
+	files  []string
+	logged []string
+}
+
+// runGenerateWithConfigFiles runs generate against a fake server with home as
+// ~/.aerospike/astools.conf, user as --config-file and working as
+// ./astools.conf, each written only when not empty.
+func runGenerateWithConfigFiles(t *testing.T, home, user, working string) configFilesRun {
+	t.Helper()
+
+	homeDir := t.TempDir()
+	t.Setenv("HOME", homeDir)
+	t.Chdir(t.TempDir())
+
+	run := configFilesRun{server: newFakeServer(t)}
+	args := []string{"generate", "-h", run.server.Addr()}
+
+	if home != "" {
+		run.files = append(run.files, writeTestFile(t, filepath.Join(homeDir, ".aerospike", "astools.conf"), home))
+	}
+
+	if working != "" {
+		writeTestFile(t, "astools.conf", working)
+	}
+
+	if user != "" {
+		run.files = append(run.files, writeTestFile(t, filepath.Join(t.TempDir(), "user.conf"), user))
+		args = append(args, "--config-file", run.files[len(run.files)-1])
+	}
+
+	config.Reset()
+	t.Cleanup(config.Reset)
+
+	*cfFileFlags = flags.ConfFileFlags{}
+
+	root := NewRootCmd()
+	root.AddCommand(newGenerateCmd())
+	root.SetArgs(args)
+
+	output := captureOutput(t, func() { run.err = root.Execute() })
+	run.cmd, _, _ = root.Find([]string{"generate"})
+
+	for _, line := range strings.Split(output, "\n") {
+		if _, file, ok := strings.Cut(line, "Using config file: "); ok {
+			run.logged = append(run.logged, strings.TrimSuffix(file, `"`))
+		}
+	}
+
+	return run
+}
+
+func writeTestFile(t *testing.T, file, text string) string {
+	t.Helper()
+
+	if err := os.MkdirAll(filepath.Dir(file), 0o700); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.WriteFile(file, []byte(text), outputFilePermissions); err != nil {
+		t.Fatal(err)
+	}
+
+	return file
+}
+
+func TestConfigFileHelp(t *testing.T) {
+	usage := strings.Join(strings.Fields(NewRootCmd().PersistentFlags().Lookup("config-file").Usage), " ")
+
+	for _, want := range []string{"/etc/aerospike/astools.conf", "~/.aerospike/astools.conf"} {
+		if !strings.Contains(usage, want) {
+			t.Errorf("--config-file help is missing %s, got %q", want, usage)
+		}
+	}
+
+	if strings.Contains(usage, "default is") {
+		t.Errorf("--config-file help still describes a single default file: %q", usage)
+	}
+}
 
 func TestPersistentPreRunRootFlags(t *testing.T) {
 	var testCases = []struct {
@@ -90,6 +263,7 @@ func (testsuite *RootTest) TestPersistentPreRunRootInitConfig() {
 	testCases := []struct {
 		configFile    string
 		configFileTxt string
+		wantErr       string
 	}{
 		{
 			configFile:    "test.conf",
@@ -98,6 +272,7 @@ func (testsuite *RootTest) TestPersistentPreRunRootInitConfig() {
 		{
 			configFile:    "test.yaml",
 			configFileTxt: yamlConfigTxt,
+			wantErr:       "failed to read config file test.yaml: toml: ",
 		},
 	}
 
@@ -141,6 +316,11 @@ func (testsuite *RootTest) TestPersistentPreRunRootInitConfig() {
 			rootCmd.SetArgs([]string{"sub", "--config-file", tc.configFile})
 
 			err = rootCmd.Execute()
+			if tc.wantErr != "" {
+				testsuite.ErrorContains(err, tc.wantErr)
+				return
+			}
+
 			if err != nil {
 				testsuite.FailNow("unexpected error", err)
 			}
