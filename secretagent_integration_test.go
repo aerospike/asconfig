@@ -6,11 +6,15 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"crypto/x509"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net"
 	"os"
 	"os/exec"
@@ -36,6 +40,10 @@ const (
 	secretAgentWrongPassword = "not-the-admin-password"
 	secretAgentStartTimeout  = 2 * time.Minute
 	legacyCADeprecation      = "Argument --sa-cafile is deprecated. Use --sa-ca-file instead."
+	passwordEnv              = "ASCONFIG_E2E_PASSWORD"
+	keyPasswordEnv           = "ASCONFIG_E2E_KEY_PASSWORD"
+	keyPassword              = "k3y-pass"
+	tlsServerPort            = "4333/tcp"
 )
 
 // containerName returns a unique container name. ASCONFIG_TEST_CONTAINER_PREFIX
@@ -115,19 +123,24 @@ func startContainer(
 }
 
 // startSecretAgent runs a Secret Agent with a file backend holding the server
-// password, and returns its address once it serves secrets. With pki set it
-// serves TLS with the PKI's server certificate.
-func startSecretAgent(t *testing.T, dockerClient *client.Client, pki *secretagenttest.PKI) string {
+// password and extra, and returns its address once it serves secrets. With pki
+// set it serves TLS with the PKI's server certificate.
+func startSecretAgent(
+	t *testing.T, dockerClient *client.Client, pki *secretagenttest.PKI, extra map[string]string,
+) string {
 	t.Helper()
 
 	ensureImage(t, dockerClient, secretAgentImage, image.PullOptions{Platform: secretAgentPlatform})
 
 	dir := t.TempDir()
 
-	secrets, err := json.Marshal(map[string]string{
+	values := map[string]string{
 		"password": secretAgentPassword,
 		"wrong":    secretAgentWrongPassword,
-	})
+	}
+	maps.Copy(values, extra)
+
+	secrets, err := json.Marshal(values)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -207,8 +220,8 @@ func startSecretAgent(t *testing.T, dockerClient *client.Client, pki *secretagen
 }
 
 // startSecretAgentServer runs an Enterprise server with security enabled and
-// returns its address.
-func startSecretAgentServer(t *testing.T, dockerClient *client.Client, confPath string) string {
+// returns the address of port.
+func startSecretAgentServer(t *testing.T, dockerClient *client.Client, confPath string, port nat.Port) string {
 	t.Helper()
 
 	serverImage := "aerospike:" + secretAgentServerVersion
@@ -238,12 +251,18 @@ func startSecretAgentServer(t *testing.T, dockerClient *client.Client, confPath 
 				{Type: mount.TypeBind, Source: featureKeyPath, Target: "/etc/aerospike/secret/features.conf"},
 			},
 		},
-		"3000/tcp")
+		port)
 }
 
 func runAsconfig(args ...string) (string, error) {
+	return runAsconfigEnv(nil, args...)
+}
+
+// runAsconfigEnv runs asconfig with env as its only environment, besides
+// GOCOVERDIR. Without HOME in env it reads no ~/.aerospike/astools.conf.
+func runAsconfigEnv(env []string, args ...string) (string, error) {
 	cmd := exec.Command(binPath+"/asconfig.test", args...)
-	cmd.Env = []string{"GOCOVERDIR=" + coveragePath}
+	cmd.Env = append([]string{"GOCOVERDIR=" + coveragePath}, env...)
 
 	var output bytes.Buffer
 
@@ -255,16 +274,17 @@ func runAsconfig(args ...string) (string, error) {
 	return output.String(), err
 }
 
-// waitForServer retries generate with a literal password until the server
-// accepts it.
-func waitForServer(t *testing.T, host, dir string) {
+// waitForServer retries generate with a literal password, and args, until the
+// server accepts it.
+func waitForServer(t *testing.T, host, dir string, args ...string) {
 	t.Helper()
 
 	out := filepath.Join(dir, "baseline.conf")
 	deadline := time.Now().Add(time.Minute)
+	args = append([]string{"generate", "-h", host, "-U", "admin", "-P", secretAgentPassword, "-o", out}, args...)
 
 	for {
-		output, err := runAsconfig("generate", "-h", host, "-U", "admin", "-P", secretAgentPassword, "-o", out)
+		output, err := runAsconfig(args...)
 		if err == nil {
 			return
 		}
@@ -274,6 +294,96 @@ func waitForServer(t *testing.T, host, dir string) {
 		}
 
 		time.Sleep(time.Second)
+	}
+}
+
+// secretAgentCase is one asconfig run of a Secret Agent test. home is written
+// to ~/.aerospike/astools.conf in a new HOME, and env is added to the
+// environment.
+type secretAgentCase struct {
+	name        string
+	output      string
+	home        string
+	args        []string
+	env         []string
+	contains    []string
+	notContains []string
+	fail        bool
+}
+
+func runSecretAgentCases(t *testing.T, tests []secretAgentCase) {
+	t.Helper()
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			args := tc.args
+			if tc.output != "" {
+				args = append(args, "-o", tc.output)
+			}
+
+			env := tc.env
+
+			if tc.home != "" {
+				home := t.TempDir()
+				if err := os.Mkdir(filepath.Join(home, ".aerospike"), 0o755); err != nil {
+					t.Fatal(err)
+				}
+
+				if err := os.WriteFile(filepath.Join(home, ".aerospike", "astools.conf"), []byte(tc.home),
+					tempFilePermissions); err != nil {
+					t.Fatal(err)
+				}
+
+				env = append(env, "HOME="+home)
+			}
+
+			output, err := runAsconfigEnv(env, args...)
+
+			if tc.fail {
+				var exitErr *exec.ExitError
+				if !errors.As(err, &exitErr) || exitErr.ExitCode() != 1 {
+					t.Fatalf("expected asconfig to exit with 1, got %v:\n%s", err, output)
+				}
+			}
+
+			if !tc.fail && err != nil {
+				t.Fatalf("asconfig failed: %v\n%s", err, output)
+			}
+
+			for _, want := range tc.contains {
+				if !strings.Contains(output, want) {
+					t.Errorf("output does not contain %q:\n%s", want, output)
+				}
+			}
+
+			for _, unwanted := range tc.notContains {
+				if strings.Contains(output, unwanted) {
+					t.Errorf("output contains %q:\n%s", unwanted, output)
+				}
+			}
+
+			if strings.Contains(output, secretAgentWrongPassword) {
+				t.Errorf("output contains a secret value:\n%s", output)
+			}
+
+			if tc.output == "" {
+				return
+			}
+
+			data, readErr := os.ReadFile(tc.output)
+
+			if tc.fail {
+				if !errors.Is(readErr, os.ErrNotExist) {
+					t.Errorf("expected no output file after a failure, got %v", readErr)
+				}
+
+				return
+			}
+
+			if readErr != nil || !strings.Contains(string(data), "namespace test") {
+				t.Errorf("unexpected generated config (%v):\n%s", readErr, data)
+			}
+		})
 	}
 }
 
@@ -293,11 +403,16 @@ func TestSecretAgent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	agent := startSecretAgent(t, dockerClient, nil)
+	agent := startSecretAgent(t, dockerClient, nil, map[string]string{
+		"user":        "admin",
+		"b64-literal": "b64:" + base64.StdEncoding.EncodeToString([]byte(secretAgentPassword)),
+		"env-literal": "env:" + passwordEnv,
+	})
 	agentHost, agentPort, _ := net.SplitHostPort(agent)
-	tlsAgent := startSecretAgent(t, dockerClient, &pki)
+	tlsAgent := startSecretAgent(t, dockerClient, &pki, nil)
 
-	host := startSecretAgentServer(t, dockerClient, filepath.Join(expectedPath, "dim_nostorage_cluster_cr.conf"))
+	host := startSecretAgentServer(t, dockerClient, filepath.Join(expectedPath, "dim_nostorage_cluster_cr.conf"),
+		"3000/tcp")
 
 	dir := t.TempDir()
 	waitForServer(t, host, dir)
@@ -349,19 +464,114 @@ sa-address = "%s"
 sa-port = "0"
 `, host, secretAgentPassword, agent))
 
+	includeConf := writeConf("astools-include.conf", fmt.Sprintf("[include]\nfile = %q\n", clusterConf))
+	passwordFile := writeConf("password.txt", secretAgentPassword+"\n")
+
 	generated := filepath.Join(dir, "generated.conf")
 	withPassword := func(ref string, args ...string) []string {
 		return append([]string{"generate", "-h", host, "-U", "admin", "-P", ref}, args...)
 	}
 
-	tests := []struct {
-		name        string
-		output      string
-		args        []string
-		contains    []string
-		notContains []string
-		fail        bool
-	}{
+	passwordEnvs := []string{
+		passwordEnv + "=" + secretAgentPassword,
+		passwordEnv + "_B64=" + base64.StdEncoding.EncodeToString([]byte(secretAgentPassword)),
+	}
+	asLiteral := []string{"INVALID_CREDENTIAL"}
+	clusterConfText, err := os.ReadFile(clusterConf)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	badSectionText, err := os.ReadFile(badSectionConf)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	runSecretAgentCases(t, []secretAgentCase{
+		{
+			name:   "--user from the Secret Agent",
+			output: filepath.Join(dir, "user.conf"),
+			args: []string{
+				"generate", "-h", host, "-U", "secrets:asconfig:user", "-P", "secrets:asconfig:password",
+				"--sa-address", agent,
+			},
+		},
+		{
+			name:     "a fetched b64: value is not decoded again",
+			output:   filepath.Join(dir, "fetched-b64.conf"),
+			args:     withPassword("secrets:asconfig:b64-literal", "--sa-address", agent),
+			contains: asLiteral,
+			fail:     true,
+		},
+		{
+			name:     "a fetched env: value is not read again",
+			output:   filepath.Join(dir, "fetched-env.conf"),
+			args:     withPassword("secrets:asconfig:env-literal", "--sa-address", agent),
+			env:      passwordEnvs,
+			contains: asLiteral,
+			fail:     true,
+		},
+		{
+			name:   "a b64: password that decodes to secrets: is not fetched",
+			output: filepath.Join(dir, "b64-secret.conf"),
+			args: withPassword("b64:"+base64.StdEncoding.EncodeToString([]byte("secrets:asconfig:password")),
+				"--sa-address", agent),
+			contains: asLiteral,
+			fail:     true,
+		},
+		{
+			name:   "env: password",
+			output: filepath.Join(dir, "env.conf"),
+			args:   withPassword("env:" + passwordEnv),
+			env:    passwordEnvs,
+		},
+		{
+			name:   "env-b64: password",
+			output: filepath.Join(dir, "env-b64.conf"),
+			args:   withPassword("env-b64:" + passwordEnv + "_B64"),
+			env:    passwordEnvs,
+		},
+		{
+			name:   "b64: password",
+			output: filepath.Join(dir, "b64.conf"),
+			args:   withPassword("b64:" + base64.StdEncoding.EncodeToString([]byte(secretAgentPassword))),
+		},
+		{
+			name:   "file: password",
+			output: filepath.Join(dir, "file.conf"),
+			args:   withPassword("file:" + passwordFile),
+		},
+		{
+			name:   "~/.aerospike/astools.conf is read",
+			output: filepath.Join(dir, "home.conf"),
+			home:   string(clusterConfText),
+			args:   []string{"generate"},
+		},
+		{
+			name:     "a bad ~/.aerospike/astools.conf fails the run",
+			output:   filepath.Join(dir, "bad-home.conf"),
+			home:     string(badSectionText),
+			args:     withPassword(secretAgentPassword),
+			contains: []string{`invalid value \"0\" for sa-port in the [secret-agent] config section`},
+			fail:     true,
+		},
+		{
+			name:   "--no-config-file skips ~/.aerospike/astools.conf",
+			output: filepath.Join(dir, "no-config-file-home.conf"),
+			home:   string(badSectionText),
+			args:   withPassword(secretAgentPassword, "--no-config-file"),
+		},
+		{
+			name:   "--only-config-file skips ~/.aerospike/astools.conf",
+			output: filepath.Join(dir, "only-config-file-home.conf"),
+			home:   string(badSectionText),
+			args:   []string{"generate", "--only-config-file", clusterConf},
+		},
+		{
+			name:   "[include] is followed",
+			output: filepath.Join(dir, "include.conf"),
+			args:   []string{"generate", "--config-file", includeConf},
+		},
 		{
 			name:   "generate, password before --sa-address",
 			output: generated,
@@ -493,61 +703,163 @@ sa-port = "0"
 			},
 			fail: true,
 		},
+	})
+}
+
+const tlsServerConf = `service {
+    feature-key-file /etc/aerospike/secret/features.conf
+}
+
+logging {
+    console {
+        context any info
+    }
+}
+
+network {
+    tls localhost {
+        ca-file /opt/aerospike/work/ca.pem
+        cert-file /opt/aerospike/work/server.pem
+        key-file /opt/aerospike/work/server.key
+    }
+
+    service {
+        tls-port 4333
+        tls-name localhost
+        tls-authenticate-client any
+    }
+
+    fabric {
+        port 3001
+    }
+
+    heartbeat {
+        mode mesh
+        port 3002
+    }
+}
+
+security {
+}
+
+namespace test {
+    memory-size 1G
+    replication-factor 1
+    storage-engine memory
+}
+`
+
+// encryptedKey returns keyFile encrypted with password in the legacy PEM
+// format the Aerospike tools read.
+func encryptedKey(t *testing.T, keyFile, password string) []byte {
+	t.Helper()
+
+	data, err := os.ReadFile(keyFile)
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			args := tc.args
-			if tc.output != "" {
-				args = append(args, "-o", tc.output)
-			}
-
-			output, err := runAsconfig(args...)
-
-			if tc.fail {
-				var exitErr *exec.ExitError
-				if !errors.As(err, &exitErr) || exitErr.ExitCode() != 1 {
-					t.Fatalf("expected asconfig to exit with 1, got %v:\n%s", err, output)
-				}
-			}
-
-			if !tc.fail && err != nil {
-				t.Fatalf("asconfig failed: %v\n%s", err, output)
-			}
-
-			for _, want := range tc.contains {
-				if !strings.Contains(output, want) {
-					t.Errorf("output does not contain %q:\n%s", want, output)
-				}
-			}
-
-			for _, unwanted := range tc.notContains {
-				if strings.Contains(output, unwanted) {
-					t.Errorf("output contains %q:\n%s", unwanted, output)
-				}
-			}
-
-			if strings.Contains(output, secretAgentWrongPassword) {
-				t.Errorf("output contains a secret value:\n%s", output)
-			}
-
-			if tc.output == "" {
-				return
-			}
-
-			data, readErr := os.ReadFile(tc.output)
-
-			if tc.fail {
-				if !errors.Is(readErr, os.ErrNotExist) {
-					t.Errorf("expected no output file after a failure, got %v", readErr)
-				}
-
-				return
-			}
-
-			if readErr != nil || !strings.Contains(string(data), "namespace test") {
-				t.Errorf("unexpected generated config (%v):\n%s", readErr, data)
-			}
-		})
+	block, _ := pem.Decode(data)
+	if block == nil {
+		t.Fatalf("no PEM block in %s", keyFile)
 	}
+
+	encrypted, err := x509.EncryptPEMBlock(rand.Reader, block.Type, block.Bytes, []byte(password), x509.PEMCipherAES256)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return pem.EncodeToMemory(encrypted)
+}
+
+// TestSecretAgentTLSServer fetches every TLS option from the Secret Agent and
+// logs in to a server that requires a client certificate.
+func TestSecretAgentTLSServer(t *testing.T) {
+	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dir := t.TempDir()
+
+	pki, err := secretagenttest.GeneratePKI(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	read := func(path string) string {
+		data, readErr := os.ReadFile(path)
+		if readErr != nil {
+			t.Fatal(readErr)
+		}
+
+		return string(data)
+	}
+
+	writeFile := func(path, text string) string {
+		if writeErr := os.WriteFile(path, []byte(text), tempFilePermissions); writeErr != nil {
+			t.Fatal(writeErr)
+		}
+
+		return path
+	}
+
+	key := string(encryptedKey(t, pki.ClientKeyFile, keyPassword))
+	keyFile := writeFile(filepath.Join(dir, "client.key"), key)
+	keyPasswordFile := writeFile(filepath.Join(dir, "key-password.txt"), keyPassword+"\nnot the password\n")
+
+	agent := startSecretAgent(t, dockerClient, nil, map[string]string{
+		"ca":                 read(pki.CAFile),
+		"cert":               read(pki.ClientCertFile),
+		"key":                key,
+		"key-password":       keyPassword,
+		"wrong-key-password": secretAgentWrongPassword,
+	})
+
+	confDir := t.TempDir()
+	writeFile(filepath.Join(confDir, "ca.pem"), read(pki.CAFile))
+	writeFile(filepath.Join(confDir, "server.pem"), read(pki.ServerCertFile))
+	writeFile(filepath.Join(confDir, "server.key"), read(pki.ServerKeyFile))
+	confPath := writeFile(filepath.Join(confDir, "aerospike.conf"), tlsServerConf)
+
+	addr := startSecretAgentServer(t, dockerClient, confPath, tlsServerPort)
+	_, port, _ := net.SplitHostPort(addr)
+	host := "127.0.0.1:localhost:" + port
+
+	waitForServer(t, host, dir, "--tls-enable", "--tls-cafile", pki.CAFile,
+		"--tls-certfile", pki.ClientCertFile, "--tls-keyfile", keyFile, "--tls-keyfile-password", keyPassword)
+
+	withTLS := func(keyPasswordValue string, args ...string) []string {
+		return append([]string{
+			"generate", "-h", host, "-U", "admin", "-P", "secrets:asconfig:password", "--sa-address", agent,
+			"--tls-enable", "--tls-cafile", "secrets:asconfig:ca", "--tls-certfile", "secrets:asconfig:cert",
+			"--tls-keyfile", "secrets:asconfig:key", "--tls-keyfile-password", keyPasswordValue,
+		}, args...)
+	}
+
+	runSecretAgentCases(t, []secretAgentCase{
+		{
+			name:   "CA, certificate, key and key password from the Secret Agent",
+			output: filepath.Join(dir, "tls.conf"),
+			args:   withTLS("secrets:asconfig:key-password"),
+		},
+		{
+			name:     "a wrong key password from the Secret Agent",
+			output:   filepath.Join(dir, "tls-wrong-key-password.conf"),
+			args:     withTLS("secrets:asconfig:wrong-key-password"),
+			contains: []string{"failed to load client authentication certificate and key"},
+			fail:     true,
+		},
+		{
+			name:   "surrounding whitespace is trimmed from the key password",
+			output: filepath.Join(dir, "tls-trimmed.conf"),
+			args:   withTLS(" \tenv:" + keyPasswordEnv + " \n"),
+			env:    []string{keyPasswordEnv + "=" + keyPassword},
+		},
+		{
+			name:   "file: key password reads the first line",
+			output: filepath.Join(dir, "tls-key-password-file.conf"),
+			args:   withTLS("file:" + keyPasswordFile),
+		},
+	})
 }
