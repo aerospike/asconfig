@@ -77,6 +77,32 @@ func TestGenerateReadsPasswordSources(t *testing.T) {
 	}
 }
 
+func TestGenerateTrimsKeyFilePassword(t *testing.T) {
+	if err := InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
+
+	t.Setenv("ASCONFIG_TEST_KEY_PASSWORD", "key-pass")
+
+	keyFile := filepath.Join(t.TempDir(), "key.pem")
+	if err := os.WriteFile(keyFile, []byte("key"), outputFilePermissions); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := newGenerateCmd()
+	if err := cmd.ParseFlags([]string{
+		"-h", unreachableAddr, "--tls-keyfile", keyFile, "--tls-keyfile-password", " env:ASCONFIG_TEST_KEY_PASSWORD ",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	requireErr(t, cmd.RunE(cmd, nil), errUnableToGenerateConfigFile)
+
+	if got := cmd.Flags().Lookup("tls-keyfile-password").Value.String(); got != "key-pass" {
+		t.Fatalf("expected the key file password %q, got %q", "key-pass", got)
+	}
+}
+
 func TestGeneratePasswordWithoutUser(t *testing.T) {
 	if err := InitializeGlobals(); err != nil {
 		t.Fatalf("Failed to initialize globals for testing: %v", err)
@@ -274,6 +300,8 @@ func TestPasswordHelp(t *testing.T) {
 		"not PKI. It must be at most 63 bytes.",
 		"Password to load protected tls-keyfile.",
 		"4) File: 'file:<PATH>', the first line of the file",
+		"Surrounding whitespace is trimmed before the form is read. A",
+		"password with surrounding whitespace must be given as 'b64:'.",
 		"The password is read only when a key file is set. It must be at",
 		"most 1024 bytes.",
 		"A value fetched with 'secrets:' is used as-is.",
