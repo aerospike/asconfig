@@ -27,9 +27,17 @@ func TestMain(m *testing.M) {
 
 	_ = os.Setenv("HOME", home)
 
+	system, err := os.MkdirTemp("", "asconfig-etc")
+	if err != nil {
+		panic(err)
+	}
+
+	config.SetSystemConfDir(system)
+
 	code := m.Run()
 
 	_ = os.RemoveAll(home)
+	_ = os.RemoveAll(system)
 
 	os.Exit(code)
 }
