@@ -106,9 +106,23 @@ func TestConfigFilesReadLikeCTools(t *testing.T) {
 		"--no-config-file reads no file": {
 			files: configFiles{
 				home: "[secret-agent]\nsa-port = 0\n",
-				user: "[cluster\n",
 				none: true,
 			},
+		},
+		"--no-config-file with --config-file": {
+			files: configFiles{
+				user: "[cluster]\nuser = \"admin\"\n",
+				none: true,
+			},
+			wantErr: "--config-file and --no-config-file are mutually exclusive",
+		},
+		"--only-config-file with --config-file": {
+			files: configFiles{
+				user: "[cluster]\nuser = \"admin\"\n",
+				only: true,
+				args: []string{"--config-file", "other.conf"},
+			},
+			wantErr: "--config-file and --only-config-file are mutually exclusive",
 		},
 		"--no-config-file with --only-config-file": {
 			files: configFiles{
@@ -159,11 +173,13 @@ type configFilesRun struct {
 
 // configFiles holds the text of ~/.aerospike/astools.conf (home), of the
 // --config-file or, with only, --only-config-file (user), and of
-// ./astools.conf (working). none adds --no-config-file.
+// ./astools.conf (working). none adds --no-config-file, and args are added to
+// the command line.
 type configFiles struct {
 	home    string
 	user    string
 	working string
+	args    []string
 	only    bool
 	none    bool
 }
@@ -211,6 +227,8 @@ func runGenerateWithConfigFiles(t *testing.T, files configFiles) configFilesRun 
 	if files.none {
 		args = append(args, "--no-config-file")
 	}
+
+	args = append(args, files.args...)
 
 	config.Reset()
 	t.Cleanup(config.Reset)
@@ -294,6 +312,10 @@ func TestOnlyServerCommandsReadConfigFiles(t *testing.T) {
 }
 
 func TestConfigFileHelp(t *testing.T) {
+	system := config.SystemConfDir()
+	config.SetSystemConfDir(config.DefaultConfDir)
+	t.Cleanup(func() { config.SetSystemConfDir(system) })
+
 	usage := strings.Join(strings.Fields(NewRootCmd().PersistentFlags().Lookup("config-file").Usage), " ")
 
 	for _, want := range []string{"/etc/aerospike/astools.conf", "~/.aerospike/astools.conf"} {
@@ -311,8 +333,10 @@ func TestConfigFileOptionsHelp(t *testing.T) {
 	usage := strings.Join(strings.Fields(NewRootCmd().PersistentFlags().FlagUsages()), " ")
 
 	for _, want := range []string{
-		"--only-config-file string Read only this config file.",
-		"--no-config-file Do not read any config file.",
+		"--only-config-file string Read only this config file. Cannot be combined with --config-file or" +
+			" --no-config-file.",
+		"--no-config-file Do not read any config file. Cannot be combined with --config-file or" +
+			" --only-config-file.",
 		"cluster_a and secret-agent_a",
 	} {
 		if !strings.Contains(usage, want) {
