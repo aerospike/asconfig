@@ -437,6 +437,32 @@ func TestConfigFileOptionsOnCommandsThatReadNone(t *testing.T) {
 	}
 }
 
+func TestConfigFileMustBeTOML(t *testing.T) {
+	if err := InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
+
+	tests := map[string]string{
+		"astools.yaml": "cluster:\n  user: admin\n",
+		"astools.json": "{\"cluster\": {\"user\": \"admin\"}}\n",
+	}
+
+	for name, text := range tests {
+		t.Run(name, func(t *testing.T) {
+			file := writeTestFile(t, filepath.Join(t.TempDir(), name), text)
+			server := newFakeServer(t)
+
+			_, err := runTestRoot(t, "generate", "-h", server.Addr(), "--config-file", file)
+
+			requireErrText(t, err, "failed to read config file "+file, "toml")
+
+			if n := server.Conns(); n != 0 {
+				t.Fatalf("expected no server connection, got %d", n)
+			}
+		})
+	}
+}
+
 func TestConfigFileHelp(t *testing.T) {
 	system := config.SystemConfDir()
 	config.SetSystemConfDir(config.DefaultConfDir)
