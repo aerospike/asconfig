@@ -66,6 +66,11 @@ var (
 
 	errInvalidLogLevel = errors.New("invalid log-level flag")
 
+	errNoAndOnlyConfigFile = errors.New("--no-config-file " + //nolint:staticcheck // Same text as the C tools.
+		"and only-config-file are mutually exclusive option. Please enable only one.")
+	errOnlyAndConfigFile = errors.New("--config-file and --only-config-file are mutually exclusive")
+	errNoAndConfigFile   = errors.New("--config-file and --no-config-file are mutually exclusive")
+
 	errValidateTooManyArguments = fmt.Errorf("expected a maximum of %d arguments", convertArgMax)
 
 	errMetadataDoesNotContain = errors.New("metadata does not contain key")
@@ -242,6 +247,8 @@ const secretAgentUsage = `{{secretAgentFlagUsages .LocalFlags false | trimTraili
  Aerospike Secret Agent used for 'secrets:<resource>:<key>' values.
  In a config file, set these in the [secret-agent] section as sa-address,
  sa-port, sa-timeout and sa-ca-file.
+ A --tls-cafile, --tls-certfile or --tls-keyfile path that begins with
+ 'secrets:' must be given as './secrets:...'.
 {{secretAgentFlagUsages .LocalFlags true | trimTrailingWhitespaces}}{{end}}`
 
 // secretAgentFlagUsages returns the usage of the --sa-* flags in flagSet, or
@@ -284,8 +291,11 @@ func addSecretAgentFlags(cmd *cobra.Command, saFlags *flags.SecretAgentFlags) {
 
 // resolveSecrets fetches secrets: values of --user, --password and the TLS
 // file and password options from the Secret Agent, and reads the --password
-// and --tls-keyfile-password sources.
-func resolveSecrets(cmd *cobra.Command, asFlags *flags.AerospikeFlags, saFlags *flags.SecretAgentFlags) error {
+// and --tls-keyfile-password sources. From then on a fetched user is left out
+// of the log, and the returned redactor leaves it out of the command's error.
+func resolveSecrets(
+	cmd *cobra.Command, asFlags *flags.AerospikeFlags, saFlags *flags.SecretAgentFlags,
+) (userRedactor, error) {
 	ctx := cmd.Context()
 	if ctx == nil {
 		ctx = context.Background()
@@ -293,9 +303,15 @@ func resolveSecrets(cmd *cobra.Command, asFlags *flags.AerospikeFlags, saFlags *
 
 	asFlags.SetWarningHandler(func(msg string) { logger.Warn(msg) })
 
+	user := asFlags.User
+
 	if err := asFlags.ResolveSecrets(ctx, saFlags); err != nil {
-		return fmt.Errorf("%w: %w", errUnableToResolveSecrets, err)
+		return userRedactor{}, fmt.Errorf("%w: %w", errUnableToResolveSecrets, err)
 	}
 
-	return nil
+	if asFlags.User == user || asFlags.User == "" {
+		return userRedactor{}, nil
+	}
+
+	return newUserRedactor(asFlags.User), nil
 }

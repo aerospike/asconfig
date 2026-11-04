@@ -36,15 +36,9 @@ func NewRootCmd() *cobra.Command {
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			var multiErr error
 
-			var cfgFiles []string
-
-			if _, ok := cmd.Annotations[configFilesAnnotation]; ok {
-				var err error
-
-				cfgFiles, err = config.InitConfigFiles(cfFileFlags.Files(), cfFileFlags.Instance, cmd.Flags())
-				if err != nil {
-					multiErr = errors.Join(multiErr, err)
-				}
+			cfgFiles, err := initConfigFiles(cmd)
+			if err != nil {
+				multiErr = errors.Join(multiErr, err)
 			}
 
 			lvl, err := cmd.Flags().GetString("log-level")
@@ -61,6 +55,10 @@ func NewRootCmd() *cobra.Command {
 
 			for _, cfgFile := range cfgFiles {
 				logger.Infof("Using config file: %s", cfgFile)
+			}
+
+			if multiErr == nil {
+				warnIgnoredConfigFileOptions(cmd)
 			}
 
 			return multiErr
@@ -90,6 +88,46 @@ func NewRootCmd() *cobra.Command {
 	})
 
 	return cmd
+}
+
+func readsConfigFiles(cmd *cobra.Command) bool {
+	_, ok := cmd.Annotations[configFilesAnnotation]
+	return ok
+}
+
+func initConfigFiles(cmd *cobra.Command) ([]string, error) {
+	files := cfFileFlags.Files()
+
+	if !readsConfigFiles(cmd) {
+		return nil, checkConfigFileOptions(files)
+	}
+
+	return config.InitConfigFiles(files, cfFileFlags.Instance, cmd.Flags())
+}
+
+func checkConfigFileOptions(files config.Files) error {
+	switch {
+	case files.None && files.Only != "":
+		return errNoAndOnlyConfigFile
+	case files.File != "" && files.Only != "":
+		return errOnlyAndConfigFile
+	case files.File != "" && files.None:
+		return errNoAndConfigFile
+	}
+
+	return nil
+}
+
+func warnIgnoredConfigFileOptions(cmd *cobra.Command) {
+	if readsConfigFiles(cmd) {
+		return
+	}
+
+	for _, name := range []string{"config-file", "only-config-file", "no-config-file", "instance"} {
+		if cmd.Flags().Changed(name) {
+			logger.Warnf("--%s is ignored: %s reads no config file", name, cmd.CommandPath())
+		}
+	}
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

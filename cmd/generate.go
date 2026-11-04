@@ -96,10 +96,17 @@ func runGenerateCommand(
 		return err
 	}
 
-	if err = resolveSecrets(cmd, aerospikeFlags, saFlags); err != nil {
+	redactor, err := resolveSecrets(cmd, aerospikeFlags, saFlags)
+	if err != nil {
 		return err
 	}
 
+	return redactor.redact(generateConfig(aerospikeFlags, outFormat, outputPath, disclaimer))
+}
+
+func generateConfig(
+	aerospikeFlags *flags.AerospikeFlags, outFormat asconfig.Format, outputPath string, disclaimer []byte,
+) error {
 	logger.Debugf("Generating config from Aerospike node")
 
 	asCommonConfig := aerospikeFlags.NewAerospikeConfig()

@@ -295,10 +295,17 @@ func runServerDiff(
 		return err
 	}
 
-	if err = resolveSecrets(cmd, asFlags, saFlags); err != nil {
+	redactor, err := resolveSecrets(cmd, asFlags, saFlags)
+	if err != nil {
 		return err
 	}
 
+	return redactor.redact(diffAgainstServer(asFlags, localPath, localFormat, localConf))
+}
+
+func diffAgainstServer(
+	asFlags *flags.AerospikeFlags, localPath string, localFormat asConf.Format, localConf *asConf.AsConfig,
+) error {
 	logger.Debugf("Generating config from Aerospike node")
 	// Generate server config using existing generate functionality
 	asCommonConfig := asFlags.NewAerospikeConfig()

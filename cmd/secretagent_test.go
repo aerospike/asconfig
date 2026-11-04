@@ -1094,6 +1094,8 @@ func TestFetchedUserIsNotPrinted(t *testing.T) {
 		literalUser     = "LiteralUser-7781"
 	)
 
+	const withoutUser = "failed to authenticate user in aerospike server"
+
 	tests := map[string]struct {
 		config  string
 		printed string
@@ -1101,15 +1103,15 @@ func TestFetchedUserIsNotPrinted(t *testing.T) {
 	}{
 		"user from the command line": {
 			args:    []string{"-U", "secrets:asconfig:user", "-P", "secrets:asconfig:password"},
-			printed: "secrets:asconfig:user",
+			printed: withoutUser,
 		},
 		"user from the config file": {
 			config:  "[cluster]\nuser = \"secrets:asconfig:user\"\npassword = \"secrets:asconfig:password\"\n",
-			printed: "secrets:asconfig:user",
+			printed: withoutUser,
 		},
 		"literal user": {
 			args:    []string{"-U", literalUser, "-P", "secrets:asconfig:password"},
-			printed: literalUser,
+			printed: "failed to authenticate user `" + literalUser + "` in aerospike server",
 		},
 	}
 
@@ -1138,9 +1140,9 @@ func TestFetchedUserIsNotPrinted(t *testing.T) {
 	}
 }
 
-// requireLoginFailurePrints checks that the log and err name user in the
-// failed login and print none of hidden.
-func requireLoginFailurePrints(t *testing.T, output string, err error, user string, hidden ...string) {
+// requireLoginFailurePrints checks that the log and err report the failed
+// login as want and print none of hidden.
+func requireLoginFailurePrints(t *testing.T, output string, err error, want string, hidden ...string) {
 	t.Helper()
 
 	printed := output + "\n" + err.Error()
@@ -1151,7 +1153,6 @@ func requireLoginFailurePrints(t *testing.T, output string, err error, user stri
 		}
 	}
 
-	want := "failed to authenticate user `" + user + "`"
 	if !strings.Contains(err.Error(), want) || !strings.Contains(output, want) {
 		t.Fatalf("expected %q in the error and the log, got:\n%s", want, printed)
 	}
