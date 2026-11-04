@@ -20,7 +20,7 @@ func TestGenerateReadsPasswordSources(t *testing.T) {
 		t.Fatalf("Failed to initialize globals for testing: %v", err)
 	}
 
-	t.Setenv("ASCONFIG_TEST_PASSWORD", "admin")
+	t.Setenv("ASCONFIG_TEST_PASSWORD", "env-password")
 
 	keyFile := filepath.Join(t.TempDir(), "key.pem")
 	if err := os.WriteFile(keyFile, []byte("key"), outputFilePermissions); err != nil {
@@ -29,12 +29,14 @@ func TestGenerateReadsPasswordSources(t *testing.T) {
 
 	tests := map[string]struct {
 		want     error
+		password string
 		args     []string
 		contains []string
 	}{
 		"env source": {
-			args: []string{"-U", "admin", "-P", "env:ASCONFIG_TEST_PASSWORD"},
-			want: errUnableToGenerateConfigFile,
+			args:     []string{"-U", "admin", "-P", "env:ASCONFIG_TEST_PASSWORD"},
+			want:     errUnableToGenerateConfigFile,
+			password: "env-password",
 		},
 		"env without a name": {
 			args:     []string{"-U", "admin", "-P", "env:"},
@@ -73,6 +75,10 @@ func TestGenerateReadsPasswordSources(t *testing.T) {
 			}
 
 			requireErr(t, cmd.RunE(cmd, nil), tt.want, tt.contains...)
+
+			if tt.password != "" {
+				requirePassword(t, cmd, tt.password)
+			}
 		})
 	}
 }

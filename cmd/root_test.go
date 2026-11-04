@@ -265,18 +265,87 @@ func writeTestFile(t *testing.T, file, text string) string {
 	return file
 }
 
+const (
+	server70Input  = "../testdata/cases/server70/server70.yaml"
+	diffFilesInput = "../testdata/sources/all_flash_cluster_cr.yaml"
+)
+
+type commandReadingNoConfigFile struct {
+	path string
+	args []string
+}
+
+var commandsReadingNoConfigFile = map[string]commandReadingNoConfigFile{
+	"list versions": {path: "list versions"},
+	"convert":       {path: "convert", args: []string{"-a", "7.0.0", server70Input}},
+	"validate":      {path: "validate", args: []string{"-a", "7.0.0", server70Input}},
+	"diff files":    {path: "diff files", args: []string{diffFilesInput, diffFilesInput}},
+	"diff versions": {path: "diff versions", args: []string{"7.0.0", "8.0.0"}},
+	"legacy diff":   {path: "diff", args: []string{diffFilesInput, diffFilesInput}},
+}
+
+func (c commandReadingNoConfigFile) cmdArgs(extra ...string) []string {
+	args := strings.Fields(c.path)
+	args = append(args, c.args...)
+
+	return append(args, extra...)
+}
+
+// runTestRoot runs args from a root command with every subcommand, and returns
+// what it printed.
+func runTestRoot(t *testing.T, args ...string) (string, error) {
+	t.Helper()
+
+	config.Reset()
+	t.Cleanup(config.Reset)
+
+	*cfFileFlags = flags.ConfFileFlags{}
+
+	root := NewRootCmd()
+	root.AddCommand(newConvertCmd(), newDiffCmd(), newGenerateCmd(), newListCmd(), newValidateCmd())
+	root.SetArgs(args)
+
+	var err error
+
+	output := captureOutput(t, func() { err = root.Execute() })
+
+	return output, err
+}
+
+func requireIgnoredWarning(t *testing.T, output, option, path string) {
+	t.Helper()
+
+	if option == "" {
+		if strings.Contains(output, "is ignored") {
+			t.Fatalf("expected no ignored option warning, got %s", output)
+		}
+
+		return
+	}
+
+	want := `level=warning msg="` + option + " is ignored: asconfig " + path + ` reads no config file"`
+	if !strings.Contains(output, want) {
+		t.Fatalf("expected the warning %q, got %s", want, output)
+	}
+}
+
 func TestOnlyServerCommandsReadConfigFiles(t *testing.T) {
 	if err := InitializeGlobals(); err != nil {
 		t.Fatalf("Failed to initialize globals for testing: %v", err)
 	}
 
-	tests := map[string]struct {
+	type readCase struct {
 		args    []string
 		wantErr bool
-	}{
-		"list versions": {args: []string{"list", "versions"}},
-		"generate":      {args: []string{"generate", "-h", "127.0.0.1:1"}, wantErr: true},
-		"diff server":   {args: []string{"diff", "server", "-h", "127.0.0.1:1", "local.conf"}, wantErr: true},
+	}
+
+	tests := map[string]readCase{
+		"generate":    {args: []string{"generate", "-h", "127.0.0.1:1"}, wantErr: true},
+		"diff server": {args: []string{"diff", "server", "-h", "127.0.0.1:1", "local.conf"}, wantErr: true},
+	}
+
+	for name, c := range commandsReadingNoConfigFile {
+		tests[name] = readCase{args: c.cmdArgs()}
 	}
 
 	for name, tt := range tests {
@@ -285,18 +354,7 @@ func TestOnlyServerCommandsReadConfigFiles(t *testing.T) {
 			t.Setenv("HOME", homeDir)
 			home := writeTestFile(t, filepath.Join(homeDir, ".aerospike", "astools.conf"), "[cluster\n")
 
-			config.Reset()
-			t.Cleanup(config.Reset)
-
-			*cfFileFlags = flags.ConfFileFlags{}
-
-			root := NewRootCmd()
-			root.AddCommand(newListCmd(), newGenerateCmd(), newDiffCmd())
-			root.SetArgs(tt.args)
-
-			var err error
-
-			captureOutput(t, func() { err = root.Execute() })
+			_, err := runTestRoot(t, tt.args...)
 
 			if !tt.wantErr {
 				if err != nil {
@@ -307,6 +365,74 @@ func TestOnlyServerCommandsReadConfigFiles(t *testing.T) {
 			}
 
 			requireErrText(t, err, "failed to read config file "+home)
+		})
+	}
+}
+
+func TestConfigFileOptionsOnCommandsThatReadNone(t *testing.T) {
+	if err := InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
+
+	missing := filepath.Join(t.TempDir(), "missing.conf")
+
+	options := map[string]struct {
+		warning string
+		wantErr string
+		args    []string
+	}{
+		"no option":          {},
+		"--config-file":      {args: []string{"--config-file", missing}, warning: "--config-file"},
+		"--only-config-file": {args: []string{"--only-config-file", missing}, warning: "--only-config-file"},
+		"--no-config-file":   {args: []string{"--no-config-file"}, warning: "--no-config-file"},
+		"--instance":         {args: []string{"--instance", "x"}, warning: "--instance"},
+		"--only-config-file with --config-file": {
+			args:    []string{"--only-config-file", missing, "--config-file", missing},
+			wantErr: "--config-file and --only-config-file are mutually exclusive",
+		},
+		"--no-config-file with --config-file": {
+			args:    []string{"--no-config-file", "--config-file", missing},
+			wantErr: "--config-file and --no-config-file are mutually exclusive",
+		},
+		"--no-config-file with --only-config-file": {
+			args:    []string{"--no-config-file", "--only-config-file", missing},
+			wantErr: "--no-config-file and only-config-file are mutually exclusive option. Please enable only one.",
+		},
+	}
+
+	for cmdName, c := range commandsReadingNoConfigFile {
+		for optName, opt := range options {
+			t.Run(cmdName+"/"+optName, func(t *testing.T) {
+				output, err := runTestRoot(t, c.cmdArgs(opt.args...)...)
+
+				if opt.wantErr != "" {
+					requireErrText(t, err, opt.wantErr)
+					return
+				}
+
+				if err != nil {
+					t.Fatalf("expected %s to run, got %v", cmdName, err)
+				}
+
+				requireIgnoredWarning(t, output, opt.warning, c.path)
+			})
+		}
+	}
+
+	for name, args := range map[string][]string{
+		"generate":    {"generate", "-h", unreachableAddr},
+		"diff server": {"diff", "server", "-h", unreachableAddr, diffServerInput},
+	} {
+		t.Run(name, func(t *testing.T) {
+			output, err := runTestRoot(t, append(args, "--no-config-file", "--instance", "x")...)
+
+			if err == nil {
+				t.Fatalf("expected %s to fail at %s", name, unreachableAddr)
+			}
+
+			if strings.Contains(output, "is ignored") {
+				t.Fatalf("expected %s to use the config file options, got %s", name, output)
+			}
 		})
 	}
 }

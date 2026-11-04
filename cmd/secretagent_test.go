@@ -515,10 +515,13 @@ func TestSecretAgentHelpBlock(t *testing.T) {
 		t.Fatalf("Failed to initialize globals for testing: %v", err)
 	}
 
+	const tlsPath = " A --tls-cafile, --tls-certfile or --tls-keyfile path that begins with\n" +
+		" 'secrets:' must be given as './secrets:...'.\n"
+
 	const block = "\n\n[secret-agent]\n" +
 		" Aerospike Secret Agent used for 'secrets:<resource>:<key>' values.\n" +
 		" In a config file, set these in the [secret-agent] section as sa-address,\n" +
-		" sa-port, sa-timeout and sa-ca-file.\n"
+		" sa-port, sa-timeout and sa-ca-file.\n" + tlsPath
 
 	commands := map[string]*cobra.Command{
 		"generate":    newGenerateCmd(),
@@ -527,6 +530,11 @@ func TestSecretAgentHelpBlock(t *testing.T) {
 
 	for cmdName, cmd := range commands {
 		usage := cmd.UsageString()
+
+		if !strings.Contains(usage, tlsPath) {
+			t.Errorf("%s: the [secret-agent] block does not say how to name a TLS file that begins with "+
+				"'secrets:':\n%s", cmdName, usage)
+		}
 
 		before, after, found := strings.Cut(usage, block)
 		if !found {
@@ -1072,5 +1080,79 @@ func TestSecretAgentOnlySelectedSectionIsRead(t *testing.T) {
 				requirePassword(t, cmd, "admin")
 			})
 		}
+	}
+}
+
+func TestFetchedUserIsNotPrinted(t *testing.T) {
+	if err := InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
+
+	const (
+		fetchedUser     = "UserUniq-4412"
+		fetchedPassword = "PassUniq-9931"
+		literalUser     = "LiteralUser-7781"
+	)
+
+	tests := map[string]struct {
+		config  string
+		printed string
+		args    []string
+	}{
+		"user from the command line": {
+			args:    []string{"-U", "secrets:asconfig:user", "-P", "secrets:asconfig:password"},
+			printed: "secrets:asconfig:user",
+		},
+		"user from the config file": {
+			config:  "[cluster]\nuser = \"secrets:asconfig:user\"\npassword = \"secrets:asconfig:password\"\n",
+			printed: "secrets:asconfig:user",
+		},
+		"literal user": {
+			args:    []string{"-U", literalUser, "-P", "secrets:asconfig:password"},
+			printed: literalUser,
+		},
+	}
+
+	for cmdName, sc := range serverCommands {
+		for name, tt := range tests {
+			for _, level := range []string{"info", "trace"} {
+				t.Run(cmdName+"/"+name+"/"+level, func(t *testing.T) {
+					agent := newFakeAgent(t, map[string]string{
+						"asconfig:user":     fetchedUser,
+						"asconfig:password": fetchedPassword,
+					})
+					server := newFakeServer(t)
+
+					args := append([]string{"-h", server.Addr(), "--sa-address", agent.Addr(), "--log-level", level},
+						tt.args...)
+
+					var err error
+
+					output := captureOutput(t, func() { _, err = runServerCommand(t, sc, tt.config, args...) })
+
+					requireErr(t, err, sc.serverErr)
+					requireLoginFailurePrints(t, output, err, tt.printed, fetchedUser, fetchedPassword)
+				})
+			}
+		}
+	}
+}
+
+// requireLoginFailurePrints checks that the log and err name user in the
+// failed login and print none of hidden.
+func requireLoginFailurePrints(t *testing.T, output string, err error, user string, hidden ...string) {
+	t.Helper()
+
+	printed := output + "\n" + err.Error()
+
+	for _, value := range hidden {
+		if strings.Contains(printed, value) {
+			t.Fatalf("expected the fetched value %q not to be printed, got:\n%s", value, printed)
+		}
+	}
+
+	want := "failed to authenticate user `" + user + "`"
+	if !strings.Contains(err.Error(), want) || !strings.Contains(output, want) {
+		t.Fatalf("expected %q in the error and the log, got:\n%s", want, printed)
 	}
 }

@@ -38,6 +38,7 @@ const (
 	secretAgentServerVersion = "ee-6.4.0.2"
 	secretAgentPassword      = "admin"
 	secretAgentWrongPassword = "not-the-admin-password"
+	secretAgentUnknownUser   = "UserUniq-4412"
 	secretAgentStartTimeout  = 2 * time.Minute
 	legacyCADeprecation      = "Argument --sa-cafile is deprecated. Use --sa-ca-file instead."
 	passwordEnv              = "ASCONFIG_E2E_PASSWORD"
@@ -404,9 +405,10 @@ func TestSecretAgent(t *testing.T) {
 	}
 
 	agent := startSecretAgent(t, dockerClient, nil, map[string]string{
-		"user":        "admin",
-		"b64-literal": "b64:" + base64.StdEncoding.EncodeToString([]byte(secretAgentPassword)),
-		"env-literal": "env:" + passwordEnv,
+		"user":         "admin",
+		"unknown-user": secretAgentUnknownUser,
+		"b64-literal":  "b64:" + base64.StdEncoding.EncodeToString([]byte(secretAgentPassword)),
+		"env-literal":  "env:" + passwordEnv,
 	})
 	agentHost, agentPort, _ := net.SplitHostPort(agent)
 	tlsAgent := startSecretAgent(t, dockerClient, &pki, nil)
@@ -636,6 +638,27 @@ sa-port = "0"
 			args:        withPassword("secrets:asconfig:wrong", "--sa-address", agent),
 			contains:    []string{"INVALID_CREDENTIAL"},
 			notContains: []string{"unable to read credentials"},
+			fail:        true,
+		},
+		{
+			name:   "a fetched user that fails to log in is not printed",
+			output: filepath.Join(dir, "unknown-user.conf"),
+			args: []string{
+				"generate", "-h", host, "-U", "secrets:asconfig:unknown-user", "-P", "secrets:asconfig:wrong",
+				"--sa-address", agent, "--log-level", "trace",
+			},
+			contains:    []string{"failed to authenticate user `secrets:asconfig:unknown-user`"},
+			notContains: []string{secretAgentUnknownUser, "unable to read credentials"},
+			fail:        true,
+		},
+		{
+			name: "diff server, a fetched user that fails to log in is not printed",
+			args: []string{
+				"diff", "server", "-h", host, "-U", "secrets:asconfig:unknown-user", "-P", "secrets:asconfig:wrong",
+				"--sa-address", agent, "--log-level", "trace", generated,
+			},
+			contains:    []string{"failed to authenticate user `secrets:asconfig:unknown-user`"},
+			notContains: []string{secretAgentUnknownUser, "unable to read credentials"},
 			fail:        true,
 		},
 		{
