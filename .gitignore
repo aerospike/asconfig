@@ -38,3 +38,6 @@ docker/aerospike-asconfig_*.deb
 
 # Intellij
 .idea/
+
+# Local git worktrees
+.worktrees/
