@@ -53,7 +53,9 @@ func TestGenerateReadsPasswordSources(t *testing.T) {
 			contains: []string{"--password: password is longer than 63 bytes"},
 		},
 		"PKI does not read the password": {
-			args: []string{"-U", "admin", "--auth", "pki", "--tls-enable", "-P", "env:ASCONFIG_TEST_UNSET"},
+			args: []string{
+				"-U", "admin", "--auth", "pki", "--tls-enable", "--tls-name", "localhost", "-P", "env:ASCONFIG_TEST_UNSET",
+			},
 			want: errUnableToGenerateConfigFile,
 		},
 		"key file password": {

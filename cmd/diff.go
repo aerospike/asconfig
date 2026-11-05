@@ -318,6 +318,10 @@ func diffAgainstServer(
 	logger.Debugf("Retrieving Aerospike configuration from server")
 
 	asHosts := asCommonConfig.NewHosts()
+	if asPolicy.TlsConfig != nil && asHosts[0].TLSName == "" {
+		return errTLSNameRequired
+	}
+
 	asinfo := info.NewAsInfo(mgmtLibLogger, asHosts[0], asPolicy)
 
 	generatedConf, err := asConf.GenerateConf(mgmtLibLogger, asinfo, true)

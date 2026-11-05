@@ -602,6 +602,41 @@ func TestDiffServerFlagsDoNotCarryOver(t *testing.T) {
 	}
 }
 
+func TestTLSNeedsTLSName(t *testing.T) {
+	if err := InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
+
+	for name, sc := range serverCommands {
+		t.Run(name+"/without a TLS name", func(t *testing.T) {
+			server := newFakeServer(t)
+
+			_, err := runServerCommand(t, sc, "", "-h", server.Addr(), "--tls-enable")
+			requireErrText(t, err, "--tls-name")
+
+			if n := server.Conns(); n != 0 {
+				t.Fatalf("expected no server connection without a TLS name, got %d", n)
+			}
+		})
+
+		for how, args := range map[string]func(*fakePeer) []string{
+			"--tls-name":  func(s *fakePeer) []string { return []string{"-h", s.Addr(), "--tls-name", "localhost"} },
+			"in the host": func(s *fakePeer) []string { return []string{"-h", "127.0.0.1:localhost:" + s.Port()} },
+		} {
+			t.Run(name+"/TLS name "+how, func(t *testing.T) {
+				server := newFakeServer(t)
+
+				_, err := runServerCommand(t, sc, "", append(args(server), "--tls-enable")...)
+				requireErr(t, err, sc.serverErr)
+
+				if n := server.Conns(); n == 0 {
+					t.Fatal("expected a server connection")
+				}
+			})
+		}
+	}
+}
+
 func TestTLSFileSecretsNeedTLS(t *testing.T) {
 	if err := InitializeGlobals(); err != nil {
 		t.Fatalf("Failed to initialize globals for testing: %v", err)

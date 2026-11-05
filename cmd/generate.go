@@ -119,6 +119,10 @@ func generateConfig(
 	logger.Infof("Retrieving Aerospike configuration from node %s", &aerospikeFlags.Seeds)
 
 	asHosts := asCommonConfig.NewHosts()
+	if asPolicy.TlsConfig != nil && asHosts[0].TLSName == "" {
+		return errTLSNameRequired
+	}
+
 	asinfo := info.NewAsInfo(mgmtLibLogger, asHosts[0], asPolicy)
 
 	generatedConf, err := asconfig.GenerateConf(mgmtLibLogger, asinfo, true)
