@@ -53,11 +53,11 @@ func TestGenerateReadsPasswordSources(t *testing.T) {
 			contains: []string{"--password: password is longer than 63 bytes"},
 		},
 		"PKI does not read the password": {
-			args: []string{"-U", "admin", "--auth", "pki", "-P", "env:ASCONFIG_TEST_UNSET"},
+			args: []string{"-U", "admin", "--auth", "pki", "--tls-enable", "-P", "env:ASCONFIG_TEST_UNSET"},
 			want: errUnableToGenerateConfigFile,
 		},
 		"key file password": {
-			args:     []string{"--tls-keyfile", keyFile, "--tls-keyfile-password", "file:"},
+			args:     []string{"--tls-enable", "--tls-keyfile", keyFile, "--tls-keyfile-password", "file:"},
 			want:     errUnableToResolveSecrets,
 			contains: []string{"--tls-keyfile-password: file: requires a path"},
 		},
@@ -97,12 +97,13 @@ func TestGenerateTrimsKeyFilePassword(t *testing.T) {
 
 	cmd := newGenerateCmd()
 	if err := cmd.ParseFlags([]string{
-		"-h", unreachableAddr, "--tls-keyfile", keyFile, "--tls-keyfile-password", " env:ASCONFIG_TEST_KEY_PASSWORD ",
+		"-h", unreachableAddr, "--tls-enable", "--tls-keyfile", keyFile,
+		"--tls-keyfile-password", " env:ASCONFIG_TEST_KEY_PASSWORD ",
 	}); err != nil {
 		t.Fatal(err)
 	}
 
-	requireErr(t, cmd.RunE(cmd, nil), errUnableToGenerateConfigFile)
+	requireErr(t, cmd.RunE(cmd, nil), errUnableToCreateClientPolicy)
 
 	if got := cmd.Flags().Lookup("tls-keyfile-password").Value.String(); got != "key-pass" {
 		t.Fatalf("expected the key file password %q, got %q", "key-pass", got)
@@ -308,8 +309,7 @@ func TestPasswordHelp(t *testing.T) {
 		"4) File: 'file:<PATH>', the first line of the file",
 		"Surrounding whitespace is trimmed before the form is read. A",
 		"password with surrounding whitespace must be given as 'b64:'.",
-		"The password is read only when a key file is set. It must be at",
-		"most 1024 bytes.",
+		"The password must be at most 1024 bytes.",
 		"A value fetched with 'secrets:' is used as-is.",
 	}
 
@@ -343,7 +343,7 @@ func TestPasswordHelpMatchesTheOtherTools(t *testing.T) {
 		t.Fatalf("Failed to initialize globals for testing: %v", err)
 	}
 
-	// The canonical text, less the prompt sentences: asconfig has no prompt.
+	// The canonical text, less the prompt sentences and the key file condition.
 	help := map[string]string{
 		"password": `Password used to authenticate with cluster. Default: none
 			It can be one of the following:
@@ -376,8 +376,7 @@ func TestPasswordHelpMatchesTheOtherTools(t *testing.T) {
 			'file:' or 'secrets:' must be given as 'b64:'.
 			Surrounding whitespace is trimmed before the form is read. A
 			password with surrounding whitespace must be given as 'b64:'.
-			The password is read only when a key file is set. It must be at
-			most 1024 bytes.
+			The password must be at most 1024 bytes.
 			A value fetched with 'secrets:' is used as-is.
 			Default: none`,
 	}
