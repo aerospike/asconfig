@@ -2,6 +2,8 @@ logging:
     - namespace: info
       masking: info
       name: console
+mod-lua:
+    allow-unsafe-lua: false
 namespaces:
     - default-read-touch-ttl-pct: 0
       index-type:
