@@ -3,9 +3,9 @@
         "Source":"testdata/cases/server72/server72.conf",
         "Destination":"testdata/cases/server72/server72-res-.yaml",
         "Expected":"testdata/cases/server72/server72.yaml",
-        "Arguments":["convert","--aerospike-version","7.2.0.0","--format","asconfig","--output","testdata/cases/server72/server72-res-.yaml"],
+        "Arguments":["convert","--aerospike-version","7.2.0.19","--format","asconfig","--output","testdata/cases/server72/server72-res-.yaml"],
         "SkipServerTest":false,
         "ServerErrorAllowList":null,
-        "ServerImage":"aerospike/aerospike-server-enterprise:7.2.0.1_2"
+        "ServerImage":"aerospike/aerospike-server-enterprise:7.2.0.19"
     }
 ]
