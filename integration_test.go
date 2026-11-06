@@ -9,11 +9,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -487,7 +489,19 @@ func runServer(version string, serverVersion string, confPath string, serverArgs
 		return "", ""
 	}
 
-	return id, resp.NetworkSettings.IPAddress
+	return id, containerIP(resp)
+}
+
+// containerIP returns the container's address on its network. Newer Docker
+// versions leave the top-level NetworkSettings.IPAddress empty.
+func containerIP(info container.InspectResponse) string {
+	for _, name := range slices.Sorted(maps.Keys(info.NetworkSettings.Networks)) {
+		if ip := info.NetworkSettings.Networks[name].IPAddress; ip != "" {
+			return ip
+		}
+	}
+
+	return info.NetworkSettings.IPAddress
 }
 
 func stopServer(id string, dockerClient *client.Client) error {

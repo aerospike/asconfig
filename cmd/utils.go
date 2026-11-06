@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -8,6 +9,8 @@ import (
 	"strings"
 
 	asConf "github.com/aerospike/aerospike-management-lib/asconfig"
+	"github.com/aerospike/tools-common-go/config"
+	"github.com/aerospike/tools-common-go/flags"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
@@ -34,6 +37,8 @@ var (
 	errDiffConfigsDiffer                = errors.New("configuration files are not equal")
 	errMismatchedFileFormats            = errors.New("mismatched file formats")
 	errUnableToCreateClientPolicy       = errors.New("unable to create client policy")
+	errTLSNameRequired                  = errors.New("TLS needs --tls-name or a host as <host>:<tls-name>:<port>")
+	errUnableToResolveSecrets           = errors.New("unable to read credentials")
 	errUnableToParseGeneratedServerConf = errors.New("unable to parse the generated server conf")
 	errUnableToGenerateConfigFromServer = errors.New("unable to generate config from server")
 	errUnableToMarshalServerConfig      = errors.New("unable to marshal server config")
@@ -61,6 +66,11 @@ var (
 	errUnableToMarshalGeneratedConfFile = errors.New("unable to marshal the generated conf file")
 
 	errInvalidLogLevel = errors.New("invalid log-level flag")
+
+	errNoAndOnlyConfigFile = errors.New("--no-config-file " + //nolint:staticcheck // Same text as the C tools.
+		"and only-config-file are mutually exclusive option. Please enable only one.")
+	errOnlyAndConfigFile = errors.New("--config-file and --only-config-file are mutually exclusive")
+	errNoAndConfigFile   = errors.New("--config-file and --no-config-file are mutually exclusive")
 
 	errValidateTooManyArguments = fmt.Errorf("expected a maximum of %d arguments", convertArgMax)
 
@@ -230,4 +240,79 @@ func renderErrorf(format string, args ...any) {
 // renderWarningf writes warning messages to stderr.
 func renderWarningf(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "Warning: "+format, args...)
+}
+
+const secretAgentUsage = `{{secretAgentFlagUsages .LocalFlags false | trimTrailingWhitespaces}}
+
+[secret-agent]
+ Aerospike Secret Agent used for 'secrets:<resource>:<key>' values.
+ In a config file, set these in the [secret-agent] section as sa-address,
+ sa-port, sa-timeout and sa-ca-file.
+ A --tls-cafile, --tls-certfile or --tls-keyfile path that begins with
+ 'secrets:' must be given as './secrets:...'.
+{{secretAgentFlagUsages .LocalFlags true | trimTrailingWhitespaces}}{{end}}`
+
+// secretAgentFlagUsages returns the usage of the --sa-* flags in flagSet, or
+// of the other flags.
+func secretAgentFlagUsages(flagSet *pflag.FlagSet, secretAgent bool) string {
+	group := &pflag.FlagSet{}
+
+	flagSet.VisitAll(func(f *pflag.Flag) {
+		if strings.HasPrefix(f.Name, "sa-") == secretAgent {
+			group.AddFlag(f)
+		}
+	})
+
+	return group.FlagUsages()
+}
+
+const configFilesAnnotation = "reads-config-files"
+
+// readConfigFiles makes the root command load the config files before cmd
+// runs. Commands that do not connect to a server read none.
+func readConfigFiles(cmd *cobra.Command) {
+	if cmd.Annotations == nil {
+		cmd.Annotations = map[string]string{}
+	}
+
+	cmd.Annotations[configFilesAnnotation] = "true"
+}
+
+// addSecretAgentFlags adds the --sa-* flags, read from the [secret-agent] or
+// [secret-agent_<instance>] config section, and lists them in the help under
+// [secret-agent].
+func addSecretAgentFlags(cmd *cobra.Command, saFlags *flags.SecretAgentFlags) {
+	saFlagSet := saFlags.NewFlagSet(flags.DefaultWrapHelpString)
+	cmd.Flags().AddFlagSet(saFlagSet)
+	config.BindPFlagsWithInstanceFallback(saFlagSet, "secret-agent")
+	cobra.AddTemplateFunc("secretAgentFlagUsages", secretAgentFlagUsages)
+	cmd.SetUsageTemplate(strings.Replace(cmd.UsageTemplate(),
+		"{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}", secretAgentUsage, 1))
+}
+
+// resolveSecrets fetches secrets: values of --user, --password and the TLS
+// file and password options from the Secret Agent, and reads the --password
+// and --tls-keyfile-password sources. From then on a fetched user is left out
+// of the log, and the returned redactor leaves it out of the command's error.
+func resolveSecrets(
+	cmd *cobra.Command, asFlags *flags.AerospikeFlags, saFlags *flags.SecretAgentFlags,
+) (userRedactor, error) {
+	ctx := cmd.Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	asFlags.SetWarningHandler(func(msg string) { logger.Warn(msg) })
+
+	user := asFlags.User
+
+	if err := asFlags.ResolveSecrets(ctx, saFlags); err != nil {
+		return userRedactor{}, fmt.Errorf("%w: %w", errUnableToResolveSecrets, err)
+	}
+
+	if asFlags.User == user || asFlags.User == "" {
+		return userRedactor{}, nil
+	}
+
+	return newUserRedactor(asFlags.User), nil
 }

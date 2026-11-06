@@ -3,15 +3,503 @@
 package cmd
 
 import (
+	"encoding/base64"
 	"errors"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/aerospike/tools-common-go/config"
+	"github.com/aerospike/tools-common-go/flags"
+	"github.com/aerospike/tools-common-go/secretagent/secretagenttest"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/suite"
 )
+
+// Keeps the host's /etc/aerospike/astools.conf and ~/.aerospike/astools.conf
+// out of every test.
+func TestMain(m *testing.M) {
+	home, err := os.MkdirTemp("", "asconfig-home")
+	if err != nil {
+		panic(err)
+	}
+
+	_ = os.Setenv("HOME", home)
+
+	system, err := os.MkdirTemp("", "asconfig-etc")
+	if err != nil {
+		panic(err)
+	}
+
+	config.SetSystemConfDir(system)
+
+	code := m.Run()
+
+	_ = os.RemoveAll(home)
+	_ = os.RemoveAll(system)
+
+	os.Exit(code)
+}
+
+func TestConfigFilesReadLikeCTools(t *testing.T) {
+	if err := InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
+
+	agent := secretagenttest.NewTLSServer(t, secretagenttest.Secrets{
+		"asconfig": {"password": base64.StdEncoding.EncodeToString([]byte("admin"))},
+	})
+
+	tests := map[string]struct {
+		files    configFiles
+		wantUser string
+		wantPass string
+		wantErr  string
+	}{
+		"--config-file is read after the home file, key by key": {
+			files: configFiles{
+				home: "[cluster]\nuser = \"home\"\npassword = \"admin\"\n",
+				user: "[cluster]\nuser = \"admin\"\n",
+			},
+			wantUser: "admin",
+			wantPass: "admin",
+		},
+		"the working directory file is not read": {
+			files: configFiles{working: "[cluster]\nuser = \"working\"\npassword = \"admin\"\n"},
+		},
+		"a later sa-address keeps the sa-ca-file of an earlier file": {
+			files: configFiles{
+				home: "[secret-agent]\nsa-ca-file = \"" + agent.CAFile() + "\"\n",
+				user: "[cluster]\nuser = \"admin\"\npassword = \"secrets:asconfig:password\"\n\n" +
+					"[secret-agent]\nsa-address = \"" + agent.Addr() + "\"\n",
+			},
+			wantUser: "admin",
+			wantPass: "admin",
+		},
+		"the [secret-agent] section of an earlier file is checked": {
+			files: configFiles{
+				home: "[secret-agent]\nsa-port = 0\n",
+				user: "[cluster]\nuser = \"admin\"\npassword = \"admin\"\n",
+			},
+			wantErr: `invalid value "0" for sa-port in the [secret-agent] config section, expected an integer from 1 to 65535`,
+		},
+		"--only-config-file skips the home file": {
+			files: configFiles{
+				home: "[cluster]\nuser = \"home\"\npassword = \"admin\"\n",
+				user: "[cluster]\nuser = \"admin\"\n",
+				only: true,
+			},
+			wantUser: "admin",
+		},
+		"--only-config-file fetches with the [secret-agent] section of that file": {
+			files: configFiles{
+				home: "[secret-agent]\nsa-port = 0\n",
+				user: "[cluster]\nuser = \"admin\"\npassword = \"secrets:asconfig:password\"\n\n" +
+					"[secret-agent]\nsa-address = \"" + agent.Addr() + "\"\nsa-ca-file = \"" + agent.CAFile() + "\"\n",
+				only: true,
+			},
+			wantUser: "admin",
+			wantPass: "admin",
+		},
+		"--no-config-file reads no file": {
+			files: configFiles{
+				home: "[secret-agent]\nsa-port = 0\n",
+				none: true,
+			},
+		},
+		"--no-config-file with --config-file": {
+			files: configFiles{
+				user: "[cluster]\nuser = \"admin\"\n",
+				none: true,
+			},
+			wantErr: "--config-file and --no-config-file are mutually exclusive",
+		},
+		"--only-config-file with --config-file": {
+			files: configFiles{
+				user: "[cluster]\nuser = \"admin\"\n",
+				only: true,
+				args: []string{"--config-file", "other.conf"},
+			},
+			wantErr: "--config-file and --only-config-file are mutually exclusive",
+		},
+		"--no-config-file with --only-config-file": {
+			files: configFiles{
+				user: "[cluster]\nuser = \"admin\"\n",
+				only: true,
+				none: true,
+			},
+			wantErr: "--no-config-file and only-config-file are mutually exclusive option. Please enable only one.",
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			run := runGenerateWithConfigFiles(t, tt.files)
+
+			if tt.wantErr != "" {
+				requireErrText(t, run.err, tt.wantErr)
+
+				if n := run.server.Conns(); n != 0 {
+					t.Fatalf("expected no server connection, got %d", n)
+				}
+
+				return
+			}
+
+			requireErr(t, run.err, errUnableToGenerateConfigFile)
+
+			if got := run.cmd.Flags().Lookup("user").Value.String(); got != tt.wantUser {
+				t.Fatalf("expected the user %q, got %q", tt.wantUser, got)
+			}
+
+			requirePassword(t, run.cmd, tt.wantPass)
+
+			if strings.Join(run.logged, "\n") != strings.Join(run.files, "\n") {
+				t.Fatalf("expected the config files %q to be logged, got %q", run.files, run.logged)
+			}
+		})
+	}
+}
+
+type configFilesRun struct {
+	err    error
+	cmd    *cobra.Command
+	server *fakePeer
+	files  []string
+	logged []string
+}
+
+// configFiles holds the text of ~/.aerospike/astools.conf (home), of the
+// --config-file or, with only, --only-config-file (user), and of
+// ./astools.conf (working). none adds --no-config-file, and args are added to
+// the command line.
+type configFiles struct {
+	home    string
+	user    string
+	working string
+	args    []string
+	only    bool
+	none    bool
+}
+
+// runGenerateWithConfigFiles runs generate against a fake server with the
+// config files of files, each written only when not empty. run.files holds the
+// files expected to be read.
+func runGenerateWithConfigFiles(t *testing.T, files configFiles) configFilesRun {
+	t.Helper()
+
+	homeDir := t.TempDir()
+	t.Setenv("HOME", homeDir)
+	t.Chdir(t.TempDir())
+
+	run := configFilesRun{server: newFakeServer(t)}
+	args := []string{"generate", "-h", run.server.Addr()}
+
+	if files.home != "" {
+		home := writeTestFile(t, filepath.Join(homeDir, ".aerospike", "astools.conf"), files.home)
+
+		if !files.only && !files.none {
+			run.files = append(run.files, home)
+		}
+	}
+
+	if files.working != "" {
+		writeTestFile(t, "astools.conf", files.working)
+	}
+
+	if files.user != "" {
+		user := writeTestFile(t, filepath.Join(t.TempDir(), "user.conf"), files.user)
+
+		option := "--config-file"
+		if files.only {
+			option = "--only-config-file"
+		}
+
+		args = append(args, option, user)
+
+		if !files.none {
+			run.files = append(run.files, user)
+		}
+	}
+
+	if files.none {
+		args = append(args, "--no-config-file")
+	}
+
+	args = append(args, files.args...)
+
+	config.Reset()
+	t.Cleanup(config.Reset)
+
+	*cfFileFlags = flags.ConfFileFlags{}
+
+	root := NewRootCmd()
+	root.AddCommand(newGenerateCmd())
+	root.SetArgs(args)
+
+	output := captureOutput(t, func() { run.err = root.Execute() })
+	run.cmd, _, _ = root.Find([]string{"generate"})
+
+	for _, line := range strings.Split(output, "\n") {
+		if _, file, ok := strings.Cut(line, "Using config file: "); ok {
+			run.logged = append(run.logged, strings.TrimSuffix(file, `"`))
+		}
+	}
+
+	return run
+}
+
+func writeTestFile(t *testing.T, file, text string) string {
+	t.Helper()
+
+	if err := os.MkdirAll(filepath.Dir(file), 0o700); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.WriteFile(file, []byte(text), outputFilePermissions); err != nil {
+		t.Fatal(err)
+	}
+
+	return file
+}
+
+const (
+	server70Input  = "../testdata/cases/server70/server70.yaml"
+	diffFilesInput = "../testdata/sources/all_flash_cluster_cr.yaml"
+)
+
+type commandReadingNoConfigFile struct {
+	path string
+	args []string
+}
+
+var commandsReadingNoConfigFile = map[string]commandReadingNoConfigFile{
+	"list versions": {path: "list versions"},
+	"convert":       {path: "convert", args: []string{"-a", "7.0.0", server70Input}},
+	"validate":      {path: "validate", args: []string{"-a", "7.0.0", server70Input}},
+	"diff files":    {path: "diff files", args: []string{diffFilesInput, diffFilesInput}},
+	"diff versions": {path: "diff versions", args: []string{"7.0.0", "8.0.0"}},
+	"legacy diff":   {path: "diff", args: []string{diffFilesInput, diffFilesInput}},
+}
+
+func (c commandReadingNoConfigFile) cmdArgs(extra ...string) []string {
+	args := strings.Fields(c.path)
+	args = append(args, c.args...)
+
+	return append(args, extra...)
+}
+
+// runTestRoot runs args from a root command with every subcommand, and returns
+// what it printed.
+func runTestRoot(t *testing.T, args ...string) (string, error) {
+	t.Helper()
+
+	config.Reset()
+	t.Cleanup(config.Reset)
+
+	*cfFileFlags = flags.ConfFileFlags{}
+
+	root := NewRootCmd()
+	root.AddCommand(newConvertCmd(), newDiffCmd(), newGenerateCmd(), newListCmd(), newValidateCmd())
+	root.SetArgs(args)
+
+	var err error
+
+	output := captureOutput(t, func() { err = root.Execute() })
+
+	return output, err
+}
+
+func requireIgnoredWarning(t *testing.T, output, option, path string) {
+	t.Helper()
+
+	if option == "" {
+		if strings.Contains(output, "is ignored") {
+			t.Fatalf("expected no ignored option warning, got %s", output)
+		}
+
+		return
+	}
+
+	want := `level=warning msg="` + option + " is ignored: asconfig " + path + ` reads no config file"`
+	if !strings.Contains(output, want) {
+		t.Fatalf("expected the warning %q, got %s", want, output)
+	}
+}
+
+func TestOnlyServerCommandsReadConfigFiles(t *testing.T) {
+	if err := InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
+
+	type readCase struct {
+		args    []string
+		wantErr bool
+	}
+
+	tests := map[string]readCase{
+		"generate":    {args: []string{"generate", "-h", "127.0.0.1:1"}, wantErr: true},
+		"diff server": {args: []string{"diff", "server", "-h", "127.0.0.1:1", "local.conf"}, wantErr: true},
+	}
+
+	for name, c := range commandsReadingNoConfigFile {
+		tests[name] = readCase{args: c.cmdArgs()}
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			homeDir := t.TempDir()
+			t.Setenv("HOME", homeDir)
+			home := writeTestFile(t, filepath.Join(homeDir, ".aerospike", "astools.conf"), "[cluster\n")
+
+			_, err := runTestRoot(t, tt.args...)
+
+			if !tt.wantErr {
+				if err != nil {
+					t.Fatalf("expected %s to ignore the config files, got %v", name, err)
+				}
+
+				return
+			}
+
+			requireErrText(t, err, "failed to read config file "+home)
+		})
+	}
+}
+
+func TestConfigFileOptionsOnCommandsThatReadNone(t *testing.T) {
+	if err := InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
+
+	missing := filepath.Join(t.TempDir(), "missing.conf")
+
+	options := map[string]struct {
+		warning string
+		wantErr string
+		args    []string
+	}{
+		"no option":          {},
+		"--config-file":      {args: []string{"--config-file", missing}, warning: "--config-file"},
+		"--only-config-file": {args: []string{"--only-config-file", missing}, warning: "--only-config-file"},
+		"--no-config-file":   {args: []string{"--no-config-file"}, warning: "--no-config-file"},
+		"--instance":         {args: []string{"--instance", "x"}, warning: "--instance"},
+		"--only-config-file with --config-file": {
+			args:    []string{"--only-config-file", missing, "--config-file", missing},
+			wantErr: "--config-file and --only-config-file are mutually exclusive",
+		},
+		"--no-config-file with --config-file": {
+			args:    []string{"--no-config-file", "--config-file", missing},
+			wantErr: "--config-file and --no-config-file are mutually exclusive",
+		},
+		"--no-config-file with --only-config-file": {
+			args:    []string{"--no-config-file", "--only-config-file", missing},
+			wantErr: "--no-config-file and only-config-file are mutually exclusive option. Please enable only one.",
+		},
+	}
+
+	for cmdName, c := range commandsReadingNoConfigFile {
+		for optName, opt := range options {
+			t.Run(cmdName+"/"+optName, func(t *testing.T) {
+				output, err := runTestRoot(t, c.cmdArgs(opt.args...)...)
+
+				if opt.wantErr != "" {
+					requireErrText(t, err, opt.wantErr)
+					return
+				}
+
+				if err != nil {
+					t.Fatalf("expected %s to run, got %v", cmdName, err)
+				}
+
+				requireIgnoredWarning(t, output, opt.warning, c.path)
+			})
+		}
+	}
+
+	for name, args := range map[string][]string{
+		"generate":    {"generate", "-h", unreachableAddr},
+		"diff server": {"diff", "server", "-h", unreachableAddr, diffServerInput},
+	} {
+		t.Run(name, func(t *testing.T) {
+			output, err := runTestRoot(t, append(args, "--no-config-file", "--instance", "x")...)
+
+			if err == nil {
+				t.Fatalf("expected %s to fail at %s", name, unreachableAddr)
+			}
+
+			if strings.Contains(output, "is ignored") {
+				t.Fatalf("expected %s to use the config file options, got %s", name, output)
+			}
+		})
+	}
+}
+
+func TestConfigFileMustBeTOML(t *testing.T) {
+	if err := InitializeGlobals(); err != nil {
+		t.Fatalf("Failed to initialize globals for testing: %v", err)
+	}
+
+	tests := map[string]string{
+		"astools.yaml": "cluster:\n  user: admin\n",
+		"astools.json": "{\"cluster\": {\"user\": \"admin\"}}\n",
+	}
+
+	for name, text := range tests {
+		t.Run(name, func(t *testing.T) {
+			file := writeTestFile(t, filepath.Join(t.TempDir(), name), text)
+			server := newFakeServer(t)
+
+			_, err := runTestRoot(t, "generate", "-h", server.Addr(), "--config-file", file)
+
+			requireErrText(t, err, "failed to read config file "+file, "toml")
+
+			if n := server.Conns(); n != 0 {
+				t.Fatalf("expected no server connection, got %d", n)
+			}
+		})
+	}
+}
+
+func TestConfigFileHelp(t *testing.T) {
+	system := config.SystemConfDir()
+	config.SetSystemConfDir(config.DefaultConfDir)
+	t.Cleanup(func() { config.SetSystemConfDir(system) })
+
+	usage := strings.Join(strings.Fields(NewRootCmd().PersistentFlags().Lookup("config-file").Usage), " ")
+
+	for _, want := range []string{"/etc/aerospike/astools.conf", "~/.aerospike/astools.conf"} {
+		if !strings.Contains(usage, want) {
+			t.Errorf("--config-file help is missing %s, got %q", want, usage)
+		}
+	}
+
+	if strings.Contains(usage, "default is") {
+		t.Errorf("--config-file help still describes a single default file: %q", usage)
+	}
+}
+
+func TestConfigFileOptionsHelp(t *testing.T) {
+	usage := strings.Join(strings.Fields(NewRootCmd().PersistentFlags().FlagUsages()), " ")
+
+	for _, want := range []string{
+		"--only-config-file string Read only this config file. Cannot be combined with --config-file or" +
+			" --no-config-file.",
+		"--no-config-file Do not read any config file. Cannot be combined with --config-file or" +
+			" --only-config-file.",
+		"cluster_a and secret-agent_a",
+	} {
+		if !strings.Contains(usage, want) {
+			t.Errorf("config file help is missing %q, got %q", want, usage)
+		}
+	}
+
+	if strings.Contains(usage, "uda_a") {
+		t.Errorf("--instance help still names the retired uda_a section: %q", usage)
+	}
+}
 
 func TestPersistentPreRunRootFlags(t *testing.T) {
 	var testCases = []struct {
@@ -90,6 +578,7 @@ func (testsuite *RootTest) TestPersistentPreRunRootInitConfig() {
 	testCases := []struct {
 		configFile    string
 		configFileTxt string
+		wantErr       string
 	}{
 		{
 			configFile:    "test.conf",
@@ -98,6 +587,7 @@ func (testsuite *RootTest) TestPersistentPreRunRootInitConfig() {
 		{
 			configFile:    "test.yaml",
 			configFileTxt: yamlConfigTxt,
+			wantErr:       "failed to read config file test.yaml: toml: ",
 		},
 	}
 
@@ -107,6 +597,7 @@ func (testsuite *RootTest) TestPersistentPreRunRootInitConfig() {
 			Use: "sub",
 			Run: func(_ *cobra.Command, _ []string) {},
 		}
+		readConfigFiles(subCmd)
 		flagSet1 := &pflag.FlagSet{}
 		flagSet2 := &pflag.FlagSet{}
 
@@ -141,6 +632,11 @@ func (testsuite *RootTest) TestPersistentPreRunRootInitConfig() {
 			rootCmd.SetArgs([]string{"sub", "--config-file", tc.configFile})
 
 			err = rootCmd.Execute()
+			if tc.wantErr != "" {
+				testsuite.ErrorContains(err, tc.wantErr)
+				return
+			}
+
 			if err != nil {
 				testsuite.FailNow("unexpected error", err)
 			}

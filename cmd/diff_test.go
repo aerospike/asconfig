@@ -162,7 +162,7 @@ func TestRunServerDiff(t *testing.T) {
 	if err := InitializeGlobals(); err != nil {
 		t.Fatalf("Failed to initialize globals for testing: %v", err)
 	}
-	cmd := newDiffCmd()
+	cmd := newDiffServerCmd()
 
 	// Test server diff argument validation
 	validationCases := []struct {
@@ -193,7 +193,7 @@ func TestRunServerDiff(t *testing.T) {
 	}
 
 	for i, test := range validationCases {
-		err := runServerDiff(cmd, test.args)
+		err := cmd.RunE(cmd, test.args)
 		if test.expectError == (err == nil) {
 			t.Fatalf(
 				"runServerDiff case %d (%s): expectError: %v does not match err: %v",
