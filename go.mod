@@ -1,6 +1,6 @@
 module github.com/aerospike/asconfig
 
-go 1.26.8
+go 1.26.10
 
 require (
 	github.com/aerospike/aerospike-client-go/v8 v8.8.0
