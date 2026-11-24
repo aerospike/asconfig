@@ -88,6 +88,7 @@ service:
     cgroup-mem-tracking: true
     cluster-name: cl1
     group: root
+    node-id: a1
     pidfile: /dummy/file/path1
     tls-refresh-period: 300
     user: root
