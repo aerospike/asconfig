@@ -487,7 +487,7 @@ func TestConfigFileOptionsHelp(t *testing.T) {
 	for _, want := range []string{
 		"--only-config-file string Read only this config file. Cannot be combined with --config-file or" +
 			" --no-config-file.",
-		"--no-config-file Do not read any config file. Cannot be combined with --config-file or" +
+		"--no-config-file[=true|false] Do not read any config file. Cannot be combined with --config-file or" +
 			" --only-config-file.",
 		"cluster_a and secret-agent_a",
 	} {
