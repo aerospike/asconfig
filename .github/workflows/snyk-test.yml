@@ -2,6 +2,7 @@ name: "Snyk Report"
 
 on:
   workflow_call:
+  workflow_dispatch:
 jobs:
   security:
     runs-on: ubuntu-latest
@@ -17,7 +18,7 @@ jobs:
           submodules: true
       - name: Get go version from go.mod
         run: |
-          echo "GO_VERSION=$(grep '^go ' go.mod | cut -d " " -f 2)" >> $GITHUB_ENV
+          echo "GO_VERSION=$(grep '^go ' go.mod | cut -d " " -f 2)" >> "$GITHUB_ENV"
       - name: Setup go version
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -27,8 +28,18 @@ jobs:
         with: 
           snyk-version: v1.1307.2
       - name: Run Snyk to check for vulnerabilities and record dependencies
+        shell: bash
         run: |
-          snyk test --print-deps | sed -r "s/\x1B\[([0-9]{1,3}((;[0-9]{1,3})*)?)?[m|K]//g" | tee asconfig-snyk.txt
+          set -euo pipefail
+          [[ -n "${SNYK_TOKEN:-}" ]] \
+            || { echo "::error::SNYK_TOKEN is not set, so asconfig-snyk.txt would hold an authentication error instead of a report" >&2; exit 1; }
+          rc=0
+          snyk test --print-deps > snyk-raw.txt || rc=$?
+          sed -r "s/\x1B\[([0-9]{1,3}((;[0-9]{1,3})*)?)?[m|K]//g" snyk-raw.txt | tee asconfig-snyk.txt
+          case "${rc}" in
+            0|1) ;;
+            *) echo "::error::snyk test exited ${rc} without a result, so asconfig-snyk.txt is not a report" >&2; exit 1 ;;
+          esac
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       - name: Upload snyk results
